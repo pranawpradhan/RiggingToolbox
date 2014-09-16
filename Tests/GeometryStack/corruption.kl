@@ -1,5 +1,6 @@
 require Geometry;
 operator entry()
 {
-  PolygonMesh poly = PolygonMesh();
+  BaseGeometry bg = BaseGeometry();
+  bg._init("foo");
 }
