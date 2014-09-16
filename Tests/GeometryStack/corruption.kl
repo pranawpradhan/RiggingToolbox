@@ -1,0 +1,5 @@
+require Geometry;
+operator entry()
+{
+  PolygonMesh poly = PolygonMesh();
+}
