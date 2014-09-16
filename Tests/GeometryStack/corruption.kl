@@ -1,6 +1,6 @@
 require Geometry;
 operator entry()
 {
-  BaseGeometry bg = BaseGeometry();
-  bg._init("foo");
+  PolygonMesh pm = PolygonMesh();
+  pm.attributes.clear();
 }
