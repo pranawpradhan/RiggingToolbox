@@ -19,7 +19,7 @@ function String[] ComputeTangentsDeformer.getRequiredAttributes(){
 
 function String[] ComputeTangentsDeformer.getModifiedAttributes(){
 	String result[];
-	result.push('positions');
+	result.push('tangents');
 	return result;
 }
 

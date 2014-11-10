@@ -13,13 +13,12 @@ object ComputeNormalsDeformer : BaseDeformer {
 function String[] ComputeNormalsDeformer.getRequiredAttributes(){
 	String result[];
 	result.push('positions');
-	result.push('normals');
 	return result;
 }
 
 function String[] ComputeNormalsDeformer.getModifiedAttributes(){
 	String result[];
-	result.push('positions');
+	result.push('normals');
 	return result;
 }
 

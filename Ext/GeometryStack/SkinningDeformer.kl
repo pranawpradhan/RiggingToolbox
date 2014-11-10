@@ -12,6 +12,8 @@ object SkinningDeformer : BaseDeformer {
   Mat44 invReferencePose[];
   Mat44 skinningMatrices[];
   Mat44 bindShapeTransforms[];
+
+  Boolean transformNormals;
 };
 
 
@@ -26,7 +28,8 @@ function String[] SkinningDeformer.getRequiredAttributes(){
 function String[] SkinningDeformer.getModifiedAttributes(){
   String result[];
   result.push('positions');
-  result.push('normals');
+  if(this.transformNormals)
+    result.push('normals');
   return result;
 }
 
