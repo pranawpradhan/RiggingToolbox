@@ -44,3 +44,14 @@ function JSONDictValue BaseModifier.saveJSON(PersistenceContext persistenceConte
 function BaseModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   
 }
+
+
+/// Generates a Description string of this pose.
+/// \param indent The indentation to use when generating the string. 
+function String BaseModifier.getDesc(String indent) {
+  String desc;
+  desc += indent + "{ \n";
+  desc += indent + "  type: "+ this.type() + "\n";
+  desc += indent + "}";
+  return desc;
+}

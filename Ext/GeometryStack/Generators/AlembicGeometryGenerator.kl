@@ -803,3 +803,13 @@ function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContex
 }
 
 
+/// Generates a Description string of this pose.
+/// \param indent The indentation to use when generating the string. 
+function String AlembicGeometryGenerator.getDesc(String indent) {
+  String desc;
+  desc += indent + "{\n";
+  desc += indent + "  type: "+ this.type() + ",\n";
+  desc += indent + "  filePath: "+ this.filePath + "\n";
+  desc += indent + "}";
+  return desc;
+}

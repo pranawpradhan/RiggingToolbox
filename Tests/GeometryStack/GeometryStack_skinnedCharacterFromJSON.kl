@@ -34,7 +34,7 @@ operator entry(){
 
   report( GetEvalPathReport() );
 
-  report("GeometrySet:" + geomSet.get(0).getDesc(true, true));
+  report("stack:" + stack.getDesc());
   
 }
 

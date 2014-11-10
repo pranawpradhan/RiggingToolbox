@@ -19,6 +19,8 @@ interface GeometryOperator {
   JSONDictValue saveJSON(PersistenceContext persistenceContext);
 
   loadJSON!(PersistenceContext persistenceContext, JSONDictValue json);
+
+  String getDesc(String indent);
 };
 
 // for each type of geometry operator, we have a factory object 

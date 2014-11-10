@@ -219,3 +219,28 @@ function GeometryStack.setupRendering!(){
     instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(1.0,0.0,0.0)));
   }
 }
+
+
+/// Generates a Description string of this pose.
+/// \param indent The indentation to use when generating the string. 
+function String GeometryStack.getDesc(String indent) {
+  String desc;
+  desc += indent + "GeometryStack { \n";
+  desc += indent + "  geomOperators:[ \n";
+  for(Integer i=0; i<this.geomOperators.size; i++){
+    desc += this.geomOperators[i].getDesc(indent+'  ') + "\n";
+  }
+  desc += indent + "  ],\n";
+  desc += indent + "  geometries:[ \n";
+  for(Integer i=0; i<this.geomSet.size; i++){
+    desc += indent + "      " + this.geomSet.get(i).getDesc(false, false) + "\n";
+  }
+  desc += indent + "  ]\n";
+  desc += indent + "}";
+  return desc;
+}
+
+/// Generates a Description string of this Pose.
+function String GeometryStack.getDesc() {
+  return this.getDesc("");
+}
