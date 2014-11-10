@@ -59,11 +59,11 @@ operator blendShapesModifier_collectGeomPointsProduce(
   io BlendShapesModifier_CollectPointsMapOutput result,
   Index index,
   Size count,
-  BlendShapesModifier_collectMeshPointsSharedData sharedData
+  BlendShapesModifier_collectGeomPointsSharedData sharedData
 ) {
   Vec3 pos = sharedData.positions[index];
   Vec3 delta = pos - sharedData.refpositions[index];
-  if(delta.getLength() < sharedData.threshold){
+  if(delta.length() < sharedData.threshold){
     result.collected = true;
     result.index = index;
     result.delta = delta;
@@ -80,7 +80,7 @@ operator blendShapesModifier_collectMeshPointsProduce(
 ) {
   Vec3 pos = sharedData.mesh.getPointPosition(index);
   Vec3 delta = pos - sharedData.refpositions[index];
-  if(delta.getLength() < sharedData.threshold){
+  if(delta.length() < sharedData.threshold){
     result.collected = true;
     result.index = index;
     result.delta = delta;
