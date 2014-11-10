@@ -33,13 +33,13 @@ function BaseModifier.evaluate(EvalContext context, io GeometrySet geomSet){
 }
 
 
-function String BaseModifier.saveJSON(){
-  String json;
+function JSONDictValue BaseModifier.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json();
 
 
   return json;
 }
 
-function BaseModifier.loadJSON!(String json){
+function BaseModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue data){
   
 }

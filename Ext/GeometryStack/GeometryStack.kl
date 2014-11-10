@@ -149,12 +149,12 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
 
 
 
-function String GeometryStack.saveJSON(){
-  String json;
+function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json();
   return json;
 }
 
-function GeometryStack.loadJSON!(String json){
+function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDictValue data){
   
 }
 

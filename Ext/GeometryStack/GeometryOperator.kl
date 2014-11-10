@@ -16,7 +16,7 @@ interface GeometryOperator {
 
   evaluate(EvalContext context, io GeometrySet geomSet);
 
-  String saveJSON();
+  JSONDictValue saveJSON(PersistenceContext persistenceContext);
 
-  loadJSON!(String json);
+  loadJSON!(PersistenceContext persistenceContext, JSONDictValue data);
 };
