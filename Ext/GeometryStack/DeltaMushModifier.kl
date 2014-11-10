@@ -74,7 +74,7 @@ operator deltaMushModifier_smoothPosNorm<<<index>>>(io Vec3 positions[], io Vec3
 
 operator deltaMushModifier_computeBinding<<<index>>>(
   io PolygonMesh mesh,
-  Vec3 initialPositions[]
+  Vec3 initialPositions[],
   io Vec3 deltas[]
 ){
   Vec3 newPos = mesh.positionsAttribute.values[index];

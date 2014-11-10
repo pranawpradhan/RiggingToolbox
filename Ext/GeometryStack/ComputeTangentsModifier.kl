@@ -6,7 +6,7 @@ require Math;
 require Geometry;
 
 
-object ComputeTangentsModifier : PolygonMeshModifier {
+object ComputeTangentsModifier : BaseModifier {
 	Scalar hardAngleRadians;
 };
 

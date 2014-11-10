@@ -46,7 +46,7 @@ struct BlendShapesModifier_collectMeshPointsSharedData {
 
 /// A struct for collecting points during surface painting.
 /// \internal
-struct CollectPointsMapOutput {
+struct BlendShapesModifier_CollectPointsMapOutput {
   Boolean collected;
   Integer index;
   Vec3 delta;
@@ -55,7 +55,12 @@ struct CollectPointsMapOutput {
 
 /// An operator for collecting points during surface painting.
 /// \internal
-operator blendShapesModifier_collectGeomPointsProduce(io CollectPointsMapOutput result, Index index, Size count, BlendShapesModifier_collectMeshPointsSharedData sharedData) {
+operator blendShapesModifier_collectGeomPointsProduce(
+  io BlendShapesModifier_CollectPointsMapOutput result,
+  Index index,
+  Size count,
+  BlendShapesModifier_collectMeshPointsSharedData sharedData
+) {
   Vec3 pos = sharedData.positions[index];
   Vec3 delta = pos - sharedData.refpositions[index];
   if(delta.getLength() < sharedData.threshold){
@@ -67,7 +72,12 @@ operator blendShapesModifier_collectGeomPointsProduce(io CollectPointsMapOutput 
 
 /// An operator for collecting points during surface painting.
 /// \internal
-operator blendShapesModifier_collectMeshPointsProduce(io CollectPointsMapOutput result, Index index, Size count, BlendShapesModifier_collectMeshPointsSharedData sharedData) {
+operator blendShapesModifier_collectMeshPointsProduce(
+  io BlendShapesModifier_CollectPointsMapOutput result,
+  Index index,
+  Size count,
+  BlendShapesModifier_collectMeshPointsSharedData sharedData
+) {
   Vec3 pos = sharedData.mesh.getPointPosition(index);
   Vec3 delta = pos - sharedData.refpositions[index];
   if(delta.getLength() < sharedData.threshold){
@@ -80,7 +90,12 @@ operator blendShapesModifier_collectMeshPointsProduce(io CollectPointsMapOutput 
 
 /// An operator for collecting points during surface painting.
 /// \internal
-operator blendShapesModifier_collectPointsReduce(CollectPointsMapOutput input, io BlendShapesModifier_Target output, Index index, Size count) {
+operator blendShapesModifier_collectPointsReduce(
+  BlendShapesModifier_CollectPointsMapOutput input,
+  io BlendShapesModifier_Target output,
+  Index index,
+  Size count
+) {
   if(input.collected){
     output.indices.push(input.index);
     output.deltas.push(input.delta);
@@ -110,7 +125,7 @@ function BlendShapesModifier.addTarget(UInt32 geomIndex, Geometry targetGeometry
     ValueProducer<BlendShapesModifier_Target> reducer = createReduce( 
       createArrayGenerator(
         createConstValue( attributes.size() ),
-        blendShapesModifier_collectMeshPointsProduce,
+        blendShapesModifier_collectGeomPointsProduce,
         createConstValue( sharedData )
       ),
       blendShapesModifier_collectPointsReduce

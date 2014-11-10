@@ -4,6 +4,7 @@
 
 require Math;
 require Geometry;
+require Manipulation;
 
 
 object WeightmapModifier : BaseModifier {
@@ -38,7 +39,7 @@ operator weightmapModifier_connectWeightmaps<<<index>>>(
   String weightmapName
 ){	
 	PolygonMesh mesh = geomSet.get(index);
-	if(mesh && !weightmaps[index]){
+	if(mesh != null && !weightmaps[index]){
 		weightmaps[index] = Weightmap();
 		weightmaps[index].setName(weightmapName);
 		weightmaps[index].connect(mesh, Xfo());

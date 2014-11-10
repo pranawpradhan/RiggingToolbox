@@ -41,7 +41,7 @@ function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
 }
 
 function SkinningModifier.setReferencePoseFromSkeleton!(Skeleton skeleton){
-  Size deformerIndices[] = skeleton.getModifierIndices();
+  Size deformerIndices[] = skeleton.getDeformerIndices();
   Mat44 referencePose[];
   referencePose.resize(deformerIndices.size);
   for (Integer i = 0; i < deformerIndices.size; i++)

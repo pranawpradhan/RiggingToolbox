@@ -17,12 +17,19 @@
     "GeometryStack/BaseStack/GeometryCache.kl",
     "GeometryStack/BaseStack/GeometryAttributeCache.kl",
     "GeometryStack/BaseStack/GeometryStack.kl",
+
+    "GeometryStack/PolygonMeshPlaneGenerator.kl",
     "GeometryStack/PolygonMeshSphereGenerator.kl",
+
     "GeometryStack/PushModifier.kl",
     "GeometryStack/ComputeNormalsModifier.kl",
     "GeometryStack/ComputeTangentsModifier.kl",
+    "GeometryStack/WeightmapModifier.kl",
     
     "GeometryStack/AlembicGeometryGenerator.kl",
-    "GeometryStack/SkinningModifier.kl"
+    "GeometryStack/SkinningModifier.kl",
+    "GeometryStack/BlendShapesModifier.kl",
+    "GeometryStack/DeltaMushModifier.kl",
+    "GeometryStack/WrapModifier.kl"
   ]
 }

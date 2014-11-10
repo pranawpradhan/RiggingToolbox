@@ -4,6 +4,7 @@
 
 require Math;
 require Geometry;
+require Manipulation;
 
 // TODO: eliminate the use of the Geometry types in the compute step.
 struct WrapModifier_Location {
