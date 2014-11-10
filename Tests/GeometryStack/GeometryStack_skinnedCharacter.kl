@@ -9,9 +9,9 @@ operator entry(){
 
   	FilePath path("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/cubeTest.abc");
     AlembicGeometryGenerator alembicGenerator(path);
-   	SkinningDeformer skiningDeformer();
+   	SkinningModifier skiningModifier();
    	stack.addGeometryOperator(alembicGenerator);
-   	stack.addGeometryOperator(skiningDeformer);
+   	stack.addGeometryOperator(skiningModifier);
 
     EvalContext context();
     GeometrySet geomSet = stack.evaluate(context);
@@ -21,7 +21,7 @@ operator entry(){
     pose.resize(2);
     pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
     pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
-	skiningDeformer.setPose(pose);
+	skiningModifier.setPose(pose);
 
 	stack.evaluate(context);
 

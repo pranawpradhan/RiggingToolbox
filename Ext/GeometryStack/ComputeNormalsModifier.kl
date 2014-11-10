@@ -6,17 +6,17 @@ require Math;
 require Geometry;
 
 
-object ComputeNormalsDeformer : BaseDeformer {
+object ComputeNormalsModifier : BaseModifier {
 	Scalar hardAngleRadians;
 };
 
-function String[] ComputeNormalsDeformer.getRequiredAttributes(){
+function String[] ComputeNormalsModifier.getRequiredAttributes(){
 	String result[];
 	result.push('positions');
 	return result;
 }
 
-function String[] ComputeNormalsDeformer.getModifiedAttributes(){
+function String[] ComputeNormalsModifier.getModifiedAttributes(){
 	String result[];
 	result.push('normals');
 	return result;
@@ -24,7 +24,7 @@ function String[] ComputeNormalsDeformer.getModifiedAttributes(){
 
 /// Per-geometry computation of the push. 
 /// \internal
-operator computeNormalsDeformer_deformGeometries<<<index>>>(
+operator computeNormalsModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   Scalar hardAngleRadians
 ){
@@ -33,8 +33,8 @@ operator computeNormalsDeformer_deformGeometries<<<index>>>(
 		mesh.recomputePointNormalsIfRequired( hardAngleRadians );
 }
 
-function ComputeNormalsDeformer.evaluate(EvalContext context, io GeometrySet geomSet){
-  computeNormalsDeformer_deformGeometries<<<geomSet.size()>>>(geomSet, this.hardAngleRadians);
+function ComputeNormalsModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  computeNormalsModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.hardAngleRadians);
 }
 
 

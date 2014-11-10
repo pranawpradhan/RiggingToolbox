@@ -57,14 +57,14 @@ for obj in allObjects:
 
          selected = pm.ls(sl=True)
          mesh.addAttr('Envelope_Weights', dataType='floatArray')
-         mesh.addAttr('EnvelopeDeformerIndices', dataType='UInt32Array')
+         mesh.addAttr('EnvelopeModifierIndices', dataType='UInt32Array')
          mesh.addAttr('MappingIndices', dataType='UInt32Array')
-         mesh.addAttr('Envelope_Deformers', dataType='stringArray')
+         mesh.addAttr('Envelope_Modifiers', dataType='stringArray')
 
          mesh.Envelope_Weights.set( weights )
-         mesh.EnvelopeDeformerIndices.set( boneIDs )
+         mesh.EnvelopeModifierIndices.set( boneIDs )
          mesh.MappingIndices.set( idMapping )
-         mesh.Envelope_Deformers.set( boneList , type='stringArray')
+         mesh.Envelope_Modifiers.set( boneList , type='stringArray')
 
 end = time.time()
 print end - start
@@ -353,10 +353,10 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
         if (header.isCompound())
         {
           String compoundName = header.getName();
-          if(compoundName == "Envelope_Deformers" || compoundName == "_EnvelopeDeformers" )
+          if(compoundName == "Envelope_Modifiers" || compoundName == "_EnvelopeModifiers" )
           {
-            AlembicICompoundProperty envDeformersCpmd = AlembicICompoundProperty(compound, compoundName);
-            deformerNames = AlembicIWStringArrayProperty(envDeformersCpmd , "vals").get();
+            AlembicICompoundProperty envModifiersCpmd = AlembicICompoundProperty(compound, compoundName);
+            deformerNames = AlembicIWStringArrayProperty(envModifiersCpmd , "vals").get();
           }
         }
       }
@@ -422,7 +422,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
 
       Float32 envelopeWeights[];
       UInt32 subArrayIndices[];
-      SInt32 envelopeDeformerIndices[];
+      SInt32 envelopeModifierIndices[];
 
       AlembicICompoundProperty compound = AlembicICompoundProperty(readers[i]._schema.getArbGeomParams());
       for (Integer pp=0; pp<compound.getNumProperties(); pp++)
@@ -444,11 +444,11 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
             // report("nbPoints : "+nbPoints);
             // report("nbBones : "+nbBones);
           }
-          if (compoundName == "EnvelopeDeformerIndices" || compoundName == "_EnvelopeDeformerIndices")
+          if (compoundName == "EnvelopeModifierIndices" || compoundName == "_EnvelopeModifierIndices")
           {
             AlembicICompoundProperty envDefIdCpmd = AlembicICompoundProperty(compound, compoundName);
-            envelopeDeformerIndices = AlembicISInt32ArrayProperty(envDefIdCpmd , "vals").get();
-            // report("bone ids"+ envelopeDeformerIndices);
+            envelopeModifierIndices = AlembicISInt32ArrayProperty(envDefIdCpmd , "vals").get();
+            // report("bone ids"+ envelopeModifierIndices);
           }
         }
       }
@@ -489,7 +489,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
         }
         if(weightsSum > DIVIDEPRECISION){
           for(Integer j = 0; j < deformerCount; ++j ) {
-            indices.set(j, boneMapping[ envelopeDeformerIndices[startIndex + j] ]);
+            indices.set(j, boneMapping[ envelopeModifierIndices[startIndex + j] ]);
             weights.set(j, envelopeWeights[startIndex + j] / weightsSum);
           }
           mesh.setPointAttribute(pnt, skinningAttr, indices, weights);

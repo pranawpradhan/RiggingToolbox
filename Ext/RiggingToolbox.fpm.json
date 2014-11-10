@@ -12,18 +12,18 @@
     "GeometryStack/BaseStack/GeometrySet.kl",
     "GeometryStack/BaseStack/GeometryOperator.kl",
     "GeometryStack/BaseStack/Generator.kl",
-    "GeometryStack/BaseStack/Deformer.kl",
+    "GeometryStack/BaseStack/Modifier.kl",
     "GeometryStack/BaseStack/CachePoint.kl",
     "GeometryStack/BaseStack/GeometryCache.kl",
     "GeometryStack/BaseStack/GeometryAttributeCache.kl",
     "GeometryStack/BaseStack/GeometryStack.kl",
-    "GeometryStack/BaseStack/PolygonMeshDeformer.kl",
+    "GeometryStack/BaseStack/PolygonMeshModifier.kl",
     "GeometryStack/PolygonMeshSphereGenerator.kl",
-    "GeometryStack/PushDeformer.kl",
-    "GeometryStack/ComputeNormalsDeformer.kl",
-    "GeometryStack/ComputeTangentsDeformer.kl",
+    "GeometryStack/PushModifier.kl",
+    "GeometryStack/ComputeNormalsModifier.kl",
+    "GeometryStack/ComputeTangentsModifier.kl",
     
     "GeometryStack/AlembicGeometryGenerator.kl",
-    "GeometryStack/SkinningDeformer.kl"
+    "GeometryStack/SkinningModifier.kl"
   ]
 }

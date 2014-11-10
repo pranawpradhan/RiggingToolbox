@@ -82,9 +82,9 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 
 // Pull-model evaluation. Evaluation can be recursive when multiple stacks are used in conjunction.
 // e.g. 
-//  [ LoadAlembic, SkinningDeformer ]
+//  [ LoadAlembic, SkinningModifier ]
 //                                  |
-//             [ LoadAlembic, WrapDeformer ] ->
+//             [ LoadAlembic, WrapModifier ] ->
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
   	AutoProfilingEvent p(FUNC);
 

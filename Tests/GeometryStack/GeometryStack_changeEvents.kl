@@ -7,14 +7,14 @@ operator entry(){
    	
    	GeometryStack stack();
    	PolygonMeshSphereGenerator sphereGenerator(2.0, 1, true, true);
-   	PushDeformer pushDeformer(3.0);
+   	PushModifier pushModifier(3.0);
    	sphereGenerator.enableCaching = true;
    	stack.addGeometryOperator(sphereGenerator);
-   	stack.addGeometryOperator(pushDeformer);
+   	stack.addGeometryOperator(pushModifier);
 
     EvalContext context();
     stack.evaluate(context);
-	pushDeformer.setPushDist(6.0);
+	pushModifier.setPushDist(6.0);
 	stack.evaluate(context);
 
 	

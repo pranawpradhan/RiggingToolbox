@@ -6,12 +6,12 @@ require Math;
 require Geometry;
 
 // TODO: eliminate the use of the Geometry types in the compute step.
-struct WrapDeformer_Location {
+struct WrapModifier_Location {
   UInt32 attributeIndices[3];
   Scalar weights[3];
 };
 
-object WrapDeformer : BaseDeformer {
+object WrapModifier : BaseModifier {
   GeometryLocation locations[][];
   Vec3 deltas[][];
   GeometryStack sourceGeometryStack;
@@ -22,14 +22,14 @@ object WrapDeformer : BaseDeformer {
 };
 
 
-function WrapDeformer(){
+function WrapModifier(){
 }
 
-function Mat44 wrapDeformer_buildRefFrame(Vec3 pos, Vec3 nrm, Vec3 tgt){
+function Mat44 wrapModifier_buildRefFrame(Vec3 pos, Vec3 nrm, Vec3 tgt){
   return Mat44();
 }
 
-operator wrapDeformer_computeBinding<<<index>>>(
+operator wrapModifier_computeBinding<<<index>>>(
   PolygonMesh srcMesh,
   Vec3Attribute srcPositionsAttribute,
   Vec3Attribute srcNormalsAttribute,
@@ -47,13 +47,13 @@ operator wrapDeformer_computeBinding<<<index>>>(
   Vec3 tgt = GetAttributeAtLocation( srcMesh, location, srcTangentsAttribute );
 
   // Build a reference frame. 
-  Mat44 mat44 = wrapDeformer_buildRefFrame(pos, nrm, tgt);
+  Mat44 mat44 = wrapModifier_buildRefFrame(pos, nrm, tgt);
 
   deltas[index] = mat44.inverse() * position;
   location[index] = location;
 }
 
-operator wrapDeformer_applyDeltas<<<index>>>(
+operator wrapModifier_applyDeltas<<<index>>>(
   PolygonMesh srcMesh,
   Vec3Attribute srcPositionsAttribute,
   Vec3Attribute srcNormalsAttribute,
@@ -67,12 +67,12 @@ operator wrapDeformer_applyDeltas<<<index>>>(
   Vec3 nrm = GetAttributeAtLocation( srcMesh, location, normalsAttribute );
   Vec3 tgt = GetAttributeAtLocation( srcMesh, location, tangentsAttribute );
 
-  Mat44 mat44 = wrapDeformer_buildRefFrame(pos, nrm, tgt);
+  Mat44 mat44 = wrapModifier_buildRefFrame(pos, nrm, tgt);
   positions[index] = mat44 * deltas[index];
 }
 
 
-operator wrapDeformer_deformGeometries<<<index>>>(
+operator wrapModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   GeometrySet srcGeomSet,
   io GeometryLocation locations[][],
@@ -96,7 +96,7 @@ operator wrapDeformer_deformGeometries<<<index>>>(
     locations[index].resize(positionsAttribute.size());
     deltas[index].resize(positionsAttribute.size());
 
-    wrapDeformer_computeBinding<<<positionsAttribute.size()>>>(
+    wrapModifier_computeBinding<<<positionsAttribute.size()>>>(
       srcMesh,
       positionsAttribute,
       normalsAttribute,
@@ -109,7 +109,7 @@ operator wrapDeformer_deformGeometries<<<index>>>(
     bound = true;
   }
   else{
-    wrapDeformer_applyDeltas<<<positionsAttribute.size()>>>(
+    wrapModifier_applyDeltas<<<positionsAttribute.size()>>>(
       srcMesh,
       positionsAttribute,
       normalsAttribute,
@@ -122,14 +122,14 @@ operator wrapDeformer_deformGeometries<<<index>>>(
   }
 }
 
-function WrapDeformer.evaluate(EvalContext context, io GeometrySet geomSet){
+function WrapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
   GeometrySet srcGeomSet = this.sourceGeometryStack.evaluate(context);
 
-  Ref<WrapDeformer> io_this = this;
+  Ref<WrapModifier> io_this = this;
   if(srcGeomSet.getVersion() != io_this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
     io_this.bound = false;
   }
-  wrapDeformer_deformGeometries<<<geomSet.size()>>>(geomSet, srcGeomSet, io_this.locations, io_this.deltas, io_this.bound);
+  wrapModifier_deformGeometries<<<geomSet.size()>>>(geomSet, srcGeomSet, io_this.locations, io_this.deltas, io_this.bound);
 
   if(io_this.bound){
     io_this.srcBoundVersion = srcGeomSet.getVersion();
@@ -138,10 +138,10 @@ function WrapDeformer.evaluate(EvalContext context, io GeometrySet geomSet){
 }
 
 
-function WrapDeformer.save(){
+function WrapModifier.save(){
   
 }
 
-function WrapDeformer.load(){
+function WrapModifier.load(){
   
 }

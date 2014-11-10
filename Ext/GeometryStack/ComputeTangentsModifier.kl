@@ -6,18 +6,18 @@ require Math;
 require Geometry;
 
 
-object ComputeTangentsDeformer : PolygonMeshDeformer {
+object ComputeTangentsModifier : PolygonMeshModifier {
 	Scalar hardAngleRadians;
 };
 
-function String[] ComputeTangentsDeformer.getRequiredAttributes(){
+function String[] ComputeTangentsModifier.getRequiredAttributes(){
 	String result[];
 	result.push('positions');
 	result.push('normals');
 	return result;
 }
 
-function String[] ComputeTangentsDeformer.getModifiedAttributes(){
+function String[] ComputeTangentsModifier.getModifiedAttributes(){
 	String result[];
 	result.push('tangents');
 	return result;
@@ -25,7 +25,7 @@ function String[] ComputeTangentsDeformer.getModifiedAttributes(){
 
 /// Per-geometry computation of the push. 
 /// \internal
-operator computeTangentsDeformer_deformGeometries<<<index>>>(
+operator computeTangentsModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet
 ){
 	PolygonMesh mesh = geomSet.get(index);
@@ -33,8 +33,8 @@ operator computeTangentsDeformer_deformGeometries<<<index>>>(
 		mesh.recomputeTangentsIfRequired();
 }
 
-function ComputeTangentsDeformer.evaluate(EvalContext context, io GeometrySet geomSet){
-  computeTangentsDeformer_deformGeometries<<<geomSet.size()>>>(geomSet);
+function ComputeTangentsModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  computeTangentsModifier_deformGeometries<<<geomSet.size()>>>(geomSet);
 }
 
 

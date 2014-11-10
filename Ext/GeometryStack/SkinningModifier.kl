@@ -6,7 +6,7 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
-object SkinningDeformer : BaseDeformer {
+object SkinningModifier : BaseModifier {
 
   UInt32 dataVersion;
   Mat44 invReferencePose[];
@@ -17,7 +17,7 @@ object SkinningDeformer : BaseDeformer {
 };
 
 
-function String[] SkinningDeformer.getRequiredAttributes(){
+function String[] SkinningModifier.getRequiredAttributes(){
   String result[];
   result.push('positions');
   result.push('normals');
@@ -25,7 +25,7 @@ function String[] SkinningDeformer.getRequiredAttributes(){
   return result;
 }
 
-function String[] SkinningDeformer.getModifiedAttributes(){
+function String[] SkinningModifier.getModifiedAttributes(){
   String result[];
   result.push('positions');
   if(this.transformNormals)
@@ -33,15 +33,15 @@ function String[] SkinningDeformer.getModifiedAttributes(){
   return result;
 }
 
-function SkinningDeformer.setReferencePose!(Mat44 referencePose[]){
+function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
   this.invReferencePose.resize(referencePose.size);
   for (Integer i = 0; i < referencePose.size; i++)
     this.invReferencePose[i] = referencePose[i].inverse();
   this.skinningMatrices.resize(referencePose.size);
 }
 
-function SkinningDeformer.setReferencePoseFromSkeleton!(Skeleton skeleton){
-  Size deformerIndices[] = skeleton.getDeformerIndices();
+function SkinningModifier.setReferencePoseFromSkeleton!(Skeleton skeleton){
+  Size deformerIndices[] = skeleton.getModifierIndices();
   Mat44 referencePose[];
   referencePose.resize(deformerIndices.size);
   for (Integer i = 0; i < deformerIndices.size; i++)
@@ -49,7 +49,7 @@ function SkinningDeformer.setReferencePoseFromSkeleton!(Skeleton skeleton){
   this.setReferencePose(referencePose);
 }
 
-function SkinningDeformer.setPose!(Mat44 pose[]){
+function SkinningModifier.setPose!(Mat44 pose[]){
   if(pose.size != this.invReferencePose.size){
     setError('Pose count does not match the reference pose count referencePose:' + this.invReferencePose.size + " != " + pose.size);
     return;
@@ -63,7 +63,7 @@ function SkinningDeformer.setPose!(Mat44 pose[]){
 
 /// The per-point operator that computes the linear blend skinning. 
 /// \internal
-operator skinningDeformer_skinPositions<<<index>>>(
+operator skinningModifier_skinPositions<<<index>>>(
   io Vec3 positions[],
   SkinningAttribute skinningAttr,
   Mat44 skinningPosAndNormMatrices[]
@@ -88,7 +88,7 @@ operator skinningDeformer_skinPositions<<<index>>>(
 
 /// The per-point operator that computes the linear blend skinning. 
 /// \internal
-operator skinningDeformer_skinPositionsAndNormals<<<index>>>(
+operator skinningModifier_skinPositionsAndNormals<<<index>>>(
   io Vec3 positions[],
   io Vec3 normals[],
   SkinningAttribute skinningAttr,
@@ -137,7 +137,7 @@ operator deformGeometries<<<index>>>(
   SkinningAttribute skinningAttr = attributes.getAttribute("skinningData");
 
   if(normalsAttribute == null){
-    skinningDeformer_skinPositions<<<attributes.size()>>>(
+    skinningModifier_skinPositions<<<attributes.size()>>>(
       positionsAttribute.values,
       skinningAttr,
       skinningPosAndNormMatrices
@@ -145,7 +145,7 @@ operator deformGeometries<<<index>>>(
     positionsAttribute.incrementVersion();
   }
   else{
-    skinningDeformer_skinPositionsAndNormals<<<attributes.size()>>>(
+    skinningModifier_skinPositionsAndNormals<<<attributes.size()>>>(
       positionsAttribute.values,
       normalsAttribute.values,
       skinningAttr,
@@ -156,12 +156,12 @@ operator deformGeometries<<<index>>>(
   }
 }
 
-function SkinningDeformer.evaluate(EvalContext context, io GeometrySet geomSet){
+function SkinningModifier.evaluate(EvalContext context, io GeometrySet geomSet){
 
   AutoProfilingEvent p(FUNC);
   if(this.dataVersion != geomSet.getVersion()){
     // create an io this pointer so we can cache the values. 
-    Ref<SkinningDeformer> io_this = this;
+    Ref<SkinningModifier> io_this = this;
     io_this.bindShapeTransforms.resize(geomSet.size);
     for(Integer i=0; i<geomSet.size; i++){
       Geometry geometry = geomSet.get(i);

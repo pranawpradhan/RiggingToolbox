@@ -6,16 +6,16 @@ require Math;
 require Geometry;
 
 
-struct BlendShapesDeformer_OffsetAndCount {
+struct BlendShapesModifier_OffsetAndCount {
   UInt32 offset;
   UInt32 count;
 };
 
-/// The Blend Shapes deformer stores a sparce data set of offsets. 
-object BlendShapesDeformer : BaseDeformer {
+/// The Blend Shapes modifier stores a sparce data set of offsets. 
+object BlendShapesModifier : BaseModifier {
 
   UInt32ArrayAllocator allocator;
-  BlendShapesDeformer_OffsetAndCount offsetAndCounts[];
+  BlendShapesModifier_OffsetAndCount offsetAndCounts[];
 
   Vec3 deltas[];
 
@@ -23,13 +23,13 @@ object BlendShapesDeformer : BaseDeformer {
 };
 
 
-function BlendShapesDeformer(){
+function BlendShapesModifier(){
   this.threshold = 0.001;
 }
 
 
 /// \internal Will defrag memory buffers if more than 1/3 is free
-inline Boolean BlendShapesDeformer._recompactIfRequired!() {
+inline Boolean BlendShapesModifier._recompactIfRequired!() {
   //Allow 25% free data
   if( this.allocator.data.size() < this.allocator.freeDataCount * 3 )
     return this._recompact();
@@ -38,13 +38,13 @@ inline Boolean BlendShapesDeformer._recompactIfRequired!() {
 }
 
 /// \internal Returns storage offset and pairs count for a given item index
-inline BlendShapesDeformer._getOffsetAndCount( UInt32 geomIndex, io UInt32 offset, io UInt32 count ) {
+inline BlendShapesModifier._getOffsetAndCount( UInt32 geomIndex, io UInt32 offset, io UInt32 count ) {
   offset = this.offsetAndCounts[geomIndex].offset;
   count = this.offsetAndCounts[geomIndex].count;
 }
 
 /// \internal Resizes the number of id-weight pairs and returns the offset of the resized item. If copyData, the previous data will be preserved.
-function UInt32 BlendShapesDeformer._resizeDeltasArray!( UInt32 geomIndex, UInt32 newCount ) {
+function UInt32 BlendShapesModifier._resizeDeltasArray!( UInt32 geomIndex, UInt32 newCount ) {
   UInt32 offset;
   UInt32 count;
   this._getOffsetAndCount( geomIndex, offset, count );
@@ -72,7 +72,7 @@ function UInt32 BlendShapesDeformer._resizeDeltasArray!( UInt32 geomIndex, UInt3
 }
 
 
-operator blendShapesDeformer_computeDeltas<<<index>>>(
+operator blendShapesModifier_computeDeltas<<<index>>>(
   Vec3 refpositions[],
   Vec3 positions[],
   Scalar threshold,
@@ -84,9 +84,9 @@ operator blendShapesDeformer_computeDeltas<<<index>>>(
 }
 
 
-function BlendShapesDeformer.addTarget(EvalContext context, Geometry targetGeometry){
+function BlendShapesModifier.addTarget(EvalContext context, Geometry targetGeometry){
 
-  blendShapesDeformer_computeDeltas<<<geomSet.size()>>>(geomSet, skinningPosAndNormMatrices);
+  blendShapesModifier_computeDeltas<<<geomSet.size()>>>(geomSet, skinningPosAndNormMatrices);
 }
 
 
@@ -117,15 +117,15 @@ operator deformGeometries<<<index>>>(
   return true;
 }
 
-function BlendShapesDeformer.evaluate(EvalContext context, io GeometrySet geomSet){
+function BlendShapesModifier.evaluate(EvalContext context, io GeometrySet geomSet){
   deformGeometries<<<geomSet.size()>>>(geomSet, skinningPosAndNormMatrices);
 }
 
 
-function BlendShapesDeformer.save(){
+function BlendShapesModifier.save(){
   
 }
 
-function BlendShapesDeformer.load(){
+function BlendShapesModifier.load(){
   
 }
