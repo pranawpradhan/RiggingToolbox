@@ -17,7 +17,6 @@
     "GeometryStack/BaseStack/GeometryCache.kl",
     "GeometryStack/BaseStack/GeometryAttributeCache.kl",
     "GeometryStack/BaseStack/GeometryStack.kl",
-    "GeometryStack/BaseStack/PolygonMeshModifier.kl",
     "GeometryStack/PolygonMeshSphereGenerator.kl",
     "GeometryStack/PushModifier.kl",
     "GeometryStack/ComputeNormalsModifier.kl",
