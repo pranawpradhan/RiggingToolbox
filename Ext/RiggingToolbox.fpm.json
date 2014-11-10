@@ -31,6 +31,8 @@
     "GeometryStack/Modifiers/SkinningModifier.kl",
     "GeometryStack/Modifiers/BlendShapesModifier.kl",
     "GeometryStack/Modifiers/DeltaMushModifier.kl",
-    "GeometryStack/Modifiers/WrapModifier.kl"
+    "GeometryStack/Modifiers/WrapModifier.kl",
+
+    "GeometryStack/RiggingToolboxRegistry.kl"
   ]
 }

@@ -43,6 +43,7 @@ function BaseGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
 function JSONDictValue BaseGenerator.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json();
 
+  json.setString("type", String(this.type()));
 
   return json;
 }

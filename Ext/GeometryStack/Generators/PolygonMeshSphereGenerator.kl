@@ -6,6 +6,21 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
+//////////////////////////////////////
+// Factory definition.
+
+object PolygonMeshSphereGeneratorFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator PolygonMeshSphereGeneratorFactory.constructGeometryOperator(){
+  PolygonMeshSphereGenerator geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
 object PolygonMeshSphereGenerator : BaseGenerator {
   Scalar radius;
   UInt32 detail;

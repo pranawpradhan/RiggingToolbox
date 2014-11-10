@@ -6,6 +6,21 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
+//////////////////////////////////////
+// Factory definition.
+
+object PolygonMeshPlaneGeneratorFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator PolygonMeshPlaneGeneratorFactory.constructGeometryOperator(){
+  PolygonMeshPlaneGenerator geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
 object PolygonMeshPlaneGenerator : BaseGenerator {
   Scalar length;
   Scalar width;

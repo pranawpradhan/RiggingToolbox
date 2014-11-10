@@ -6,6 +6,8 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
+// pre-declaring the regsitry because it is loaded last in the fpm file. 
+object RiggingToolboxRegistry;
 
 object GeometryStack : Listener {
   String name;
@@ -151,11 +153,24 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
 
 function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json();
+  JSONArrayValue geomOperatorsData();
+  for(UInt32 i=0; i<this.geomOperators.size; i++){
+    geomOperatorsData.add(this.geomOperators.saveJSON(persistenceContext));
+  }
+  json.set("geomOperators", geomOperatorsData);
   return json;
 }
 
-function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDictValue data){
-  
+function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  RiggingToolboxRegistry registry = getRiggingToolboxRegistry();
+  JSONArrayValue geomOperatorsData = json.get("geomOperators");
+  for(UInt32 i=0; i<geomOperators.size; i++){
+    JSONDictValue geomOperatorData = geomOperatorsData.get(i);
+    String type = geomOperatorData.getString("type");
+    GeometryOperator geomOp = registry.constructGeometryOperator(type);
+    geomOp.load(persistenceContext, geomOperatorData);
+    this.geomOperators.push(geomOp);
+  }
 }
 
 function GeometryStack.setupRendering!(){

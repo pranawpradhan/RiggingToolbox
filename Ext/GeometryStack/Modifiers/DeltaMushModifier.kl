@@ -6,6 +6,22 @@ require Math;
 require Geometry;
 
 
+//////////////////////////////////////
+// Factory definition.
+
+object DeltaMushModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator DeltaMushModifierFactory.constructGeometryOperator(){
+  DeltaMushModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
+
 object DeltaMushModifier : BaseModifier {
   Vec3 deltas[][];
 

@@ -20,3 +20,11 @@ interface GeometryOperator {
 
   loadJSON!(PersistenceContext persistenceContext, JSONDictValue data);
 };
+
+// for each type of geometry operator, we have a factory object 
+// that is constructed and registered in the RiggingToolboxRegistry.
+// This enables the RiggingToolboxRegistry to construct any operator
+// as it loads. 
+interface GeometryOperatorFactory {
+  GeometryOperator constructGeometryOperator();
+};

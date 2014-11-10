@@ -5,6 +5,21 @@
 require Math;
 require Geometry;
 
+//////////////////////////////////////
+// Factory definition.
+
+object ComputeTangentsModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator ComputeTangentsModifierFactory.constructGeometryOperator(){
+  ComputeTangentsModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
 
 object ComputeTangentsModifier : BaseModifier {
   Scalar hardAngleRadians;

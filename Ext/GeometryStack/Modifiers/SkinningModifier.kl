@@ -6,6 +6,23 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
+
+//////////////////////////////////////
+// Factory definition.
+
+object SkinningModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator SkinningModifierFactory.constructGeometryOperator(){
+  SkinningModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
+
 object SkinningModifier : BaseModifier {
 
   UInt32 dataVersion;
@@ -158,7 +175,7 @@ operator deformGeometries<<<index>>>(
 
 function SkinningModifier.evaluate(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  
+
   if(this.dataVersion != geomSet.getVersion()){
     // create an io this pointer so we can cache the values. 
     Ref<SkinningModifier> io_this = this;

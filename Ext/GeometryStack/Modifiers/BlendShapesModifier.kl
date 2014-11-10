@@ -5,10 +5,32 @@
 require Math;
 require Geometry;
 
+
+//////////////////////////////////////
+// Factory definition.
+
+object BlendShapesModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator BlendShapesModifierFactory.constructGeometryOperator(){
+  BlendShapesModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
+
 struct BlendShapesModifier_Target {
   UInt32 indices[];
   Vec3 deltas[];
 };
+
+
+//////////////////////////////////////
+//
+
 
 /// The Blend Shapes modifier stores a sparce data set of offsets. 
 object BlendShapesModifier : BaseModifier {

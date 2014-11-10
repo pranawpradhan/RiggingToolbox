@@ -6,6 +6,21 @@ require Math;
 require Geometry;
 
 
+//////////////////////////////////////
+// Factory definition.
+
+object PushModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator PushModifierFactory.constructGeometryOperator(){
+  PushModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
 object PushModifier : BaseModifier {
   Scalar push;
 };

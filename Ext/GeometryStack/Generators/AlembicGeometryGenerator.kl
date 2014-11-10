@@ -6,6 +6,22 @@ require Alembic;
 require AlembicWrapper;
 require Characters;
 
+
+//////////////////////////////////////
+// Factory definition.
+
+object AlembicGeometryGeneratorFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator AlembicGeometryGeneratorFactory.constructGeometryOperator(){
+  AlembicGeometryGenerator geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
 /*
 // The following python script extracts the Skinning weights and ids 
 // into a custom attribute that is then exported to Alembic.

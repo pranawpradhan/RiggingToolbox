@@ -7,6 +7,22 @@ require Geometry;
 require Manipulation;
 
 
+//////////////////////////////////////
+// Factory definition.
+
+object WeightmapModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator WeightmapModifierFactory.constructGeometryOperator(){
+  WeightmapModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
+
 object WeightmapModifier : BaseModifier {
   Weightmap weightmaps[];
   String weightmapName;

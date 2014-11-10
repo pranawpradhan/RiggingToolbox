@@ -36,6 +36,7 @@ function BaseModifier.evaluate(EvalContext context, io GeometrySet geomSet){
 function JSONDictValue BaseModifier.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json();
 
+  json.setString("type", String(this.type()));
 
   return json;
 }

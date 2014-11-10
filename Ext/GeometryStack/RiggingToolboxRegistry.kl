@@ -1,0 +1,39 @@
+/*
+ *  Copyright 2010-2012 Fabric Engine Inc. All rights reserved.
+ */
+require Singletons;
+
+
+
+object RiggingToolboxRegistry {
+  GeometryOperatorFactory geomOpFactories[String];
+};
+
+function RiggingToolboxRegistry(){
+  RiggingToolboxRegistry registry = Singleton_get('RiggingToolboxRegistry');
+  if(registry != null) {
+    throw("RiggingToolboxRegistry already constructed. Please use 'getRiggingToolboxRegistry' instead.");
+  }
+  Singleton_set('RiggingToolboxRegistry', this);
+}
+
+
+function RiggingToolboxRegistry getRiggingToolboxRegistry(){
+  // check if we can get the singleton
+  RiggingToolboxRegistry registry = Singleton_get('RiggingToolboxRegistry');
+  if(registry == null) {
+    registry = RiggingToolboxRegistry();
+  }
+  return registry;
+}
+
+function RiggingToolboxRegistry.registerGeometryOperator!(String typeName, GeometryOperatorFactory deformerFactory){
+  this.geomOpFactories[typeName] = deformerFactory;
+}
+
+function GeometryOperator RiggingToolboxRegistry.constructGeometryOperator(String typeName){
+  if(!this.geomOpFactories.has(typeName)){
+    throw("GeometryOperator type not found:" + typeName);
+  }
+  return this.geomOpFactories[typeName].constructGeometryOperator();
+}

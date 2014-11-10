@@ -6,6 +6,22 @@ require Math;
 require Geometry;
 require Manipulation;
 
+
+//////////////////////////////////////
+// Factory definition.
+
+object WrapModifierFactory : GeometryOperatorFactory {
+};
+
+function GeometryOperator WrapModifierFactory.constructGeometryOperator(){
+  WrapModifier geomOp();
+  return geomOp;
+}
+
+
+//////////////////////////////////////
+//
+
 // TODO: eliminate the use of the Geometry types in the compute step.
 struct WrapModifier_Location {
   UInt32 attributeIndices[3];
@@ -133,7 +149,7 @@ operator wrapModifier_deformGeometries<<<index>>>(
 
 function WrapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  
+
   Ref<WrapModifier> io_this = this;
   GeometrySet srcGeomSet = io_this.sourceGeometryStack.evaluate(context);
 
