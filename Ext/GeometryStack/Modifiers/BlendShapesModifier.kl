@@ -102,19 +102,25 @@ operator blendShapesModifier_collectPointsReduce(
   }
 }
 
+// First add a reference geometry, followed by a collection of targets. 
+// As the targets are added we generate our sparce blend targets based on the reference.
+// This step must happen before evaluation. 
+function BlendShapesModifier.addReference!(Geometry refGeometry){
+  UInt32 numGeoms = this.targets.size()+1;
+  this.targets.resize(numGeoms);
+  this.referencePositions.resize(numGeoms);
+}
 
-function BlendShapesModifier.addTarget(UInt32 geomIndex, Geometry targetGeometry){
-  UInt32 numTargets = this.targets[geomIndex];
-  if(this.targets[geomIndex].size < numTargets+1){
-    for(UInt32 i=0; i<this.targets.size; i++)
-      this.targets[i].resize(numTargets+1);
-  }
-  UInt32 targetIndex = numTargets;
+function BlendShapesModifier.addTarget!(UInt32 geomIndex, Geometry targetGeometry){
+  UInt32 numTargets = this.targets[geomIndex].size()+1;
+  UInt32 targetIndex = numTargets-1;
+  this.targets[geomIndex].resize(numTargets);
+  this.referencePositions[geomIndex].resize(numTargets);
 
   PolygonMesh targetMesh = targetGeometry;
   if(!targetMesh){
 
-    Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
+    Ref<GeometryAttributes> attributes = targetGeometry.getAttributes();
     Vec3Attribute positionsAttribute = attributes.positionsAttribute;
 
     BlendShapesModifier_collectGeomPointsSharedData sharedData;
@@ -163,38 +169,38 @@ operator BlendShapesModifier_applyMeshDeltas<<<index>>>(
   BlendShapesModifier_Target target,
 ){
   Vec3 pos = mesh.getPointPosition(target.indices[index]);
-  mesh.setPointPosition(target.indices[index], pos + target.deltas[index]);
+  mesh.setPointPosition(Size(target.indices[index]), pos + target.deltas[index]);
 }
 
 
-operator deformGeometries<<<index>>>(
+operator blendShapesModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
-  UInt32ArrayAllocator indices,
-  Vec3 deltas[]
+  BlendShapesModifier_Target targets[][]
 ){
   Geometry geom = geomSet.get(index);
+  Ref<GeometryAttributes> attributes = geom.getAttributes();
+  Vec3Attribute positionsAttribute = attributes.positionsAttribute;
+  
   PolygonMesh mesh = geom;
-  if(!mesh){
-    Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
-    Vec3Attribute positionsAttribute = attributes.positionsAttribute;
-    BlendShapesModifier_applyGeomDeltas<<<attributes.size()>>>(
-      positionsAttribute.values,
-      this.targets[index]
-    );
-    positionsAttribute.incrementVersion();
+  for(UInt32 i=0; i<targets[index].size; i++){
+    if(!mesh){
+      BlendShapesModifier_applyGeomDeltas<<<attributes.size()>>>(
+        positionsAttribute.values,
+        targets[index][i]
+      );
+    }
+    else{
+      BlendShapesModifier_applyMeshDeltas<<<mesh.pointCount()>>>(
+        mesh,
+        targets[index][i]
+      );
+    }
   }
-  else{
-    BlendShapesModifier_applyGeomDeltas<<<mesh.pointCount()>>>(
-      mesh,
-      this.targets[index]
-    );
-    mesh.incrementPointPositionsVersion();
-  }
-  return true;
+  positionsAttribute.incrementVersion();
 }
 
 function BlendShapesModifier.evaluate(EvalContext context, io GeometrySet geomSet){
-  deformGeometries<<<geomSet.size()>>>(geomSet, skinningPosAndNormMatrices);
+  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets);
 }
 
 

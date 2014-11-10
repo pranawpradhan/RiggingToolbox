@@ -26,7 +26,7 @@ object WrapModifier : BaseModifier {
 function WrapModifier(){
 }
 
-function Mat44 wrapModifier_buildRefFrame(Vec3 pos, Vec3 nrm, Vec3 tgt){
+function Mat44 wrapModifier_buildRefFrame(Vec3 pos, Vec3 nrm, Vec4 tngnt){
   return Mat44();
 }
 
@@ -39,19 +39,19 @@ operator wrapModifier_computeBinding<<<index>>>(
   io Vec3 deltas[],
   Vec3 positions[],
 ){
-  Vec4 position = positions[index];
+  Vec3 position = positions[index];
   Vec3 scaling(1.0, 1.0, 1.0);
   GeometryLocation location = srcMesh.getClosest( position, scaling, SCALAR_INFINITE );
 
   Vec3 pos = GetAttributeAtLocation( srcMesh, location, srcPositionsAttribute );
   Vec3 nrm = GetAttributeAtLocation( srcMesh, location, srcNormalsAttribute );
-  Vec3 tgt = GetAttributeAtLocation( srcMesh, location, srcTangentsAttribute );
+  Vec4 tgt = GetAttributeAtLocation( srcMesh, location, srcTangentsAttribute );
 
   // Build a reference frame. 
   Mat44 mat44 = wrapModifier_buildRefFrame(pos, nrm, tgt);
 
   deltas[index] = mat44.inverse() * position;
-  location[index] = location;
+  locations[index] = location;
 }
 
 operator wrapModifier_applyDeltas<<<index>>>(
@@ -63,10 +63,10 @@ operator wrapModifier_applyDeltas<<<index>>>(
   Vec3 deltas[],
   io Vec3 positions[],
 ){
-  GeometryLocation location = location[index];
-  Vec3 pos = GetAttributeAtLocation( srcMesh, location, positionsAttribute );
-  Vec3 nrm = GetAttributeAtLocation( srcMesh, location, normalsAttribute );
-  Vec3 tgt = GetAttributeAtLocation( srcMesh, location, tangentsAttribute );
+  GeometryLocation location = locations[index];
+  Vec3 pos = GetAttributeAtLocation( srcMesh, location, srcPositionsAttribute );
+  Vec3 nrm = GetAttributeAtLocation( srcMesh, location, srcNormalsAttribute );
+  Vec4 tgt = GetAttributeAtLocation( srcMesh, location, srcTangentsAttribute );
 
   Mat44 mat44 = wrapModifier_buildRefFrame(pos, nrm, tgt);
   positions[index] = mat44 * deltas[index];
@@ -78,18 +78,27 @@ operator wrapModifier_deformGeometries<<<index>>>(
   GeometrySet srcGeomSet,
   io GeometryLocation locations[][],
   io Vec3 deltas[][],
-  io Boolean bound
+  Boolean bound
 ){
   PolygonMesh srcMesh = srcGeomSet.get(0);
-  if(!srcMesh)
+  if(!srcMesh){
+    // Note: The source GeometrySet could contain multiple meshes to deform the target geoms.
+    // There could be a mapping generates from the target meshes to the source meshes on a per-point
+    // basis. For now we just expect one polymesh as the source. 
+    report("Warning in wrapModifier_deformGeometries: Source GeometrySet does not contain a polygon mesh.");
     return;
+  }
 
   Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
 
+  // Gather the attributes from the source mesh that will be used to 
+  // drive the point positions of the target meshes.
+  Ref<Vec3Attribute> srcPositionsAttribute = srcMesh.positionsAttribute;
+  Ref<Vec3Attribute> srcNormalsAttribute = srcMesh.normalsAttribute;
+  Ref<Vec4Attribute> srcTangentsAttribute = srcMesh.getAttribute("tangents");
+
   if(!bound){
-    Vec3Attribute normalsAttribute = attributes.normalsAttribute;
-    Ref<Vec4Attribute> tangentsAttribute = attributes.getVec4Attribute("tangents");
 
     srcMesh.prepareForSpatialQueries(positionsAttribute.size(), null );
     Ref<SpatialQuery> query = srcMesh.beginSpatialQuery();
@@ -99,22 +108,21 @@ operator wrapModifier_deformGeometries<<<index>>>(
 
     wrapModifier_computeBinding<<<positionsAttribute.size()>>>(
       srcMesh,
-      positionsAttribute,
-      normalsAttribute,
-      tangentsAttribute,
+      srcPositionsAttribute,
+      srcNormalsAttribute,
+      srcTangentsAttribute,
       locations[index],
       deltas[index],
       positionsAttribute.values
     );
     srcMesh.endSpatialQuery(query);
-    bound = true;
   }
   else{
     wrapModifier_applyDeltas<<<positionsAttribute.size()>>>(
       srcMesh,
-      positionsAttribute,
-      normalsAttribute,
-      tangentsAttribute,
+      srcPositionsAttribute,
+      srcNormalsAttribute,
+      srcTangentsAttribute,
       locations[index],
       deltas[index],
       positionsAttribute.values
@@ -124,17 +132,18 @@ operator wrapModifier_deformGeometries<<<index>>>(
 }
 
 function WrapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
-  GeometrySet srcGeomSet = this.sourceGeometryStack.evaluate(context);
-
   Ref<WrapModifier> io_this = this;
+  GeometrySet srcGeomSet = io_this.sourceGeometryStack.evaluate(context);
+
   if(srcGeomSet.getVersion() != io_this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
     io_this.bound = false;
   }
   wrapModifier_deformGeometries<<<geomSet.size()>>>(geomSet, srcGeomSet, io_this.locations, io_this.deltas, io_this.bound);
 
-  if(io_this.bound){
+  if(!io_this.bound){
     io_this.srcBoundVersion = srcGeomSet.getVersion();
     io_this.boundVersion = geomSet.getVersion();
+    io_this.bound = true;
   }
 }
 

@@ -8,26 +8,26 @@ require Manipulation;
 
 
 object WeightmapModifier : BaseModifier {
-	Weightmap weightmaps[];
-	String weightmapName;
+  Weightmap weightmaps[];
+  String weightmapName;
 };
 
 function String[] WeightmapModifier.getRequiredAttributes(){
-	String result[];
-	result.push('positions');
-	return result;
+  String result[];
+  result.push('positions');
+  return result;
 }
 
 function String[] WeightmapModifier.getModifiedAttributes(){
-	String result[];
-	result.push(this.weightmapName);
-	return result;
+  String result[];
+  result.push(this.weightmapName);
+  return result;
 }
 
 /// Return true if the generation of the geometries is expensive and the results should be cached.
 function Boolean WeightmapModifier.cacheResults(){
-	// Teh weightmap does not need to bac cached 
-	return false;
+  // Teh weightmap does not need to bac cached 
+  return false;
 }
 
 
@@ -37,19 +37,18 @@ operator weightmapModifier_connectWeightmaps<<<index>>>(
   io GeometrySet geomSet,
   io Weightmap weightmaps[],
   String weightmapName
-){	
-	PolygonMesh mesh = geomSet.get(index);
-	if(mesh != null && !weightmaps[index]){
-		weightmaps[index] = Weightmap();
-		weightmaps[index].setName(weightmapName);
-		weightmaps[index].connect(mesh, Xfo());
-	}
+){
+  PolygonMesh mesh = geomSet.get(index);
+  if(mesh != null && !weightmaps[index]){
+    weightmaps[index] = Weightmap();
+    weightmaps[index].setName(weightmapName);
+    weightmaps[index].connect(mesh, Xfo());
+  }
 }
 
 
 function WeightmapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
-
-  Ref<WrapModifier> io_this = this;
+  Ref<WeightmapModifier> io_this = this;
   weightmapModifier_connectWeightmaps<<<geomSet.size()>>>(geomSet, io_this.weightmaps, this.weightmapName);
 }
 

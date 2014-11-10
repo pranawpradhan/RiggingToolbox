@@ -9,18 +9,34 @@ require Geometry;
 object DeltaMushModifier : BaseModifier {
   Vec3 deltas[][];
 
+  UInt32 iterations;
   Boolean bound;
   UInt32 boundVersion;
 };
 
 
 function DeltaMushModifier(){
+  this.iterations = 20;
 }
 
-function Mat44 deltaMushModifier_buildRefFrame(Vec3 pos, Vec3 nrm, Vec3 tgt){
+function String[] DeltaMushModifier.getRequiredAttributes(){
+  String result[];
+  result.push('positions');
+  result.push('normals');
+  result.push('tangents');
+  return result;
+}
+
+function String[] DeltaMushModifier.getModifiedAttributes(){
+  String result[];
+  result.push('positions');
+  return result;
+}
+
+
+function Mat44 deltaMushModifier_buildRefFrame(Vec3 pos, Vec3 nrm, Vec4 tngnt){
   return Mat44();
 }
-
 
 
 struct SmoothPosMRInput {
@@ -28,7 +44,7 @@ struct SmoothPosMRInput {
   Vec3 positions[];
 };
 
-operator deltaMushModifier_smoothPos<<<index>>>(io Vec3 positions[], PolygonMesh mesh) {
+operator deltaMushModifier_smoothPos<<<index>>>(io Vec3 positions[], io PolygonMesh mesh) {
 
   //Pseudo-gaussian: center weight = 0.5, neighbor weights sum = 0.5
   Vec3 position = positions[ index ];
@@ -43,7 +59,7 @@ operator deltaMushModifier_smoothPos<<<index>>>(io Vec3 positions[], PolygonMesh
       neiSum += positions[neiPt];
     }
     neiSum /= Scalar(nbNei);
-    mesh.setPointPosition( index, ( position + neiSum ) * 0.5 );
+    mesh.setPointPosition( Size(index), ( position + neiSum ) * 0.5 );
   }
 }
 
@@ -74,12 +90,13 @@ operator deltaMushModifier_smoothPosNorm<<<index>>>(io Vec3 positions[], io Vec3
 
 operator deltaMushModifier_computeBinding<<<index>>>(
   io PolygonMesh mesh,
+  Ref<Vec4Attribute> tangents,
   Vec3 initialPositions[],
   io Vec3 deltas[]
 ){
   Vec3 newPos = mesh.positionsAttribute.values[index];
   Vec3 newNormal = mesh.normalsAttribute.values[index];
-  Vec4 newTangent = mesh.tangentsAttribute.values[index];
+  Vec4 newTangent = tangents.values[index];
 
   // Build a reference frame. 
   Mat44 mat44 = deltaMushModifier_buildRefFrame(newPos, newNormal, newTangent);
@@ -90,11 +107,12 @@ operator deltaMushModifier_computeBinding<<<index>>>(
 
 operator deltaMushModifier_applyDeltas<<<index>>>(
   io PolygonMesh mesh,
+  Ref<Vec4Attribute> tangents,
   Vec3 deltas[]
 ){
   Vec3 newPos = mesh.positionsAttribute.values[index];
   Vec3 newNormal = mesh.normalsAttribute.values[index];
-  Vec4 newTangent = mesh.tangentsAttribute.values[index];
+  Vec4 newTangent = tangents.values[index];
 
   // Build a reference frame. 
   Mat44 mat44 = deltaMushModifier_buildRefFrame(newPos, newNormal, newTangent);
@@ -107,56 +125,66 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   io Vec3 deltas[][],
   UInt32 iterations,
-  io Boolean bound
+  Boolean bound
 ){
   PolygonMesh mesh = geomSet.get(0);
-  if(!mesh)
+  if(!mesh){
+    report("Warning in DeltaMushModifier: geometry is not a polygon mesh:" + getGeomDebugName(mesh));
     return;
+  }
+
+  if(!mesh.getAttributes().has("tangents")){
+    report("Warning in DeltaMushModifier: mesh does not have tangents computed:" + getGeomDebugName(mesh));
+    return;
+  }
+  Ref<Vec4Attribute> tangents = mesh.getAttribute("tangents");
+
   if(!bound){
     // Cache the initial positions of the points before relaxing.
-    Vec3 initialPositions = mesh.positionsAttribute.values.clone();
+    Vec3 initialPositions[] = mesh.positionsAttribute.values.clone();
 
     for(UInt32 i=0; i<iterations; i++){
-      // relax the mesh, causing it to lose volume. 
+      // relax the mesh, causing it to lose volume.
       deltaMushModifier_smoothPos<<<mesh.pointCount()>>>(mesh.positionsAttribute.values, mesh);
     }
-    // compute the deltas between the relaxed mesh, and the orrignal vertex positions.
-    deltaMushModifier_computeBinding<<<positionsAttribute.size()>>>(
+
+    deltas[index].resize(mesh.pointCount());
+    // compute the deltas between the relaxed mesh, and the original vertex positions.
+    deltaMushModifier_computeBinding<<<mesh.pointCount()>>>(
       mesh,
+      tangents,
       initialPositions,
       deltas[index]
     );
-    bound = true;
   }
   else{
     for(UInt32 i=0; i<iterations; i++){
-      // relax the mesh, causing it to lose volume. 
+      // relax the mesh, causing it to lose volume.
       deltaMushModifier_smoothPos<<<mesh.pointCount()>>>(mesh.positionsAttribute.values, mesh);
     }
   }
 
   // Re-apply the deltas to re-inflate the mesh.
   // (Even when binding, the mesh is deflated, so it must be re-inflated)
-  deltaMushModifier_applyDeltas<<<positionsAttribute.size()>>>(
+  deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
     mesh,
+    tangents,
     deltas[index]
   );
-  positionsAttribute.incrementVersion();
+  mesh.incrementPointPositionsVersion();
 
 }
 
 function DeltaMushModifier.evaluate(EvalContext context, io GeometrySet geomSet){
-  GeometrySet srcGeomSet = this.sourceGeometryStack.evaluate(context);
-
   Ref<DeltaMushModifier> io_this = this;
-  if(srcGeomSet.getVersion() != io_this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
+  if(geomSet.getVersion() != this.boundVersion){
     io_this.bound = false;
   }
-  deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, srcGeomSet, io_this.locations, io_this.deltas, io_this.bound);
+  deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, io_this.deltas, this.iterations, io_this.bound);
 
-  if(io_this.bound){
-    io_this.srcBoundVersion = srcGeomSet.getVersion();
+  if(!io_this.bound){
     io_this.boundVersion = geomSet.getVersion();
+    io_this.bound = true;
   }
 }
 
