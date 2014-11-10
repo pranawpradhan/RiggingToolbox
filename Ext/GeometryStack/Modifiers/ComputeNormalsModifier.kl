@@ -34,6 +34,7 @@ operator computeNormalsModifier_deformGeometries<<<index>>>(
 }
 
 function ComputeNormalsModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  AutoProfilingEvent p(FUNC);
   computeNormalsModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.hardAngleRadians);
 }
 

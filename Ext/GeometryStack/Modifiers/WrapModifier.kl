@@ -132,6 +132,8 @@ operator wrapModifier_deformGeometries<<<index>>>(
 }
 
 function WrapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  AutoProfilingEvent p(FUNC);
+  
   Ref<WrapModifier> io_this = this;
   GeometrySet srcGeomSet = io_this.sourceGeometryStack.evaluate(context);
 

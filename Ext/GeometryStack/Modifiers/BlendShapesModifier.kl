@@ -200,6 +200,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 }
 
 function BlendShapesModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  AutoProfilingEvent p(FUNC);
   blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets);
 }
 

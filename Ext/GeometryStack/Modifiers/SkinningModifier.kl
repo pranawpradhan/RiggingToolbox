@@ -157,8 +157,8 @@ operator deformGeometries<<<index>>>(
 }
 
 function SkinningModifier.evaluate(EvalContext context, io GeometrySet geomSet){
-
   AutoProfilingEvent p(FUNC);
+  
   if(this.dataVersion != geomSet.getVersion()){
     // create an io this pointer so we can cache the values. 
     Ref<SkinningModifier> io_this = this;

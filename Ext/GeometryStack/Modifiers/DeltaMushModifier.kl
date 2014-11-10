@@ -176,6 +176,8 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
 }
 
 function DeltaMushModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  AutoProfilingEvent p(FUNC);
+  
   Ref<DeltaMushModifier> io_this = this;
   if(geomSet.getVersion() != this.boundVersion){
     io_this.bound = false;

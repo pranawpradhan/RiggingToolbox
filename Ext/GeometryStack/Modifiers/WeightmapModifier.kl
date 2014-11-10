@@ -48,6 +48,8 @@ operator weightmapModifier_connectWeightmaps<<<index>>>(
 
 
 function WeightmapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+  AutoProfilingEvent p(FUNC);
+  
   Ref<WeightmapModifier> io_this = this;
   weightmapModifier_connectWeightmaps<<<geomSet.size()>>>(geomSet, io_this.weightmaps, this.weightmapName);
 }
