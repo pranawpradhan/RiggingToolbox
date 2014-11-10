@@ -6,6 +6,71 @@ require Alembic;
 require AlembicWrapper;
 require Characters;
 
+/*
+// The following python script extracts the Skinning weights and ids 
+// into a custom attribute that is then exported to Alembic.
+from itertools import chain
+import time
+import pymel.core as pm
+from pymel import *
+start = time.time()
+
+def packWeights(w, weights, boneIDs, idMapping):
+     for i,v in enumerate(w):
+         for j,x in enumerate(list(v)):
+             if x != 0:
+                 weights.append(float(x))
+                 boneIDs.append(j)
+             if j == 0:
+                 idMapping.append(len(weights))
+
+def fnFindSkinCluster(mesh):
+     skincluster = None
+     for each in pm.listHistory(mesh):
+         if type(each)==pm.nodetypes.SkinCluster:
+             skincluster = each
+     return skincluster
+
+def fnSaveSkinning(mesh, weights, boneIDs, idMapping, boneList):
+     skincluster = fnFindSkinCluster(mesh)
+     if skincluster!=None:
+         w = skincluster.getWeights(skincluster.getGeometry()[0])
+         packWeights(w, weights, boneIDs, idMapping)
+         for each in skincluster.getInfluence():
+             boneList.append(str(each))
+         return True
+     else:
+         return False
+
+     #return [weights, boneIDs, idMapping, boneList] 
+start = time.time() 
+obj = pm.ls(selection=True) 
+allObjects = pm.ls(type='mesh') 
+for obj in allObjects:
+     weights = []
+     boneIDs = []
+     idMapping = []
+     boneList = []
+     hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
+     if hasSkin:
+         mesh = pm.PyNode(obj)
+
+         selected = pm.ls(sl=True)
+         mesh.addAttr('Envelope_Weights', dataType='floatArray')
+         mesh.addAttr('EnvelopeDeformerIndices', dataType='UInt32Array')
+         mesh.addAttr('MappingIndices', dataType='UInt32Array')
+         mesh.addAttr('Envelope_Deformers', dataType='stringArray')
+
+         mesh.Envelope_Weights.set( weights )
+         mesh.EnvelopeDeformerIndices.set( boneIDs )
+         mesh.MappingIndices.set( idMapping )
+         mesh.Envelope_Deformers.set( boneList , type='stringArray')
+
+end = time.time()
+print end - start
+
+*/
+
 
 object AlembicIWStringArrayProperty {
   AlembicIArrayProperty prop;
