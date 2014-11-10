@@ -8,76 +8,76 @@ require FabricStatistics;
 
 
 object GeometryStack : Listener {
-	GeometrySet geomSet;
-	GeometryOperator geomOperators[];
-	CachePoint cachePoints[];
-	UInt32 dirtyPoint;
+  GeometrySet geomSet;
+  GeometryOperator geomOperators[];
+  CachePoint cachePoints[];
+  UInt32 dirtyPoint;
 
 
-	// e.g. If a deformer modifies positions, and the subsequent deformer
-	// ultilizes normals, and there is a dependeny from normals to positions
-	// then normals have to be automatically recomputed before the next deformer is run. 
-	String implicitDependencies[String][];
+  // e.g. If a deformer modifies positions, and the subsequent deformer
+  // ultilizes normals, and there is a dependeny from normals to positions
+  // then normals have to be automatically recomputed before the next deformer is run. 
+  String implicitDependencies[String][];
 };
 
 function GeometryStack() {
-	this.init();
+  this.init();
 }
 
 
 function GeometryStack.init!() {
-	this.geomSet = GeometrySet();
-	this.addAttributeDependency('normals', 'positions');
-	this.addAttributeDependency('tangents', 'positions');
-	this.addAttributeDependency('tangents', 'normals');
+  this.geomSet = GeometrySet();
+  this.addAttributeDependency('normals', 'positions');
+  this.addAttributeDependency('tangents', 'positions');
+  this.addAttributeDependency('tangents', 'normals');
 }
 
 function GeometryStack.addAttributeDependency!(String from, String to) {
-	if(!this.implicitDependencies.has(from)){
-		String emptyArray[];
-		this.implicitDependencies[from] = emptyArray;
-	}
-	this.implicitDependencies[from].push(to);
+  if(!this.implicitDependencies.has(from)){
+    String emptyArray[];
+    this.implicitDependencies[from] = emptyArray;
+  }
+  this.implicitDependencies[from].push(to);
 }
 
 function GeometryStack.addGeometryOperator!(GeometryOperator op) {
-	this.geomOperators.push(op);
-	this.cachePoints.resize(this.geomOperators.size);
+  this.geomOperators.push(op);
+  this.cachePoints.resize(this.geomOperators.size);
 
-	// Note: the 'in' arg becomes 'io' here.
-	Notifier notifier = op;
-	if(notifier)
-		notifier.addListener(this);
+  // Note: the 'in' arg becomes 'io' here.
+  Notifier notifier = op;
+  if(notifier)
+    notifier.addListener(this);
 }
 
 
 function GeometryStack.disableCachePoint!(UInt32 index) {
-	if(this.cachePoints[index] != null)
-		this.cachePoints[index].disable();
+  if(this.cachePoints[index] != null)
+    this.cachePoints[index].disable();
 }
 
 function GeometryStack.enableCachePoint!(UInt32 index) {
-	if(this.cachePoints[index] != null)
-		this.cachePoints[index].enable();
+  if(this.cachePoints[index] != null)
+    this.cachePoints[index].enable();
 }
 
 function GeometryStack.notify!(Notifier notifier, String type, String data) {
-	AutoProfilingEvent p(FUNC+":" + type);
-	switch(type){
-	case 'changed':
-		for(Integer i=0; i<this.geomOperators.size; i++){
-			Notifier op = this.geomOperators[i];
-			if(op === notifier){
-				this.dirtyPoint = i;
-				for(Integer j=i; j<this.geomOperators.size; j++){
-					if(this.cachePoints[j] != null)
-						this.cachePoints[j].invalidate();
-				}
-				break;
-			}
-		}
-		break;
-	}
+  AutoProfilingEvent p(FUNC+":" + type);
+  switch(type){
+  case 'changed':
+    for(Integer i=0; i<this.geomOperators.size; i++){
+      Notifier op = this.geomOperators[i];
+      if(op === notifier){
+        this.dirtyPoint = i;
+        for(Integer j=i; j<this.geomOperators.size; j++){
+          if(this.cachePoints[j] != null)
+            this.cachePoints[j].invalidate();
+        }
+        break;
+      }
+    }
+    break;
+  }
 }
 
 // Pull-model evaluation. Evaluation can be recursive when multiple stacks are used in conjunction.
@@ -86,62 +86,62 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 //                                  |
 //             [ LoadAlembic, WrapModifier ] ->
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
-  	AutoProfilingEvent p(FUNC);
+    AutoProfilingEvent p(FUNC);
 
-	this.dirtyPoint = 0;// force evlauation all the time.
-	if(this.dirtyPoint < this.geomOperators.size){
-		for(Integer i=this.dirtyPoint; i<this.geomOperators.size; i++){
-			GeometryOperator op = this.geomOperators[i];
+  this.dirtyPoint = 0;// force evlauation all the time.
+  if(this.dirtyPoint < this.geomOperators.size){
+    for(Integer i=this.dirtyPoint; i<this.geomOperators.size; i++){
+      GeometryOperator op = this.geomOperators[i];
 
-			// Now check the geometries if they have the attributes required by the next operation.
-			Boolean debug = true;
-			if(debug){
-				String requiredAttributes[] = op.getRequiredAttributes();
-				for(Integer k=0; k<this.geomSet.size; k++){
-					String missingAttributes[];
-					for(Integer j=0; j<requiredAttributes.size; j++){
-						Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
-						if(!attributes.has(requiredAttributes[j]))
-							missingAttributes.push(requiredAttributes[j]);
-					}
-					if(missingAttributes.size > 0){
-						setError("Cannot evaluate '" + op.type() + "'. Geometry missing required attributes:" + missingAttributes);
-						return this.geomSet;
-					}
-				}
-			}
+      // Now check the geometries if they have the attributes required by the next operation.
+      Boolean debug = true;
+      if(debug){
+        String requiredAttributes[] = op.getRequiredAttributes();
+        for(Integer k=0; k<this.geomSet.size; k++){
+          String missingAttributes[];
+          for(Integer j=0; j<requiredAttributes.size; j++){
+            Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
+            if(!attributes.has(requiredAttributes[j]))
+              missingAttributes.push(requiredAttributes[j]);
+          }
+          if(missingAttributes.size > 0){
+            setError("Cannot evaluate '" + op.type() + "'. Geometry missing required attributes:" + missingAttributes);
+            return this.geomSet;
+          }
+        }
+      }
 
-			CachePoint cachePoint = this.cachePoints[i];
-			if(cachePoint != null && cachePoint.isValid())
-				cachePoint.restore(this.geomSet);
-			else{
-				op.evaluate(context, this.geomSet);
+      CachePoint cachePoint = this.cachePoints[i];
+      if(cachePoint != null && cachePoint.isValid())
+        cachePoint.restore(this.geomSet);
+      else{
+        op.evaluate(context, this.geomSet);
 
-				// If the op requests the results to be cached. (this may depend on the size of the data)
-				// we then generate an appropriate cache point and initialize it. 
-				if(op.cacheResults()){
-					if(cachePoint == null){
-						Generator generator = op;
-						if(generator)
-							cachePoint = GeometryCache();
-						else
-							cachePoint = GeometryAttributeCache();
-						this.cachePoints[i] = cachePoint;
-					}
-					cachePoint.update(this.geomSet, op.getModifiedAttributes());
-				}
-			}
-			this.dirtyPoint++;
-		}
-	}
-	return this.geomSet;
+        // If the op requests the results to be cached. (this may depend on the size of the data)
+        // we then generate an appropriate cache point and initialize it. 
+        if(op.cacheResults()){
+          if(cachePoint == null){
+            Generator generator = op;
+            if(generator)
+              cachePoint = GeometryCache();
+            else
+              cachePoint = GeometryAttributeCache();
+            this.cachePoints[i] = cachePoint;
+          }
+          cachePoint.update(this.geomSet, op.getModifiedAttributes());
+        }
+      }
+      this.dirtyPoint++;
+    }
+  }
+  return this.geomSet;
 }
 
 
 
 function String GeometryStack.saveJSON(){
-	String json;
-	return json;
+  String json;
+  return json;
 }
 
 function GeometryStack.loadJSON!(String json){

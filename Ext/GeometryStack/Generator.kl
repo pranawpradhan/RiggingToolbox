@@ -7,7 +7,7 @@ require Math;
 require Geometry;
 
 interface Generator {
-	Boolean cacheResults();
+  Boolean cacheResults();
 };
 
 object BaseGenerator : Notifier, Generator, GeometryOperator {
@@ -19,21 +19,21 @@ function BaseGenerator(){
 }
 
 function String[] BaseGenerator.getRequiredAttributes(){
-	// Generators should never require attributes to exist. 
-	String result[];
-	return result;
+  // Generators should never require attributes to exist. 
+  String result[];
+  return result;
 }
 
 function String[] BaseGenerator.getModifiedAttributes(){
-	String result[];
-	result.push('positions');
-	return result;
+  String result[];
+  result.push('positions');
+  return result;
 }
 
 
 /// Return true if the generation of the geometries is expensive and the results should be cached.
 function Boolean BaseGenerator.cacheResults(){
-	return true;
+  return true;
 }
 
 function BaseGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
@@ -41,10 +41,10 @@ function BaseGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
 }
 
 function String BaseGenerator.saveJSON(){
-	String json;
+  String json;
 
 
-	return json;
+  return json;
 }
 
 function BaseGenerator.loadJSON!(String json){

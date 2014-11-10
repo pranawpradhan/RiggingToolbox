@@ -7,34 +7,34 @@ require Geometry;
 
 
 object PushModifier : BaseModifier {
-	Scalar push;
+  Scalar push;
 };
 
 function PushModifier(){
-	this.push = 1.0;
+  this.push = 1.0;
 }
 
 function PushModifier(Scalar push){
-	this.push = push;
+  this.push = push;
 }
 
 function String[] PushModifier.getRequiredAttributes(){
-	String result[];
-	result.push('positions');
-	result.push('normals');
-	return result;
+  String result[];
+  result.push('positions');
+  result.push('normals');
+  return result;
 }
 
 function String[] PushModifier.getModifiedAttributes(){
-	String result[];
-	result.push('positions');
-	return result;
+  String result[];
+  result.push('positions');
+  return result;
 }
 
 function PushModifier.setPushDist!(Scalar push){
-	this.push = push;
-	String data;
-	this.notify('changed', data);
+  this.push = push;
+  String data;
+  this.notify('changed', data);
 }
 
 
@@ -54,18 +54,18 @@ operator pushModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   Scalar push
 ){
-	Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
-	Vec3Attribute positionsAttribute = attributes.positionsAttribute;
-	Vec3Attribute normalsAttribute = attributes.normalsAttribute;
-	if(!positionsAttribute || !normalsAttribute){
-		setError("Error in pushModifier_deformGeometries. Missing attributes.");
-	}
-	pushModifier_pushPositionsAlongNormals<<<attributes.size()>>>(
-		positionsAttribute.values,
-		normalsAttribute.values,
-		push
-	);
-	positionsAttribute.incrementVersion();
+  Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
+  Vec3Attribute positionsAttribute = attributes.positionsAttribute;
+  Vec3Attribute normalsAttribute = attributes.normalsAttribute;
+  if(!positionsAttribute || !normalsAttribute){
+    setError("Error in pushModifier_deformGeometries. Missing attributes.");
+  }
+  pushModifier_pushPositionsAlongNormals<<<attributes.size()>>>(
+    positionsAttribute.values,
+    normalsAttribute.values,
+    push
+  );
+  positionsAttribute.incrementVersion();
 }
 
 function PushModifier.evaluate(EvalContext context, io GeometrySet geomSet){

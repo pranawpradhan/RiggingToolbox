@@ -6,24 +6,24 @@ require Math;
 require Geometry;
 
 object Notifier {
-	Listener listeners[];
+  Listener listeners[];
 };
 
 function Notifier.addListener!(Listener listener){
-	// TODO: make this method threadsafe. 
-	for(Integer i=0; i<this.listeners.size; i++){
-		if(this.listeners[i] === listener)
-			return;
-	}
-	this.listeners.push(listener);
+  // TODO: make this method threadsafe. 
+  for(Integer i=0; i<this.listeners.size; i++){
+    if(this.listeners[i] === listener)
+      return;
+  }
+  this.listeners.push(listener);
 }
 
 
 function Notifier.notify(String type, String data){
-	for(Integer i=0; i<this.listeners.size; i++){
-		// Cast the listener to an non-const value.
-		Ref<Listener> listener = this.listeners[i];
-		listener.notify(this, type, data);
-	}
+  for(Integer i=0; i<this.listeners.size; i++){
+    // Cast the listener to an non-const value.
+    Ref<Listener> listener = this.listeners[i];
+    listener.notify(this, type, data);
+  }
 }
 

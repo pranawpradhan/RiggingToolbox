@@ -13,18 +13,18 @@ object BaseModifier : Notifier, Modifier, GeometryOperator {
 };
 
 function String[] BaseModifier.getRequiredAttributes(){
-	String result[];
-	return result;
+  String result[];
+  return result;
 }
 
 function String[] BaseModifier.getModifiedAttributes(){
-	String result[];
-	return result;
+  String result[];
+  return result;
 }
 
 /// Return true if the generation of the geometries is expensive and the results should be cached.
 function Boolean BaseModifier.cacheResults(){
-	return false;
+  return false;
 }
 
 
@@ -34,10 +34,10 @@ function BaseModifier.evaluate(EvalContext context, io GeometrySet geomSet){
 
 
 function String BaseModifier.saveJSON(){
-	String json;
+  String json;
 
 
-	return json;
+  return json;
 }
 
 function BaseModifier.loadJSON!(String json){

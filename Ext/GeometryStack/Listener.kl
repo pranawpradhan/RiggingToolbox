@@ -8,5 +8,5 @@ require Geometry;
 object Notifier;
 
 interface Listener {
-	notify!(Notifier notifier, String type, String data);
+  notify!(Notifier notifier, String type, String data);
 };

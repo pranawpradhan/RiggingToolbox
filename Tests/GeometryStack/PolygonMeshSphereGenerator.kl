@@ -2,16 +2,15 @@
 require RiggingToolbox;
 
 operator entry(){
-   	
-    PolygonMeshSphereGenerator sphereGenerator();
+  PolygonMeshSphereGenerator sphereGenerator();
 
-    EvalContext context();
-    GeometrySet geomSet();
-    sphereGenerator.evaluate(context, geomSet);
+  EvalContext context();
+  GeometrySet geomSet();
+  sphereGenerator.evaluate(context, geomSet);
 
-    report("NumGeometries:" + geomSet.size);
-    for(Integer i=0; i<geomSet.size; i++){
-        report(geomSet.get(i).getDesc(false, false));
-    }
+  report("NumGeometries:" + geomSet.size);
+  for(Integer i=0; i<geomSet.size; i++){
+    report(geomSet.get(i).getDesc(false, false));
+  }
 }
 

@@ -4,20 +4,19 @@ require RiggingToolbox;
 operator entry(){
 
   StartFabricProfiling();
-   	
-   	GeometryStack stack();
-   	PolygonMeshSphereGenerator sphereGenerator(2.0, 1, true, true);
-   	PushModifier pushModifier(3.0);
-   	sphereGenerator.enableCaching = true;
-   	stack.addGeometryOperator(sphereGenerator);
-   	stack.addGeometryOperator(pushModifier);
 
-    EvalContext context();
-    stack.evaluate(context);
-	pushModifier.setPushDist(6.0);
-	stack.evaluate(context);
+  GeometryStack stack();
+  PolygonMeshSphereGenerator sphereGenerator(2.0, 1, true, true);
+  PushModifier pushModifier(3.0);
+  sphereGenerator.enableCaching = true;
+  stack.addGeometryOperator(sphereGenerator);
+  stack.addGeometryOperator(pushModifier);
 
-	
+  EvalContext context();
+  stack.evaluate(context);
+  pushModifier.setPushDist(6.0);
+  stack.evaluate(context);
+
   StopFabricProfiling();
 
   report( GetEvalPathReport() );

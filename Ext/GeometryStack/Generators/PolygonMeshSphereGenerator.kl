@@ -32,13 +32,13 @@ function PolygonMeshSphereGenerator(Scalar radius, UInt32 detail, Boolean setNor
 }
 
 function String[] PolygonMeshSphereGenerator.getModifiedAttributes(){
-	String result[];
-	result.push('positions');
-	if(this.normals)
-		result.push('normals');
-	if(this.uvs)
-		result.push('uvs');
-	return result;
+  String result[];
+  result.push('positions');
+  if(this.normals)
+    result.push('normals');
+  if(this.uvs)
+    result.push('uvs');
+  return result;
 }
 
 

@@ -7,19 +7,19 @@ require Geometry;
 
 
 object ComputeNormalsModifier : BaseModifier {
-	Scalar hardAngleRadians;
+  Scalar hardAngleRadians;
 };
 
 function String[] ComputeNormalsModifier.getRequiredAttributes(){
-	String result[];
-	result.push('positions');
-	return result;
+  String result[];
+  result.push('positions');
+  return result;
 }
 
 function String[] ComputeNormalsModifier.getModifiedAttributes(){
-	String result[];
-	result.push('normals');
-	return result;
+  String result[];
+  result.push('normals');
+  return result;
 }
 
 /// Per-geometry computation of the push. 
@@ -28,9 +28,9 @@ operator computeNormalsModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   Scalar hardAngleRadians
 ){
-	PolygonMesh mesh = geomSet.get(index);
-	if(mesh)
-		mesh.recomputePointNormalsIfRequired( hardAngleRadians );
+  PolygonMesh mesh = geomSet.get(index);
+  if(mesh)
+    mesh.recomputePointNormalsIfRequired( hardAngleRadians );
 }
 
 function ComputeNormalsModifier.evaluate(EvalContext context, io GeometrySet geomSet){

@@ -6,17 +6,17 @@ require Math;
 require Geometry;
 
 interface GeometryOperator {
-	// returns the list of attributes modifed by the deformer. 
-	String[] getRequiredAttributes();
-	
-	// returns the list of attributes modifed by the deformer. 
-	String[] getModifiedAttributes();
-	
-	Boolean cacheResults();
+  // returns the list of attributes modifed by the deformer. 
+  String[] getRequiredAttributes();
+  
+  // returns the list of attributes modifed by the deformer. 
+  String[] getModifiedAttributes();
+  
+  Boolean cacheResults();
 
-	evaluate(EvalContext context, io GeometrySet geomSet);
+  evaluate(EvalContext context, io GeometrySet geomSet);
 
-	String saveJSON();
+  String saveJSON();
 
-	loadJSON!(String json);
+  loadJSON!(String json);
 };
