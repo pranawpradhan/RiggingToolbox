@@ -5,20 +5,15 @@
 require Math;
 require Geometry;
 
-
-struct BlendShapesModifier_OffsetAndCount {
-  UInt32 offset;
-  UInt32 count;
+struct BlendShapesModifier_Target {
+  UInt32 indices[];
+  Vec3 deltas[];
 };
 
 /// The Blend Shapes modifier stores a sparce data set of offsets. 
 object BlendShapesModifier : BaseModifier {
-
-  UInt32ArrayAllocator allocator;
-  BlendShapesModifier_OffsetAndCount offsetAndCounts[];
-
-  Vec3 deltas[];
-
+  Vec3 referencePositions[][];
+  BlendShapesModifier_Target targets[][];
   Scalar threshold;
 };
 
@@ -28,76 +23,132 @@ function BlendShapesModifier(){
 }
 
 
-/// \internal Will defrag memory buffers if more than 1/3 is free
-inline Boolean BlendShapesModifier._recompactIfRequired!() {
-  //Allow 25% free data
-  if( this.allocator.data.size() < this.allocator.freeDataCount * 3 )
-    return this._recompact();
-  else
-    return false;
-}
 
-/// \internal Returns storage offset and pairs count for a given item index
-inline BlendShapesModifier._getOffsetAndCount( UInt32 geomIndex, io UInt32 offset, io UInt32 count ) {
-  offset = this.offsetAndCounts[geomIndex].offset;
-  count = this.offsetAndCounts[geomIndex].count;
-}
+//////////////////////////////////////
+//
 
-/// \internal Resizes the number of id-weight pairs and returns the offset of the resized item. If copyData, the previous data will be preserved.
-function UInt32 BlendShapesModifier._resizeDeltasArray!( UInt32 geomIndex, UInt32 newCount ) {
-  UInt32 offset;
-  UInt32 count;
-  this._getOffsetAndCount( geomIndex, offset, count );
+/// A struct for collecting points during surface painting.
+/// \internal
+struct BlendShapesModifier_collectGeomPointsSharedData {
+  Vec3 positions[];
+  Vec3 refpositions[];
+  Scalar threshold;
+};
 
-  if( newCount != count ) {
-    UInt32 newOffset = count ? this.allocator.reallocate( offset, count, newCount, 0 ) : this.allocator.allocate( newCount, 0 );
-    UInt32 prevDataSize = this.offsetAndCounts.size();
-    UInt32 newDataSize = this.allocator.data.size();
-    this.deltas.resize(newDataSize);
 
-    if( newOffset != offset ) {
-      this.offsetAndCounts[geomIndex].offset = newOffset;
+/// A struct for collecting points during surface painting.
+/// \internal
+struct BlendShapesModifier_collectMeshPointsSharedData {
+  PolygonMesh mesh;
+  Vec3 refpositions[];
+  Scalar threshold;
+};
 
-      if( this._recompactIfRequired() )
-        newOffset = this.offsetAndCounts[geomIndex].offset;
-      // Copy the attribute values to thier new locations.
-      for(UInt32 i=0; i<count; i++){
-        this.deltas[newOffset+i-1] = this.deltas[offset+i-1];
-      }
-      offset = newOffset;
-    }
-    this.offsetAndCounts[geomIndex].count = newCount;
+/// A struct for collecting points during surface painting.
+/// \internal
+struct CollectPointsMapOutput {
+  Boolean collected;
+  Integer index;
+  Vec3 delta;
+};
+
+
+/// An operator for collecting points during surface painting.
+/// \internal
+operator blendShapesModifier_collectGeomPointsProduce(io CollectPointsMapOutput result, Index index, Size count, BlendShapesModifier_collectMeshPointsSharedData sharedData) {
+  Vec3 pos = sharedData.positions[index];
+  Vec3 delta = pos - sharedData.refpositions[index];
+  if(delta.getLength() < sharedData.threshold){
+    result.collected = true;
+    result.index = index;
+    result.delta = delta;
   }
-  return offset;
+}
+
+/// An operator for collecting points during surface painting.
+/// \internal
+operator blendShapesModifier_collectMeshPointsProduce(io CollectPointsMapOutput result, Index index, Size count, BlendShapesModifier_collectMeshPointsSharedData sharedData) {
+  Vec3 pos = sharedData.mesh.getPointPosition(index);
+  Vec3 delta = pos - sharedData.refpositions[index];
+  if(delta.getLength() < sharedData.threshold){
+    result.collected = true;
+    result.index = index;
+    result.delta = delta;
+  }
 }
 
 
-operator blendShapesModifier_computeDeltas<<<index>>>(
-  Vec3 refpositions[],
-  Vec3 positions[],
-  Scalar threshold,
-  io Vec3 deltas[]
-){
-  Vec3 delta = refpositions - positions[index];
-  if(deltas.lengthSquared() > threshold)
-    positions[index] = position;
+/// An operator for collecting points during surface painting.
+/// \internal
+operator blendShapesModifier_collectPointsReduce(CollectPointsMapOutput input, io BlendShapesModifier_Target output, Index index, Size count) {
+  if(input.collected){
+    output.indices.push(input.index);
+    output.deltas.push(input.delta);
+  }
 }
 
 
-function BlendShapesModifier.addTarget(EvalContext context, Geometry targetGeometry){
+function BlendShapesModifier.addTarget(UInt32 geomIndex, Geometry targetGeometry){
+  UInt32 numTargets = this.targets[geomIndex];
+  if(this.targets[geomIndex].size < numTargets+1){
+    for(UInt32 i=0; i<this.targets.size; i++)
+      this.targets[i].resize(numTargets+1);
+  }
+  UInt32 targetIndex = numTargets;
 
-  blendShapesModifier_computeDeltas<<<geomSet.size()>>>(geomSet, skinningPosAndNormMatrices);
+  PolygonMesh targetMesh = targetGeometry;
+  if(!targetMesh){
+
+    Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
+    Vec3Attribute positionsAttribute = attributes.positionsAttribute;
+
+    BlendShapesModifier_collectGeomPointsSharedData sharedData;
+    sharedData.positions = positionsAttribute.values;
+    sharedData.refpositions = this.referencePositions[geomIndex];
+    sharedData.threshold = this.threshold;
+
+    ValueProducer<BlendShapesModifier_Target> reducer = createReduce( 
+      createArrayGenerator(
+        createConstValue( attributes.size() ),
+        blendShapesModifier_collectMeshPointsProduce,
+        createConstValue( sharedData )
+      ),
+      blendShapesModifier_collectPointsReduce
+    );
+    this.targets[geomIndex][targetIndex] = reducer.produce();
+  }
+  else{
+    BlendShapesModifier_collectMeshPointsSharedData sharedData;
+    sharedData.mesh = targetMesh;
+    sharedData.refpositions = this.referencePositions[geomIndex];
+    sharedData.threshold = this.threshold;
+
+    ValueProducer<BlendShapesModifier_Target> reducer = createReduce( 
+      createArrayGenerator(
+        createConstValue( targetMesh.pointCount() ),
+        blendShapesModifier_collectMeshPointsProduce,
+        createConstValue( sharedData )
+      ),
+      blendShapesModifier_collectPointsReduce
+    );
+    this.targets[geomIndex][targetIndex] = reducer.produce();
+  }
 }
 
 
-operator applyDeltas<<<index>>>(
+operator BlendShapesModifier_applyGeomDeltas<<<index>>>(
   io Vec3 positions[],
-  UInt32ArrayAllocator indices,
-  UInt32 offset,
-  Vec3 deltas[]
+  BlendShapesModifier_Target target
 ){
-  UInt32 pointIndex = indices.data[offset+index];
-  positions[pointIndex] += deltas[index];
+  positions[target.indices[index]] += target.deltas[index];
+}
+
+operator BlendShapesModifier_applyMeshDeltas<<<index>>>(
+  io PolygonMesh mesh,
+  BlendShapesModifier_Target target,
+){
+  Vec3 pos = mesh.getPointPosition(target.indices[index]);
+  mesh.setPointPosition(target.indices[index], pos + target.deltas[index]);
 }
 
 
@@ -106,14 +157,24 @@ operator deformGeometries<<<index>>>(
   UInt32ArrayAllocator indices,
   Vec3 deltas[]
 ){
-  Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
-  Vec3Attribute positionsAttribute = attributes.positionsAttribute;
-  applyDeltas<<<attributes.size()>>>(
-    positionsAttribute.values,
-    indices,
-    deltas
-  );
-  positionsAttribute.incrementVersion();
+  Geometry geom = geomSet.get(index);
+  PolygonMesh mesh = geom;
+  if(!mesh){
+    Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
+    Vec3Attribute positionsAttribute = attributes.positionsAttribute;
+    BlendShapesModifier_applyGeomDeltas<<<attributes.size()>>>(
+      positionsAttribute.values,
+      this.targets[index]
+    );
+    positionsAttribute.incrementVersion();
+  }
+  else{
+    BlendShapesModifier_applyGeomDeltas<<<mesh.pointCount()>>>(
+      mesh,
+      this.targets[index]
+    );
+    mesh.incrementPointPositionsVersion();
+  }
   return true;
 }
 
