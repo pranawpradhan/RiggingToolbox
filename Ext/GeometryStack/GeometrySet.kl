@@ -23,19 +23,18 @@ inline GeometrySet.resize!(Size newSize) {
   this.version++;
 }
 
-/// returns an element the contained value array by index
+/// returns a geometry the by index
 inline Geometry GeometrySet.get(Index index) {
   return this.geometries[index];
 }
 
-/// sets an element the contained value array by index
+/// sets a geometry by index
 inline GeometrySet.set!(Index index, Geometry value) {
   this.geometries[index] = value;
   this.version++;
 }
 
-
-/// gets a single object out of the container or null if it doesn't exist
+/// returns true if the geometry set owns a meta data under the given key
 function Boolean GeometrySet.hasMetaData( String name ) {
   return this.metaData.has( name );
 }
@@ -47,7 +46,6 @@ function Ref<Object> GeometrySet.getMetaData( String name ) {
 
 /// sets a single object in the metadata
 function GeometrySet.setMetaData!( String name, Object value ) {
-  report("setMetaData:" + name);
   this.metaData[name] = value;
   this.version++;
 }

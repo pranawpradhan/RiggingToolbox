@@ -8,11 +8,16 @@ require FabricStatistics;
 
 
 object GeometryStack : Listener {
+  String name;
+
   GeometrySet geomSet;
   GeometryOperator geomOperators[];
   CachePoint cachePoints[];
   UInt32 dirtyPoint;
 
+  DrawingHandle handle;
+  Boolean renderingInitialized;
+  UInt32 geomSetVersion;
 
   // e.g. If a deformer modifies positions, and the subsequent deformer
   // ultilizes normals, and there is a dependeny from normals to positions
@@ -134,6 +139,11 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
       this.dirtyPoint++;
     }
   }
+
+  if(this.geomSetVersion != this.geomSet.getVersion()){
+    this.setupRendering();
+    this.geomSetVersion = this.geomSet.getVersion();
+  }
   return this.geomSet;
 }
 
@@ -146,4 +156,39 @@ function String GeometryStack.saveJSON(){
 
 function GeometryStack.loadJSON!(String json){
   
+}
+
+function GeometryStack.setupRendering!(){
+
+  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
+  this.handle = DrawingHandle(this.name+"Handle");
+
+  // Now setup the rendering
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLSurfaceShader('skinnedSurfaceShader'));
+  InlineMaterial material = shader.getOrCreateMaterial(this.name+"Material");
+
+  for(Integer geomId=0; geomId<this.geomSet.size(); geomId++){
+    Geometry geom = this.geomSet.get(geomId);
+    String name = this.name + "_" + getGeomDebugName(geom);
+    InlineShape shape = null;
+    PolygonMesh mesh = geom;
+    if(mesh)
+      shape = InlineMeshShape(name, mesh);
+    else{
+      Lines lines = geom;
+      if(lines)
+        shape = InlineLinesShape(name, lines);
+      else{
+        Points points = geom;
+        if(points)
+          shape = InlinePointsShape(name, points);
+        else{
+          report("Warning in GeometryStack.setupRendering: unsupported geometry type:" + geom.type());
+          continue;
+        }
+      }
+    }
+    InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
+    instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(1.0,0.0,0.0)));
+  }
 }
