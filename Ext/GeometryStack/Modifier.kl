@@ -41,6 +41,6 @@ function JSONDictValue BaseModifier.saveJSON(PersistenceContext persistenceConte
   return json;
 }
 
-function BaseModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue data){
+function BaseModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   
 }

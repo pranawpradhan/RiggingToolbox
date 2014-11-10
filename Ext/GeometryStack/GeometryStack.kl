@@ -57,6 +57,10 @@ function GeometryStack.addGeometryOperator!(GeometryOperator op) {
     notifier.addListener(this);
 }
 
+function GeometryOperator GeometryStack.getGeometryOperator(UInt32 index) {
+  return this.geomOperators[index];
+}
+
 
 function GeometryStack.disableCachePoint!(UInt32 index) {
   if(this.cachePoints[index] != null)
@@ -155,7 +159,7 @@ function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceCont
   JSONDictValue json();
   JSONArrayValue geomOperatorsData();
   for(UInt32 i=0; i<this.geomOperators.size; i++){
-    geomOperatorsData.add(this.geomOperators.saveJSON(persistenceContext));
+    geomOperatorsData.add(this.geomOperators[i].saveJSON(persistenceContext));
   }
   json.set("geomOperators", geomOperatorsData);
   return json;
@@ -164,14 +168,22 @@ function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceCont
 function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   RiggingToolboxRegistry registry = getRiggingToolboxRegistry();
   JSONArrayValue geomOperatorsData = json.get("geomOperators");
-  for(UInt32 i=0; i<geomOperators.size; i++){
+  for(UInt32 i=0; i<geomOperatorsData.size; i++){
     JSONDictValue geomOperatorData = geomOperatorsData.get(i);
     String type = geomOperatorData.getString("type");
     GeometryOperator geomOp = registry.constructGeometryOperator(type);
-    geomOp.load(persistenceContext, geomOperatorData);
-    this.geomOperators.push(geomOp);
+    geomOp.loadJSON(persistenceContext, geomOperatorData);
+    this.addGeometryOperator(geomOp);
   }
 }
+
+
+function GeometryStack.loadJSONString!(PersistenceContext persistenceContext, String str){
+  JSONDoc doc();
+  doc.parse(str);
+  this.loadJSON(persistenceContext, doc.root);
+}
+
 
 function GeometryStack.setupRendering!(){
 

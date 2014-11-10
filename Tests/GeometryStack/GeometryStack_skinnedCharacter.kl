@@ -7,11 +7,12 @@ operator entry(){
 
   GeometryStack stack();
 
-  FilePath path("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/cubeTest.abc");
-  AlembicGeometryGenerator alembicGenerator(path);
+  AlembicGeometryGenerator alembicGenerator();
   SkinningModifier skiningModifier();
   stack.addGeometryOperator(alembicGenerator);
   stack.addGeometryOperator(skiningModifier);
+
+  alembicGenerator.setFilePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/cubeTest.abc");
 
   EvalContext context();
   GeometrySet geomSet = stack.evaluate(context);

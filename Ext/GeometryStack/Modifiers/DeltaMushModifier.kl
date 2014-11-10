@@ -206,11 +206,3 @@ function DeltaMushModifier.evaluate(EvalContext context, io GeometrySet geomSet)
   }
 }
 
-
-function DeltaMushModifier.save(){
-  
-}
-
-function DeltaMushModifier.load(){
-  
-}

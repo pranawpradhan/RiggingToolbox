@@ -191,7 +191,7 @@ function String[] AlembicIWStringArrayProperty.get() {
 object AlembicGeometryGenerator : BaseGenerator {
 
   /// the file path of the alembic file. 
-  FilePath filePath;
+  String filePath;
 
   /// An array of joints which must be included in the skeleton
   String includedBones[];
@@ -219,14 +219,11 @@ object AlembicGeometryGenerator : BaseGenerator {
 function AlembicGeometryGenerator() {
 }
 
-/// Constructor taking a file path to load the alembic file on disk
-function AlembicGeometryGenerator(FilePath filePath) {
-  this.setFilePath(filePath);
-}
-
 /// Sets the file path of the alembic file. 
-inline  AlembicGeometryGenerator.setFilePath!(FilePath filePath){
+inline  AlembicGeometryGenerator.setFilePath!(String filePath){
   this.filePath = filePath;
+  String data;
+  this.notify('changed', data);
 }
 
 /// Returns the file path of the alembic file. 
@@ -359,7 +356,8 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
 {
   AutoProfilingEvent p(FUNC);
     // Check for an absolute file path, then a relative path.
-    FilePath expandedPath = this.filePath.expandEnvVars();
+    FilePath expandedPath = FilePath(this.filePath);
+    expandedPath = expandedPath.expandEnvVars();
     if(!expandedPath.exists()){
       report("File not found:" + expandedPath.string());
       return;
@@ -788,7 +786,20 @@ function Skeleton AlembicGeometryGenerator.buildSkeleton(io AlembicArchiveReader
       }
     }
   }
-  
-  
   return Skeleton('this.getName()', bones);
 }
+
+
+function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  json.setString('filePath', this.filePath);
+  return json;
+}
+
+function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  this.parent#loadJSON(persistenceContext, json);
+
+  this.filePath = json.getString('filePath');
+}
+
+

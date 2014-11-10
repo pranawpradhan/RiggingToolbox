@@ -166,10 +166,4 @@ function WrapModifier.evaluate(EvalContext context, io GeometrySet geomSet){
 }
 
 
-function WrapModifier.save(){
-  
-}
-
-function WrapModifier.load(){
-  
-}
+\

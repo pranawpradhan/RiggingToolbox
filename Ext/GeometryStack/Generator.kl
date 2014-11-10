@@ -48,6 +48,6 @@ function JSONDictValue BaseGenerator.saveJSON(PersistenceContext persistenceCont
   return json;
 }
 
-function BaseGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue data){
+function BaseGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   
 }
