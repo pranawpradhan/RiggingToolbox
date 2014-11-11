@@ -2,8 +2,8 @@
   "geomOperators": [
     {
      "type": "AlembicGeometryGenerator",
-     "filePath": "sphereBlendShapes.abc",
-     "geometryNames": ["SphereRefShape"]
+     "filePath": "skinnedTube.abc",
+     "geometryNames": ["pCylinderShape1"]
     },
     {
      "type": "SkinningModifier"

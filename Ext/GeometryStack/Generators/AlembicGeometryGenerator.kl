@@ -29,6 +29,8 @@ from itertools import chain
 import time
 import pymel.core as pm
 from pymel import *
+from maya import cmds
+
 start = time.time()
 
 def packWeights(w, weights, boneIDs, idMapping):
@@ -70,17 +72,25 @@ for obj in allObjects:
      hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
      if hasSkin:
          mesh = pm.PyNode(obj)
-
+         if cmds.objExists(obj+'.EnvelopeWeights'):
+             mesh.deleteAttr('EnvelopeWeights')
+         if cmds.objExists(obj+'.EnvelopeDeformerIndices'):
+             mesh.deleteAttr('EnvelopeDeformerIndices')
+         if cmds.objExists(obj+'.MappingIndices'):
+             mesh.deleteAttr('MappingIndices')
+         if cmds.objExists(obj+'.EnvelopeDeformers'):
+             mesh.deleteAttr('EnvelopeDeformers')
+             
          selected = pm.ls(sl=True)
-         mesh.addAttr('Envelope_Weights', dataType='floatArray')
-         mesh.addAttr('EnvelopeDeformerIndices', dataType='UInt32Array')
-         mesh.addAttr('MappingIndices', dataType='UInt32Array')
-         mesh.addAttr('Envelope_Modifiers', dataType='stringArray')
+         mesh.addAttr('EnvelopeWeights', dataType='doubleArray')
+         mesh.addAttr('EnvelopeDeformerIndices', dataType='Int32Array')
+         mesh.addAttr('MappingIndices', dataType='Int32Array')
+         mesh.addAttr('EnvelopeDeformers', dataType='stringArray')
 
-         mesh.Envelope_Weights.set( weights )
+         mesh.EnvelopeWeights.set( weights )
          mesh.EnvelopeDeformerIndices.set( boneIDs )
          mesh.MappingIndices.set( idMapping )
-         mesh.Envelope_Modifiers.set( boneList , type='stringArray')
+         mesh.EnvelopeDeformers.set( boneList , type='stringArray')
 
 end = time.time()
 print end - start
@@ -227,6 +237,8 @@ function AlembicGeometryGenerator() {
 /// Sets the file path of the alembic file. 
 inline  AlembicGeometryGenerator.setFilePath!(String filePath){
   this.filePath = filePath;
+  this.expandedPath = FilePath(this.filePath);
+  this.expandedPath = this.expandedPath.expandEnvVars();
   String data;
   this.notify('changed', data);
 }
@@ -254,7 +266,7 @@ function String AlembicGeometryGenerator.getParentPath(String pathStr) {
 }
 
 function Integer AlembicGeometryGenerator.findItem(String set[], String item) {
-  for(Integer j=0; j<set.size-1; j++){
+  for(Integer j=0; j<set.size; j++){
     if(item == set[j])
       return j;
   }
@@ -286,9 +298,6 @@ function AlembicGeometryGenerator.collectHierarchy(String pathStr, io String ske
     String parentPath = this.getParentPath(pathStr);
     if(parentPath != "")
       this.collectHierarchy(parentPath, skeletonBonePaths);
-
-    // String path[] = pathStr.split('/');
-    // report("collectHierarchy:" + path[path.size-1]);
     skeletonBonePaths.push(pathStr);
   }
 }
@@ -362,6 +371,8 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
 function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
 {
   AutoProfilingEvent p(FUNC);
+  if(!this.expandedPath.exists())
+    return;
 
   report("Importing:" + this.expandedPath.string());
 
@@ -406,7 +417,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
 
     //-----------------------------------------
     // Get the envelope weights data
-    AlembicICompoundProperty compound = AlembicICompoundProperty(readers[i]._schema.getArbGeomParams());
+    AlembicICompoundProperty compound = readers[i]._schema.getArbGeomParams();
 
     if(!compound.valid())
       continue;
@@ -431,9 +442,9 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
       }
     }
 
-
-    if(deformerNames.size==0)
+    if(deformerNames.size==0){
       continue;
+    }
 
     skinnedGeometryIndices.push(i);
     skinnedGeometries.push(mesh);
@@ -464,11 +475,10 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
   }
 
-  // ensure any manually included bones are part of the skeleton.
+  //  ensure any manually included bones are part of the skeleton.
   for (Integer i=0; i<xformPaths.size; i++){
-    String name = this.getNameFromPath(xformPaths[i]);
     for(Integer j=0; j<this.includedBones.size; j++){
-      if(name == this.includedBones[j]){
+      if(included[i] == this.includedBones[j]){
         if(this.findItem(skeletonBonePaths, xformPaths[j]) == -1){
           skeletonBonePaths.push(xformPaths[j]);
         }
@@ -482,7 +492,6 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
 
   if(skeletonBonePaths.size == 0)
     return;
-
   //-----------------------------------------
   // Construct the skeleton
   Skeleton skeleton = this.buildSkeleton(archive, skeletonBonePaths, deformerNamesUnion);

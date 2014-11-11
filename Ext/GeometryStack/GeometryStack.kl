@@ -261,7 +261,7 @@ function GeometryStack.setupRendering!(){
 
 /// Generates a Description string of this pose.
 /// \param indent The indentation to use when generating the string. 
-function String GeometryStack.getDesc(String indent) {
+function String GeometryStack.getDesc(String indent, Boolean includeGeometries) {
   String desc;
   desc += indent + "GeometryStack { \n";
   desc += indent + "  geomOperators:[ \n";
@@ -269,16 +269,21 @@ function String GeometryStack.getDesc(String indent) {
     desc += this.geomOperators[i].getDesc(indent+'  ') + "\n";
   }
   desc += indent + "  ],\n";
-  desc += indent + "  geometries:[ \n";
-  for(Integer i=0; i<this.geomSet.size; i++){
-    desc += indent + "      " + this.geomSet.get(i).getDesc(false, false) + "\n";
+  if(includeGeometries){
+    desc += indent + "  geometries:[ \n";
+    for(Integer i=0; i<this.geomSet.size; i++){
+      desc += indent + "      " + this.geomSet.get(i).getDesc(false, false) + "\n";
+    }
+    desc += indent + "  ]\n";
   }
-  desc += indent + "  ]\n";
+  else{
+    desc += indent + "  numGeometries:" + this.geomSet.size + "\n";
+  }
   desc += indent + "}";
   return desc;
 }
 
 /// Generates a Description string of this Pose.
 function String GeometryStack.getDesc() {
-  return this.getDesc("");
+  return this.getDesc("", false);
 }
