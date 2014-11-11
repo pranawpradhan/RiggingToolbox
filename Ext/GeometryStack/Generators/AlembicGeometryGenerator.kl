@@ -23,78 +23,73 @@ function GeometryOperator AlembicGeometryGeneratorFactory.constructGeometryOpera
 //
 
 /*
-// The following python script extracts the Skinning weights and ids 
-// into a custom attribute that is then exported to Alembic.
+# The following python script extracts the Skinning weights and ids 
+# into a custom attribute that is then exported to Alembic.
 from itertools import chain
 import time
 import pymel.core as pm
 from pymel import *
-from maya import cmds
-
 start = time.time()
 
 def packWeights(w, weights, boneIDs, idMapping):
-     for i,v in enumerate(w):
-         for j,x in enumerate(list(v)):
-             if x != 0:
-                 weights.append(float(x))
-                 boneIDs.append(j)
-             if j == 0:
-                 idMapping.append(len(weights))
+    for i,v in enumerate(w):
+        for j,x in enumerate(list(v)):
+            if x != 0:
+                weights.append(float(x))
+                boneIDs.append(j)
+            if j == 0:
+                idMapping.append(len(weights))
 
 def fnFindSkinCluster(mesh):
-     skincluster = None
-     for each in pm.listHistory(mesh):
-         if type(each)==pm.nodetypes.SkinCluster:
-             skincluster = each
-     return skincluster
+    skincluster = None
+    for each in pm.listHistory(mesh):
+        if type(each)==pm.nodetypes.SkinCluster:
+            skincluster = each
+    return skincluster
 
 def fnSaveSkinning(mesh, weights, boneIDs, idMapping, boneList):
-     skincluster = fnFindSkinCluster(mesh)
-     if skincluster!=None:
-         w = skincluster.getWeights(skincluster.getGeometry()[0])
-         packWeights(w, weights, boneIDs, idMapping)
-         for each in skincluster.getInfluence():
-             boneList.append(str(each))
-         return True
-     else:
-         return False
+    skincluster = fnFindSkinCluster(mesh)
+    if skincluster!=None:
+        w = skincluster.getWeights(skincluster.getGeometry()[0])
+        packWeights(w, weights, boneIDs, idMapping)
+        for each in skincluster.getInfluence():
+            boneList.append(str(each))
+        return True
+    else:
+        return False
 
-     #return [weights, boneIDs, idMapping, boneList] 
-start = time.time() 
-obj = pm.ls(selection=True) 
-allObjects = pm.ls(type='mesh') 
+    #return [weights, boneIDs, idMapping, boneList]
+start = time.time()
+obj = pm.ls(selection=True)
+allObjects = pm.ls(type='mesh')
 for obj in allObjects:
-     weights = []
-     boneIDs = []
-     idMapping = []
-     boneList = []
-     hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
-     if hasSkin:
-         mesh = pm.PyNode(obj)
-         if cmds.objExists(obj+'.EnvelopeWeights'):
-             mesh.deleteAttr('EnvelopeWeights')
-         if cmds.objExists(obj+'.EnvelopeDeformerIndices'):
-             mesh.deleteAttr('EnvelopeDeformerIndices')
-         if cmds.objExists(obj+'.MappingIndices'):
-             mesh.deleteAttr('MappingIndices')
-         if cmds.objExists(obj+'.EnvelopeDeformers'):
-             mesh.deleteAttr('EnvelopeDeformers')
-             
-         selected = pm.ls(sl=True)
-         mesh.addAttr('EnvelopeWeights', dataType='doubleArray')
-         mesh.addAttr('EnvelopeDeformerIndices', dataType='Int32Array')
-         mesh.addAttr('MappingIndices', dataType='Int32Array')
-         mesh.addAttr('EnvelopeDeformers', dataType='stringArray')
+    mesh = pm.PyNode(obj)
+    if cmds.objExists(obj+'.EnvelopeWeights'):
+        mesh.deleteAttr('EnvelopeWeights')
+    if cmds.objExists(obj+'.EnvelopeDeformerIndices'):
+        mesh.deleteAttr('EnvelopeDeformerIndices')
+    if cmds.objExists(obj+'.MappingIndices'):
+        mesh.deleteAttr('MappingIndices')
+    if cmds.objExists(obj+'.EnvelopeDeformers'):
+        mesh.deleteAttr('EnvelopeDeformers')
+    weights = []
+    boneIDs = []
+    idMapping = []
+    boneList = []
+    hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
+    if hasSkin:
+        mesh = pm.PyNode(obj)
 
-         mesh.EnvelopeWeights.set( weights )
-         mesh.EnvelopeDeformerIndices.set( boneIDs )
-         mesh.MappingIndices.set( idMapping )
-         mesh.EnvelopeDeformers.set( boneList , type='stringArray')
+        selected = pm.ls(sl=True)
+        mesh.addAttr('EnvelopeWeights', dataType='doubleArray')
+        mesh.addAttr('EnvelopeDeformerIndices', dataType='Int32Array')
+        mesh.addAttr('MappingIndices', dataType='Int32Array')
+        mesh.addAttr('EnvelopeDeformers', dataType='stringArray')
 
-end = time.time()
-print end - start
-
+        mesh.EnvelopeWeights.set( weights )
+        mesh.EnvelopeDeformerIndices.set( boneIDs )
+        mesh.MappingIndices.set( idMapping )
+        mesh.EnvelopeDeformers.set( boneList , type='stringArray')
 */
 
 
@@ -315,6 +310,20 @@ function AlembicGeometryGenerator.addChildrenToSkeleton(String pathStr, String x
 }
 
 
+function Xfo AlembicGeometryGenerator.computeGlobalPose(io AlembicArchiveReader archive, String pathStr){
+  AlembicXformReader xformReader = archive.getXform(pathStr);
+  Xfo xfo();
+  if(xformReader)
+    xfo = xformReader.readSample(0.0);
+
+  String parentPath = this.getParentPath(pathStr);
+  if(parentPath != ""){
+    xfo = this.computeGlobalPose(archive, parentPath) * xfo;
+  }
+  return xfo;
+}
+
+
 
 function String[] AlembicGeometryGenerator_loadStringArrayProperty( AlembicICompoundProperty compound, io AlembicPropertyHeader header, String prop ){
   String result[];
@@ -366,6 +375,7 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
 
 
 
+
 /// Loads the data from the alembic file
 /// \internal
 function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
@@ -381,6 +391,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
   String xformPaths[] = archive.getPathsOfType('Xform');
   String transformNames[];
   transformNames.resize(xformPaths.size());
+  geomSet.resize(0);
 
   String skeletonBonePaths[];
   String deformerNamesUnion[];
@@ -422,9 +433,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     if(!compound.valid())
       continue;
 
-    Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
     String deformerNames[];
-
     for (Integer pp=0; pp<compound.getNumProperties(); pp++){
       AlembicPropertyHeader header = compound.getPropertyHeader(pp);
       String propname = header.getName();
@@ -470,7 +479,9 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     // Skeleton that is used to generate the skining matricies. 
     this.mergeSet(deformerNamesUnion, deformerNames);
 
-    GenericMat44Value bindShapeTransform(Mat44());
+    Xfo globalXfo = this.computeGlobalPose(archive, polymeshPaths[i]);
+
+    GenericMat44Value bindShapeTransform(globalXfo.toMat44());
     AutoLock AL(mesh.metaData.lock);
     mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
   }
@@ -478,7 +489,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
   //  ensure any manually included bones are part of the skeleton.
   for (Integer i=0; i<xformPaths.size; i++){
     for(Integer j=0; j<this.includedBones.size; j++){
-      if(included[i] == this.includedBones[j]){
+      if(xformPaths[i] == this.includedBones[j]){
         if(this.findItem(skeletonBonePaths, xformPaths[j]) == -1){
           skeletonBonePaths.push(xformPaths[j]);
         }
@@ -563,8 +574,11 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     if(envelopeWeights.size == 0)
       continue;
 
+    if(mesh.pointCount() != subArrayIndices.size)
+      throw("Invalid skinning data");
+
     UInt32 nbBones = bonesIDs[i].size;
-    UInt32 nbPoints = subArrayIndices.size / 2;
+    UInt32 nbPoints = subArrayIndices.size;
     Integer boneMapping[];
     boneMapping.resize(nbBones);
     for(Integer j=0; j<bonesIDs[i].size; j++) {
@@ -578,9 +592,10 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     }
 
     Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
+    UInt32 usedWeights = 0;
     for(Integer pnt = 0; pnt < nbPoints; ++pnt ) {
       UInt32 startIndex = subArrayIndices[pnt];
-      UInt32 deformerCount = ((pnt < (nbPoints-1)) ? subArrayIndices[pnt+1] : envelopeDeformerIndices.size) - startIndex;
+      UInt32 deformerCount = ((pnt < (nbPoints-1)) ? subArrayIndices[pnt+1] : envelopeWeights.size) - startIndex;
 
       LocalL16UInt32Array indices;
       LocalL16ScalarArray weights;
@@ -599,6 +614,9 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
           weights.set(j, envelopeWeights[startIndex + j] / weightsSum);
         }
         mesh.setPointAttribute(pnt, skinningAttr, indices, weights);
+      }
+      else{
+        report("Warning: skinning weights are zero:" + this.getNameFromPath(polymeshPaths[i]) + " vertex:" + pnt);
       }
     }
   }

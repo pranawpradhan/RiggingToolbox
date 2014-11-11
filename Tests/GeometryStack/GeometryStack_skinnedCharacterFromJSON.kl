@@ -23,9 +23,11 @@ operator entry(){
 
   // Modify the pose and then reevaluate. 
   Mat44 pose[];
-  pose.resize(2);
+  pose.resize(4);
   pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
   pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
+  pose[2] = Xfo(Vec3(10, 20, 5)).toMat44();
+  pose[3] = Xfo(Vec3(10, 20, 5)).toMat44();
   skiningModifier.setPose(pose);
 
   GeometrySet geomSet = stack.evaluate(context);

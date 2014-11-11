@@ -60,7 +60,6 @@ operator skinnedTubeCharacter_SetPose(
   pose.push(joint2);
   pose.push(joint3);
   pose.push(joint4);
-  report(pose);
   skinningModifier.setPose(pose);
 }
 """)
