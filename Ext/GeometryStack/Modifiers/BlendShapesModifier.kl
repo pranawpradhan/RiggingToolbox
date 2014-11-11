@@ -63,12 +63,17 @@ inline String BlendShapesModifier_getNameFromPath(String pathStr) {
 
 /// Loads the data from the alembic file
 /// \internal
-function BlendShapesModifier.loadTargetsFromAlembic!(String filePath){
+function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String filePath){
 
   AutoProfilingEvent p(FUNC);
   // Check for an absolute file path, then a relative path.
   FilePath expandedPath = FilePath(filePath);
   expandedPath = expandedPath.expandEnvVars();
+
+  if(expandedPath.isRelative()){
+    expandedPath = FilePath(basePath) / FilePath(filePath);
+  }
+
   if(!expandedPath.exists()){
     report("File not found:" + expandedPath.string());
     return;
@@ -351,7 +356,7 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
     if(targetGeometryNamesData)
       this.targetGeometryNames = targetGeometryNamesData.toStringArray();
     
-    this.loadTargetsFromAlembic(this.filePath);
+    this.loadTargetsFromAlembic(persistenceContext.filePath, this.filePath);
   }
 }
 

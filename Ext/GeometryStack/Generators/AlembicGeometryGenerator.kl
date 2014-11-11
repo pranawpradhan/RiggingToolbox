@@ -193,6 +193,9 @@ object AlembicGeometryGenerator : BaseGenerator {
   /// the file path of the alembic file. 
   String filePath;
 
+  /// \internal
+  FilePath expandedPath;
+
   String geometryNames[];
 
   /// An array of joints which must be included in the skeleton
@@ -359,245 +362,238 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
 function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
 {
   AutoProfilingEvent p(FUNC);
-    // Check for an absolute file path, then a relative path.
-    FilePath expandedPath = FilePath(this.filePath);
-    expandedPath = expandedPath.expandEnvVars();
-    if(!expandedPath.exists()){
-      report("File not found:" + expandedPath.string());
-      return;
+
+  report("Importing:" + this.expandedPath.string());
+
+  AlembicArchiveReader archive(this.expandedPath.string());
+
+  String xformPaths[] = archive.getPathsOfType('Xform');
+  String transformNames[];
+  transformNames.resize(xformPaths.size());
+
+  String skeletonBonePaths[];
+  String deformerNamesUnion[];
+
+  for(Size i=0;i<xformPaths.size();i++) {
+    // xformReaders[i] 
+    AlembicXformReader xformReader = archive.getXform(xformPaths[i]);
+    String name = this.getNameFromPath(xformPaths[i]);
+    transformNames[i] = name;
+  }
+
+  String polymeshPaths[] = archive.getPathsOfType('PolyMesh');
+
+  AlembicPolyMeshReader readers[];
+  readers.resize(polymeshPaths.size());
+
+  UInt32 skinnedGeometryIndices[];
+  Geometry skinnedGeometries[];
+  // The bone ids referenced by each geometry.
+  Integer bonesIDs[][];
+  bonesIDs.resize(polymeshPaths.size());
+
+  for(Size i=0; i<polymeshPaths.size(); i++) {
+    String name = this.getNameFromPath(polymeshPaths[i]);
+
+    if(this.geometryNames.size != 0 && !applyNameFilters(name, this.geometryNames))
+      continue;
+
+    readers[i] = archive.getPolyMesh(polymeshPaths[i]);
+
+    PolygonMesh mesh = PolygonMesh();
+    readers[i].readSample(0.0, mesh);
+    geomSet.add(mesh);
+
+    //-----------------------------------------
+    // Get the envelope weights data
+    AlembicICompoundProperty compound = AlembicICompoundProperty(readers[i]._schema.getArbGeomParams());
+
+    if(!compound.valid())
+      continue;
+
+    Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
+    String deformerNames[];
+
+    for (Integer pp=0; pp<compound.getNumProperties(); pp++){
+      AlembicPropertyHeader header = compound.getPropertyHeader(pp);
+      String propname = header.getName();
+      AlembicPropertyType pType = header.getPropertyType();
+      if(propname == "EnvelopeDeformers" || propname == "Envelope_Deformers" || propname == "_EnvelopeDeformers" ) {
+        if (header.isCompound()){
+          AlembicICompoundProperty envDeformersCpmd = AlembicICompoundProperty(compound, propname);
+          // AlembicPropertyHeader subPropHeader = compound.getPropertyHeader(0);
+          deformerNames = AlembicIWStringArrayProperty(envDeformersCpmd, 'vals').get();
+          // deformerNames = AlembicGeometryGenerator_loadStringArrayProperty(envDeformersCpmd, subPropHeader, "vals");
+        }
+        else
+          deformerNames = AlembicIStringArrayProperty(compound, propname).get();
+          // deformerNames = AlembicGeometryGenerator_loadStringArrayProperty(compound, header, propname);
+      }
     }
 
-    report("Importing:" + expandedPath.string());
 
-    AlembicArchiveReader archive(expandedPath.string());
+    if(deformerNames.size==0)
+      continue;
 
-    String xformPaths[] = archive.getPathsOfType('Xform');
-    String transformNames[];
-    transformNames.resize(xformPaths.size());
+    skinnedGeometryIndices.push(i);
+    skinnedGeometries.push(mesh);
 
-    String skeletonBonePaths[];
-    String deformerNamesUnion[];
-
-    for(Size i=0;i<xformPaths.size();i++) {
-      // xformReaders[i] 
-      AlembicXformReader xformReader = archive.getXform(xformPaths[i]);
-      String name = this.getNameFromPath(xformPaths[i]);
-      transformNames[i] = name;
+     // The Skeleton stores the union of all bones used to deform all geometries
+    // that make up this character.
+    // Merge the envelope deformers into the skeleton bone paths,
+    // while also traversing up the hierarchy and collecting the entire
+    // hierarchy. This is because the skeleton must represent the entire
+    // transformation from the scene root to each deformer in the skeleton. 
+    bonesIDs[i].resize(deformerNames.size);
+    for(Integer j=0; j<deformerNames.size; j++){
+      for (Integer k=0; k<transformNames.size; k++)
+        if (/*"deformers:"+*/transformNames[k] == deformerNames[j]){
+          // Store the index of the deformer in the transformNames array
+          bonesIDs[i][j] = k;
+          this.collectHierarchy(xformPaths[k], skeletonBonePaths);
+          break;
+        }
     }
 
-    String polymeshPaths[] = archive.getPathsOfType('PolyMesh');
+    // Gather the list of all deformers. this list will be the sub-set of the 
+    // Skeleton that is used to generate the skining matricies. 
+    this.mergeSet(deformerNamesUnion, deformerNames);
 
-    AlembicPolyMeshReader readers[];
-    readers.resize(polymeshPaths.size());
+    GenericMat44Value bindShapeTransform(Mat44());
+    AutoLock AL(mesh.metaData.lock);
+    mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
+  }
 
-    UInt32 skinnedGeometryIndices[];
-    Geometry skinnedGeometries[];
-    // The bone ids referenced by each geometry.
-    Integer bonesIDs[][];
-    bonesIDs.resize(polymeshPaths.size());
+  // ensure any manually included bones are part of the skeleton.
+  for (Integer i=0; i<xformPaths.size; i++){
+    String name = this.getNameFromPath(xformPaths[i]);
+    for(Integer j=0; j<this.includedBones.size; j++){
+      if(name == this.includedBones[j]){
+        if(this.findItem(skeletonBonePaths, xformPaths[j]) == -1){
+          skeletonBonePaths.push(xformPaths[j]);
+        }
+      }
+    }
+  }
 
-    for(Size i=0; i<polymeshPaths.size(); i++) {
-      String name = this.getNameFromPath(polymeshPaths[i]);
+  for (Integer i=0; i<this.includedSubtrees.size; i++){
+    this.addChildrenToSkeleton(this.includedSubtrees[i], xformPaths, skeletonBonePaths);
+  }
 
-      if(this.geometryNames.size != 0 && !applyNameFilters(name, this.geometryNames))
-        continue;
+  if(skeletonBonePaths.size == 0)
+    return;
 
-      readers[i] = archive.getPolyMesh(polymeshPaths[i]);
+  //-----------------------------------------
+  // Construct the skeleton
+  Skeleton skeleton = this.buildSkeleton(archive, skeletonBonePaths, deformerNamesUnion);
+  geomSet.setMetaData('skeleton', skeleton);
 
-      PolygonMesh mesh = PolygonMesh();
-      readers[i].readSample(0.0, mesh);
-      geomSet.add(mesh);
+  //-----------------------------------------
+  // Load the envelope weights and remap the bone indices to the skeleton hierarchy.
 
-      //-----------------------------------------
-      // Get the envelope weights data
-      AlembicICompoundProperty compound = AlembicICompoundProperty(readers[i]._schema.getArbGeomParams());
+  for(Size i=0; i<skinnedGeometries.size(); i++) {
+    PolygonMesh mesh = skinnedGeometries[i];
 
-      if(!compound.valid())
-        continue;
+    //-----------------------------------------
+    // Get the envelope weights data
 
-      Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
-      String deformerNames[];
+    Float32 envelopeWeights[];
+    UInt32 subArrayIndices[];
+    UInt32 envelopeDeformerIndices[];
 
-      for (Integer pp=0; pp<compound.getNumProperties(); pp++){
-        AlembicPropertyHeader header = compound.getPropertyHeader(pp);
-        String propname = header.getName();
-        AlembicPropertyType pType = header.getPropertyType();
-        if(propname == "EnvelopeDeformers" || propname == "Envelope_Deformers" || propname == "_EnvelopeDeformers" ) {
+    AlembicICompoundProperty compound = readers[skinnedGeometryIndices[i]]._schema.getArbGeomParams();
+    for (Integer pp=0; pp<compound.getNumProperties(); pp++) {
+      AlembicPropertyHeader header = compound.getPropertyHeader(pp);
+      AlembicPropertyType pType = header.getPropertyType();
+      String propname = header.getName();
+      switch(propname){
+        case "EnvelopeWeights":
+        case "Envelope_Weights":
+        case "_EnvelopeWeights":
           if (header.isCompound()){
-            AlembicICompoundProperty envDeformersCpmd = AlembicICompoundProperty(compound, propname);
-            // AlembicPropertyHeader subPropHeader = compound.getPropertyHeader(0);
-            deformerNames = AlembicIWStringArrayProperty(envDeformersCpmd, 'vals').get();
-            // deformerNames = AlembicGeometryGenerator_loadStringArrayProperty(envDeformersCpmd, subPropHeader, "vals");
+            AlembicICompoundProperty envWeightsCpmd = AlembicICompoundProperty(compound, propname);
+            // envelopeWeights = AlembicGeometryGenerator_loadFloat32ArrayProperty(envWeightsCpmd, header, "vals");
+            envelopeWeights = AlembicIFloat32ArrayProperty(envWeightsCpmd, 'vals').get();
+
+            UInt32 temp[] = AlembicIUInt32ArrayProperty(envWeightsCpmd , "subArrayIndices").get();
+            subArrayIndices.resize(temp.size/2);
+            for(Integer j=0; j<subArrayIndices.size; j++)
+              subArrayIndices[j] = temp[j*2];
           }
           else
-            deformerNames = AlembicIStringArrayProperty(compound, propname).get();
-            // deformerNames = AlembicGeometryGenerator_loadStringArrayProperty(compound, header, propname);
-        }
-      }
-
-
-      if(deformerNames.size==0)
-        continue;
-
-      skinnedGeometryIndices.push(i);
-      skinnedGeometries.push(mesh);
-
-       // The Skeleton stores the union of all bones used to deform all geometries
-      // that make up this character.
-      // Merge the envelope deformers into the skeleton bone paths,
-      // while also traversing up the hierarchy and collecting the entire
-      // hierarchy. This is because the skeleton must represent the entire
-      // transformation from the scene root to each deformer in the skeleton. 
-      bonesIDs[i].resize(deformerNames.size);
-      for(Integer j=0; j<deformerNames.size; j++){
-        for (Integer k=0; k<transformNames.size; k++)
-          if (/*"deformers:"+*/transformNames[k] == deformerNames[j]){
-            // Store the index of the deformer in the transformNames array
-            bonesIDs[i][j] = k;
-            this.collectHierarchy(xformPaths[k], skeletonBonePaths);
-            break;
+            envelopeWeights = AlembicGeometryGenerator_loadFloat32ArrayProperty(compound, header, propname);
+          break;
+        case "MappingIndices":
+        case "_MappingIndices":
+          if (header.isCompound()){
+            AlembicICompoundProperty mappingIndicesCpmd = AlembicICompoundProperty(compound, propname);
+            SInt32 temp[] = AlembicISInt32ArrayProperty(mappingIndicesCpmd , "vals").get();
+            subArrayIndices.resize(temp.size);
+            for(UInt32 w=0; w<temp.size; w++)
+              subArrayIndices[w] = UInt32(temp[w]);
+            // subArrayIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(mappingIndicesCpmd, header, "vals");
           }
+          else
+            subArrayIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(compound, header, propname);
+          break;
+        case "EnvelopeDeformerIndices":
+        case "_EnvelopeDeformerIndices":
+          if (header.isCompound()){
+            AlembicICompoundProperty envDefIdCpmd = AlembicICompoundProperty(compound, propname);
+            SInt32 temp[] = AlembicISInt32ArrayProperty(envDefIdCpmd , "vals").get();
+            envelopeDeformerIndices.resize(temp.size);
+            for(UInt32 w=0; w<temp.size; w++)
+              envelopeDeformerIndices[w] = UInt32(temp[w]);
+            // envelopeDeformerIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(envDefIdCpmd, header, "vals");
+          }
+          else
+            envelopeDeformerIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(compound, header, propname);
+          break;
       }
-
-      // Gather the list of all deformers. this list will be the sub-set of the 
-      // Skeleton that is used to generate the skining matricies. 
-      this.mergeSet(deformerNamesUnion, deformerNames);
-
-      GenericMat44Value bindShapeTransform(Mat44());
-      AutoLock AL(mesh.metaData.lock);
-      mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
     }
+    if(envelopeWeights.size == 0)
+      continue;
 
-    // ensure any manually included bones are part of the skeleton.
-    for (Integer i=0; i<xformPaths.size; i++){
-      String name = this.getNameFromPath(xformPaths[i]);
-      for(Integer j=0; j<this.includedBones.size; j++){
-        if(name == this.includedBones[j]){
-          if(this.findItem(skeletonBonePaths, xformPaths[j]) == -1){
-            skeletonBonePaths.push(xformPaths[j]);
-          }
+    UInt32 nbBones = bonesIDs[i].size;
+    UInt32 nbPoints = subArrayIndices.size / 2;
+    Integer boneMapping[];
+    boneMapping.resize(nbBones);
+    for(Integer j=0; j<bonesIDs[i].size; j++) {
+      for(Integer k=0; k<skeletonBonePaths.size(); k++) {
+        String name = this.getNameFromPath(xformPaths[bonesIDs[i][j]]);
+        if(name == deformerNamesUnion[k]){
+          boneMapping[j] = k;
+          break;
         }
       }
     }
 
-    for (Integer i=0; i<this.includedSubtrees.size; i++){
-      this.addChildrenToSkeleton(this.includedSubtrees[i], xformPaths, skeletonBonePaths);
-    }
+    Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
+    for(Integer pnt = 0; pnt < nbPoints; ++pnt ) {
+      UInt32 startIndex = subArrayIndices[pnt];
+      UInt32 deformerCount = ((pnt < (nbPoints-1)) ? subArrayIndices[pnt+1] : envelopeDeformerIndices.size) - startIndex;
 
-    if(skeletonBonePaths.size == 0)
-      return;
+      LocalL16UInt32Array indices;
+      LocalL16ScalarArray weights;
+      indices.resize(deformerCount);
+      weights.resize(deformerCount);
 
-    //-----------------------------------------
-    // Construct the skeleton
-    Skeleton skeleton = this.buildSkeleton(archive, skeletonBonePaths, deformerNamesUnion);
-    geomSet.setMetaData('skeleton', skeleton);
-
-    //-----------------------------------------
-    // Load the envelope weights and remap the bone indices to the skeleton hierarchy.
-
-    for(Size i=0; i<skinnedGeometries.size(); i++) {
-      PolygonMesh mesh = skinnedGeometries[i];
-
-      //-----------------------------------------
-      // Get the envelope weights data
-
-      Float32 envelopeWeights[];
-      UInt32 subArrayIndices[];
-      UInt32 envelopeDeformerIndices[];
-
-      AlembicICompoundProperty compound = readers[skinnedGeometryIndices[i]]._schema.getArbGeomParams();
-      for (Integer pp=0; pp<compound.getNumProperties(); pp++)
-      {
-        AlembicPropertyHeader header = compound.getPropertyHeader(pp);
-        AlembicPropertyType pType = header.getPropertyType();
-        String propname = header.getName();
-        switch(propname){
-          case "EnvelopeWeights":
-          case "Envelope_Weights":
-          case "_EnvelopeWeights":
-            if (header.isCompound()){
-              AlembicICompoundProperty envWeightsCpmd = AlembicICompoundProperty(compound, propname);
-              // envelopeWeights = AlembicGeometryGenerator_loadFloat32ArrayProperty(envWeightsCpmd, header, "vals");
-              envelopeWeights = AlembicIFloat32ArrayProperty(envWeightsCpmd, 'vals').get();
-
-              UInt32 temp[] = AlembicIUInt32ArrayProperty(envWeightsCpmd , "subArrayIndices").get();
-              subArrayIndices.resize(temp.size/2);
-              for(Integer j=0; j<subArrayIndices.size; j++)
-                subArrayIndices[j] = temp[j*2];
-            }
-            else
-              envelopeWeights = AlembicGeometryGenerator_loadFloat32ArrayProperty(compound, header, propname);
-            break;
-          case "MappingIndices":
-          case "_MappingIndices":
-            if (header.isCompound()){
-              AlembicICompoundProperty mappingIndicesCpmd = AlembicICompoundProperty(compound, propname);
-              SInt32 temp[] = AlembicISInt32ArrayProperty(mappingIndicesCpmd , "vals").get();
-              subArrayIndices.resize(temp.size);
-              for(UInt32 w=0; w<temp.size; w++)
-                subArrayIndices[w] = UInt32(temp[w]);
-              // subArrayIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(mappingIndicesCpmd, header, "vals");
-            }
-            else
-              subArrayIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(compound, header, propname);
-            break;
-          case "EnvelopeDeformerIndices":
-          case "_EnvelopeDeformerIndices":
-            if (header.isCompound()){
-              AlembicICompoundProperty envDefIdCpmd = AlembicICompoundProperty(compound, propname);
-              SInt32 temp[] = AlembicISInt32ArrayProperty(envDefIdCpmd , "vals").get();
-              envelopeDeformerIndices.resize(temp.size);
-              for(UInt32 w=0; w<temp.size; w++)
-                envelopeDeformerIndices[w] = UInt32(temp[w]);
-              // envelopeDeformerIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(envDefIdCpmd, header, "vals");
-            }
-            else
-              envelopeDeformerIndices = AlembicGeometryGenerator_loadUInt32ArrayProperty(compound, header, propname);
-            break;
-        }
+      // Some files have non-normalized skinning weights, and so here we
+      // normalize the data so that the geometry will be deformed correctly.
+      Scalar weightsSum = 0.0;
+      for(Integer j = 0; j < deformerCount; ++j ) {
+        weightsSum += envelopeWeights[startIndex + j];
       }
-      if(envelopeWeights.size == 0)
-        continue;
-
-      UInt32 nbBones = bonesIDs[i].size;
-      UInt32 nbPoints = subArrayIndices.size / 2;
-      Integer boneMapping[];
-      boneMapping.resize(nbBones);
-      for(Integer j=0; j<bonesIDs[i].size; j++) {
-        for(Integer k=0; k<skeletonBonePaths.size(); k++) {
-          String name = this.getNameFromPath(xformPaths[bonesIDs[i][j]]);
-          if(name == deformerNamesUnion[k]){
-            boneMapping[j] = k;
-            break;
-          }
-        }
-      }
-
-      Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
-      for(Integer pnt = 0; pnt < nbPoints; ++pnt ) {
-        UInt32 startIndex = subArrayIndices[pnt];
-        UInt32 deformerCount = ((pnt < (nbPoints-1)) ? subArrayIndices[pnt+1] : envelopeDeformerIndices.size) - startIndex;
-
-        LocalL16UInt32Array indices;
-        LocalL16ScalarArray weights;
-        indices.resize(deformerCount);
-        weights.resize(deformerCount);
-
-        // Some files have non-normalized skinning weights, and so here we
-        // normalize the data so that the geometry will be deformed correctly.
-        Scalar weightsSum = 0.0;
+      if(weightsSum > DIVIDEPRECISION){
         for(Integer j = 0; j < deformerCount; ++j ) {
-          weightsSum += envelopeWeights[startIndex + j];
+          indices.set(j, boneMapping[ envelopeDeformerIndices[startIndex + j] ]);
+          weights.set(j, envelopeWeights[startIndex + j] / weightsSum);
         }
-        if(weightsSum > DIVIDEPRECISION){
-          for(Integer j = 0; j < deformerCount; ++j ) {
-            indices.set(j, boneMapping[ envelopeDeformerIndices[startIndex + j] ]);
-            weights.set(j, envelopeWeights[startIndex + j] / weightsSum);
-          }
-          mesh.setPointAttribute(pnt, skinningAttr, indices, weights);
-        }
+        mesh.setPointAttribute(pnt, skinningAttr, indices, weights);
       }
     }
+  }
+
   }
 }
 
@@ -852,6 +848,18 @@ function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContex
     this.includedSubtrees = includedSubtreesData.toStringArray();
 
   this.filePath = json.getString('filePath');
+
+    // Check for an absolute file path, then a relative path.
+  this.expandedPath = FilePath(this.filePath);
+  this.expandedPath = this.expandedPath.expandEnvVars();
+
+  if(this.expandedPath.isRelative()){
+    this.expandedPath = FilePath(persistenceContext.filePath) / FilePath(this.filePath);
+  }
+
+  if(!this.expandedPath.exists()){
+    throw("File not found:" + this.expandedPath.string());
+  }
 }
 
 

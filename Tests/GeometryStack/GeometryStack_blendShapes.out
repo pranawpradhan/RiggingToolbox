@@ -1,5 +1,5 @@
 Importing:C:\Users\Phil\Projects\RiggingToolbox/Tests/GeometryStack/sphereBlendShapes.abc
-function Ref<BlendShapesModifier>.loadTargetsFromAlembic!(String)
+function Ref<BlendShapesModifier>.loadTargetsFromAlembic!(String, String)
 --function Ref<BlendShapesModifier>.addReferenceGeometry!(Geometry)
 --function Ref<BlendShapesModifier>.addTargetGeometry!(UInt32, Geometry)
 --function Ref<BlendShapesModifier>.addTargetGeometry!(UInt32, Geometry)
@@ -16,11 +16,11 @@ stack:GeometryStack {
   geomOperators:[ 
   {
     type: AlembicGeometryGenerator,
-    filePath: ${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/sphereBlendShapes.abc
+    filePath: sphereBlendShapes.abc
   }
   {
     type: BlendShapesModifier,
-    filePath: ${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/sphereBlendShapes.abc
+    filePath: sphereBlendShapes.abc
     refGeoms: 1
       blendTargets: 0:2
   }
