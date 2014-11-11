@@ -854,7 +854,7 @@ function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContex
   this.expandedPath = this.expandedPath.expandEnvVars();
 
   if(this.expandedPath.isRelative()){
-    this.expandedPath = FilePath(persistenceContext.filePath) / FilePath(this.filePath);
+    this.expandedPath = FilePath(persistenceContext.filePath) / this.expandedPath;
   }
 
   if(!this.expandedPath.exists()){

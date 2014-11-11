@@ -13,12 +13,12 @@ operator entry(){
     \"geomOperators\": [
       {\n\
        \"type\": \"AlembicGeometryGenerator\",\n\
-       \"filePath\": \"sphereBlendShapes.abc\"\n\
+       \"filePath\": \"sphereBlendShapes.abc\",\n\
        \"geometryNames\": [\"SphereRefShape\"]
       },
       {\n\
        \"type\": \"BlendShapesModifier\",\n\
-       \"filePath\": \"sphereBlendShapes.abc\"\n\
+       \"filePath\": \"sphereBlendShapes.abc\",\n\
        \"referenceGeometryName\": \"SphereRefShape\",\n\
        \"targetGeometryNames\": [\"SphereRefTarget*\"]\n\
       }

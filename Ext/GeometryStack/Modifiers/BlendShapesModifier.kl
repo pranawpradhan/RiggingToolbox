@@ -27,6 +27,9 @@ struct BlendShapesModifier_Target {
   Vec3 deltas[];
 };
 
+function UInt32 BlendShapesModifier_Target.pointCount(){
+  return this.indices.size;
+}
 
 //////////////////////////////////////
 //
@@ -71,7 +74,7 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
   expandedPath = expandedPath.expandEnvVars();
 
   if(expandedPath.isRelative()){
-    expandedPath = FilePath(basePath) / FilePath(filePath);
+    expandedPath = FilePath(basePath) / expandedPath;
   }
 
   if(!expandedPath.exists()){
@@ -287,7 +290,7 @@ operator blendShapesModifier_applyMeshDeltas<<<index>>>(
   Scalar weight
 ){
   Vec3 pos = mesh.getPointPosition(target.indices[index]);
-  mesh.setPointPosition(UInt32(target.indices[index]), pos + (target.deltas[index] * weight));
+  mesh.setPointPosition(target.indices[index], pos + (target.deltas[index] * weight));
 }
 
 
@@ -303,14 +306,14 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   PolygonMesh mesh = geom;
   for(UInt32 i=0; i<targets[index].size; i++){
     if(!mesh){
-      blendShapesModifier_applyGeomDeltas<<<targets[index].size()>>>(
+      blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()>>>(
         positionsAttribute.values,
         targets[index][i],
         weights[i]
       );
     }
     else{
-      blendShapesModifier_applyMeshDeltas<<<targets[index].size()>>>(
+      blendShapesModifier_applyMeshDeltas<<<targets[index][i].pointCount()>>>(
         mesh,
         targets[index][i],
         weights[i]
@@ -346,9 +349,9 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
     this.filePath = json.getString('filePath');
 
 
-  // The Alembic file should contain a collection of geometries that are grouped by naming convention.
-  // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
-  // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
+    // The Alembic file should contain a collection of geometries that are grouped by naming convention.
+    // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
+    // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
 
     this.referenceGeometryName = json.getString('referenceGeometryName');
 

@@ -11,6 +11,7 @@ object RiggingToolboxRegistry;
 
 object GeometryStack : Listener {
   String name;
+  String filePath;
 
   GeometrySet geomSet;
   GeometryOperator geomOperators[];
@@ -59,6 +60,10 @@ function GeometryStack.addGeometryOperator!(GeometryOperator op) {
 
 function GeometryOperator GeometryStack.getGeometryOperator(UInt32 index) {
   return this.geomOperators[index];
+}
+
+function UInt32 GeometryStack.numGeometryOperators() {
+  return this.geomOperators.size;
 }
 
 
@@ -168,6 +173,8 @@ function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceCont
 function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   RiggingToolboxRegistry registry = getRiggingToolboxRegistry();
   JSONArrayValue geomOperatorsData = json.get("geomOperators");
+  if(!geomOperatorsData)
+    throw("Invalid json :" + json);
   for(UInt32 i=0; i<geomOperatorsData.size; i++){
     JSONDictValue geomOperatorData = geomOperatorsData.get(i);
     String type = geomOperatorData.getString("type");
@@ -178,10 +185,41 @@ function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDict
 }
 
 
-function GeometryStack.loadJSONString!(PersistenceContext persistenceContext, String str){
+function GeometryStack.loadJSONString!(PersistenceContext persistenceContext, String jsonString){
   JSONDoc doc();
-  doc.parse(str);
+  doc.parse(jsonString);
   this.loadJSON(persistenceContext, doc.root);
+}
+
+
+function GeometryStack.loadJSONFile!(PersistenceContext persistenceContext, String filePath){
+  FilePath expandedPath(filePath);
+  expandedPath = expandedPath.expandEnvVars();
+
+  if(expandedPath.isRelative()){
+    expandedPath = FilePath(persistenceContext.filePath) / expandedPath;
+  }
+
+  if(!expandedPath.exists()){
+    throw("File not found:" + expandedPath.string());
+  }
+  this.filePath = filePath;
+  String expandedPathStr = expandedPath.string();
+
+  PersistenceContext subpersistenceContext;
+  expandedPath.removeFileName();
+  subpersistenceContext.filePath = expandedPath.string();
+  TextReader reader(expandedPathStr);
+  this.loadJSONString(subpersistenceContext, reader.readAll());
+}
+
+function GeometryStack.loadJSONFile!(String filePath){
+  PersistenceContext persistenceContext;
+  this.loadJSONFile( persistenceContext, filePath);
+}
+
+function String GeometryStack.getFilePath(){
+  return this.filePath;
 }
 
 
