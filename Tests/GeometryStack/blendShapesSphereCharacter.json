@@ -10,6 +10,10 @@
      "filePath": "sphereBlendShapes.abc",
      "referenceGeometryName": "SphereRefShape",
      "targetGeometryNames": ["SphereRefTarget*"]
+    },
+    {
+     "type": "ComputeNormalsModifier",
+     "hardAngle": 3.1
     }
   ]
 }

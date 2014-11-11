@@ -23,8 +23,12 @@ function GeometryOperator ComputeNormalsModifierFactory.constructGeometryOperato
 
 
 object ComputeNormalsModifier : BaseModifier {
-  Scalar hardAngleRadians;
+  Scalar hardAngle;
 };
+
+function ComputeNormalsModifier(){
+  this.hardAngle = 1.0;
+}
 
 function String[] ComputeNormalsModifier.getRequiredAttributes(){
   String result[];
@@ -38,20 +42,40 @@ function String[] ComputeNormalsModifier.getModifiedAttributes(){
   return result;
 }
 
+/// Sets the file path of the alembic file. 
+inline  ComputeNormalsModifier.setHardAngle!(Scalar angle){
+  this.hardAngle = angle;
+  String data;
+  this.notify('changed', data);
+}
+
+
 /// Per-geometry computation of the push. 
 /// \internal
 operator computeNormalsModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
-  Scalar hardAngleRadians
+  Scalar hardAngle
 ){
   PolygonMesh mesh = geomSet.get(index);
   if(mesh)
-    mesh.recomputePointNormalsIfRequired( hardAngleRadians );
+    mesh.recomputePointNormalsIfRequired( hardAngle );
 }
 
 function ComputeNormalsModifier.evaluate(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  computeNormalsModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.hardAngleRadians);
+  computeNormalsModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.hardAngle);
 }
 
 
+
+function JSONDictValue ComputeNormalsModifier.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  json.setScalar('hardAngle', this.hardAngle);
+  return json;
+}
+
+function ComputeNormalsModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  this.parent#loadJSON(persistenceContext, json);
+  if(json.has('hardAngle'))
+    this.hardAngle = json.getScalar('hardAngle');
+}

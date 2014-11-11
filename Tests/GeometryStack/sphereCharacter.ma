@@ -1,6 +1,6 @@
 //Maya ASCII 2014 scene
 //Name: sphereCharacter.ma
-//Last modified: Mon, Nov 10, 2014 04:36:15 PM
+//Last modified: Mon, Nov 10, 2014 10:37:44 PM
 //Codeset: 1252
 requires maya "2014";
 currentUnit -l centimeter -a degree -t film;
@@ -11,8 +11,8 @@ fileInfo "cutIdentifier" "201310090514-890429";
 fileInfo "osv" "Microsoft Windows 8 Home Premium Edition, 64-bit  (Build 9200)\n";
 createNode transform -s -n "persp";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 59.681024532774551 20.629865403300357 -11.138143939178306 ;
-	setAttr ".r" -type "double3" -11.738352729590726 98.599999999991525 0 ;
+	setAttr ".t" -type "double3" 58.346173246508165 -0.98538864293189476 -20.136563813824168 ;
+	setAttr ".r" -type "double3" 8.0616472704115285 106.99999999998676 0 ;
 createNode camera -s -n "perspShape" -p "persp";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999993;
