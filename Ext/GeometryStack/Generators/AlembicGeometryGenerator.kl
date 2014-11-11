@@ -193,6 +193,8 @@ object AlembicGeometryGenerator : BaseGenerator {
   /// the file path of the alembic file. 
   String filePath;
 
+  String geometryNames[];
+
   /// An array of joints which must be included in the skeleton
   String includedBones[];
 
@@ -350,6 +352,43 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
   return result;
 }
 
+function Boolean AlembicGeometryGenerator_applyFilter(String name, String filter){
+  report("AlembicGeometryGenerator_applyFilter:" + name + ":" + filter);
+  UInt32 result[];
+  String filterStr = filter;
+  Boolean wildCardStart = filter.startsWith("*");
+  Boolean wildCardEnd = filter.endsWith("*");
+  if(wildCardStart){
+    filterStr = filterStr.subString(1, -1);
+  }
+  if(wildCardEnd){
+    filterStr = filterStr.subString(0, filterStr.length()-2);
+  }
+  if(wildCardStart && name.endsWith(filterStr)){
+    return true;
+  }
+  else if(wildCardEnd && name.startsWith(filterStr)){
+    return true;
+  }
+  else if(name == filterStr){
+    return true;
+  }
+  return false;
+}
+
+function Boolean AlembicGeometryGenerator_applyFilters(String name, String filters[]){
+  for(Integer i=0; i<filters.size; i++){
+    if(AlembicGeometryGenerator_applyFilter(name, filters[i])){
+      report("true");
+      return true;
+    }
+
+  }
+  report("false");
+  return false;
+}
+
+
 /// Loads the data from the alembic file
 /// \internal
 function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
@@ -382,25 +421,34 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     }
 
     String polymeshPaths[] = archive.getPathsOfType('PolyMesh');
-    geomSet.resize(polymeshPaths.size());
 
     AlembicPolyMeshReader readers[];
     readers.resize(polymeshPaths.size());
 
+    UInt32 skinnedGeometryIndices[];
+    Geometry skinnedGeometries[];
     // The bone ids referenced by each geometry.
     Integer bonesIDs[][];
     bonesIDs.resize(polymeshPaths.size());
 
     for(Size i=0; i<polymeshPaths.size(); i++) {
       String name = this.getNameFromPath(polymeshPaths[i]);
+
+      if(this.geometryNames.size != 0 && !AlembicGeometryGenerator_applyFilters(name, this.geometryNames))
+        continue;
+
       readers[i] = archive.getPolyMesh(polymeshPaths[i]);
 
       PolygonMesh mesh = PolygonMesh();
       readers[i].readSample(0.0, mesh);
+      geomSet.add(mesh);
 
       //-----------------------------------------
       // Get the envelope weights data
       AlembicICompoundProperty compound = AlembicICompoundProperty(readers[i]._schema.getArbGeomParams());
+
+      if(!compound.valid())
+        continue;
 
       Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
       String deformerNames[];
@@ -421,6 +469,13 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
             // deformerNames = AlembicGeometryGenerator_loadStringArrayProperty(compound, header, propname);
         }
       }
+
+
+      if(deformerNames.size==0)
+        continue;
+
+      skinnedGeometryIndices.push(i);
+      skinnedGeometries.push(mesh);
 
        // The Skeleton stores the union of all bones used to deform all geometries
       // that make up this character.
@@ -446,7 +501,6 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
       GenericMat44Value bindShapeTransform(Mat44());
       AutoLock AL(mesh.metaData.lock);
       mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
-      geomSet.set(i, mesh);
     }
 
     // ensure any manually included bones are part of the skeleton.
@@ -460,9 +514,13 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
         }
       }
     }
+
     for (Integer i=0; i<this.includedSubtrees.size; i++){
       this.addChildrenToSkeleton(this.includedSubtrees[i], xformPaths, skeletonBonePaths);
     }
+
+    if(skeletonBonePaths.size == 0)
+      return;
 
     //-----------------------------------------
     // Construct the skeleton
@@ -472,8 +530,8 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     //-----------------------------------------
     // Load the envelope weights and remap the bone indices to the skeleton hierarchy.
 
-    for(Size i=0; i<polymeshPaths.size(); i++) {
-      PolygonMesh mesh = geomSet.get(i);
+    for(Size i=0; i<skinnedGeometries.size(); i++) {
+      PolygonMesh mesh = skinnedGeometries[i];
 
       //-----------------------------------------
       // Get the envelope weights data
@@ -482,7 +540,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
       UInt32 subArrayIndices[];
       UInt32 envelopeDeformerIndices[];
 
-      AlembicICompoundProperty compound = readers[i]._schema.getArbGeomParams();
+      AlembicICompoundProperty compound = readers[skinnedGeometryIndices[i]]._schema.getArbGeomParams();
       for (Integer pp=0; pp<compound.getNumProperties(); pp++)
       {
         AlembicPropertyHeader header = compound.getPropertyHeader(pp);
@@ -792,12 +850,41 @@ function Skeleton AlembicGeometryGenerator.buildSkeleton(io AlembicArchiveReader
 
 function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json = this.parent#saveJSON(persistenceContext);
+
   json.setString('filePath', this.filePath);
+
+  JSONArrayValue geometryNamesData();
+  for(Integer i=0; i<this.geometryNames.size; i++)
+    geometryNamesData.addString(this.geometryNames[i]);
+  json.set('geometryNames', geometryNamesData);
+
+  JSONArrayValue includedBonesData();
+  for(Integer i=0; i<this.includedBones.size; i++)
+    includedBonesData.addString(this.includedBones[i]);
+  json.set('includedBones', includedBonesData);
+
+  JSONArrayValue includedSubtreesData();
+  for(Integer i=0; i<this.includedSubtrees.size; i++)
+    includedSubtreesData.addString(this.includedSubtrees[i]);
+  json.set('includedSubtrees', includedSubtreesData);
+
   return json;
 }
 
 function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   this.parent#loadJSON(persistenceContext, json);
+
+  JSONArrayValue geometryNamesData = json.get('geometryNames');
+  if(geometryNamesData)
+    this.geometryNames = geometryNamesData.toStringArray();
+  
+  JSONArrayValue includedBonesData = json.get('includedBones');
+  if(includedBonesData)
+    this.includedBones = includedBonesData.toStringArray();
+
+  JSONArrayValue includedSubtreesData = json.get('includedSubtrees');
+  if(includedSubtreesData)
+    this.includedSubtrees = includedSubtreesData.toStringArray();
 
   this.filePath = json.getString('filePath');
 }

@@ -1,0 +1,49 @@
+
+require RiggingToolbox;
+
+operator entry(){
+
+  StartFabricProfiling();
+
+  String json = "    {\n\
+    \"geomOperators\": [
+      {\n\
+       \"type\": \"AlembicGeometryGenerator\",\n\
+       \"filePath\": \"${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/sphereBlendShapes.abc\"\n\
+       \"geometryNames\": [\"SphereRefShape\"]
+      },
+      {\n\
+       \"type\": \"BlendShapesModifier\",\n\
+       \"filePath\": \"${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/sphereBlendShapes.abc\"\n\
+       \"referenceGeometryPrefix\": \"SphereRef\",\n\
+       \"targetGeometriesPrefix\": \"SphereRefTarget\",\n\
+      }
+    ]
+  }";
+
+  GeometryStack stack();
+  PersistenceContext persistenceContext();
+  stack.loadJSONString(persistenceContext, json);
+
+  BlendShapesModifier blendShapesModifier = stack.getGeometryOperator(1);
+
+  EvalContext context();
+  stack.evaluate(context);
+
+  // Modify the pose and then reevaluate. 
+  Scalar weights[];
+  weights.resize(2);
+  weights[0] = 0.65;
+  weights[1] = 1.0;
+  blendShapesModifier.setBlendWeights(weights);
+
+  GeometrySet geomSet = stack.evaluate(context);
+
+  StopFabricProfiling();
+
+  report( GetEvalPathReport() );
+
+  report("GeometrySet:" + geomSet.get(0).getDesc(true, true));
+  
+}
+

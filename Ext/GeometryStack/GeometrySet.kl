@@ -34,6 +34,12 @@ inline GeometrySet.set!(Index index, Geometry value) {
   this.version++;
 }
 
+/// adds a geometry
+inline GeometrySet.add!(Geometry value) {
+  this.geometries.push(value);
+  this.version++;
+}
+
 /// returns true if the geometry set owns a meta data under the given key
 function Boolean GeometrySet.hasMetaData( String name ) {
   return this.metaData.has( name );

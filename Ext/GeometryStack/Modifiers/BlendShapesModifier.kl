@@ -34,9 +34,15 @@ struct BlendShapesModifier_Target {
 
 /// The Blend Shapes modifier stores a sparce data set of offsets. 
 object BlendShapesModifier : BaseModifier {
+  String filePath;
+  String referenceGeometryPrefix;
+  String targetGeometriesPrefix;
+
   Vec3 referencePositions[][];
   BlendShapesModifier_Target targets[][];
   Scalar threshold;
+
+  Scalar weights[];
 };
 
 
@@ -45,6 +51,74 @@ function BlendShapesModifier(){
 }
 
 
+
+//////////////////////////////////////
+//
+
+
+inline String BlendShapesModifier_getNameFromPath(String pathStr) {
+  String path[] = pathStr.split('/');
+  return path[path.size-1];
+}
+
+/// Loads the data from the alembic file
+/// \internal
+function BlendShapesModifier.loadTargetsFromAlembic!(String filePath){
+
+  AutoProfilingEvent p(FUNC);
+  // Check for an absolute file path, then a relative path.
+  FilePath expandedPath = FilePath(filePath);
+  expandedPath = expandedPath.expandEnvVars();
+  if(!expandedPath.exists()){
+    report("File not found:" + expandedPath.string());
+    return;
+  }
+
+  AlembicArchiveReader archive(expandedPath.string());
+  String polymeshPaths[] = archive.getPathsOfType('PolyMesh');
+
+  AlembicPolyMeshReader readers[];
+  readers.resize(polymeshPaths.size());
+  String refGeomNames[];
+
+  // The Alembic file should contain a collection of geometries that are grouped by naming convention.
+  // 'MyGeometry' <- The reference geometry used to compute the blend shapes. 
+  // 'MyGeometry_Shape1' <- Shape1 target
+  // 'MyGeometry_Shape2' <- Shape2 target
+  // 'MyGeometry_Shape3' <- Shape3 target
+
+  for(UInt32 i=0; i<polymeshPaths.size(); i++) {
+    String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
+    if(name.startsWith(this.referenceGeometryPrefix)){
+      AlembicPolyMeshReader reader = archive.getPolyMesh(polymeshPaths[i]);
+      PolygonMesh mesh = PolygonMesh();
+      reader.readSample(0.0, mesh);
+      this.addReferenceGeometry(mesh);
+
+      refGeomNames.push(name);
+    }
+  }
+
+  for(UInt32 i=0; i<polymeshPaths.size(); i++) {
+    String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
+    if(name.startsWith(this.targetGeometriesPrefix)){
+      AlembicPolyMeshReader reader = archive.getPolyMesh(polymeshPaths[i]);
+      PolygonMesh mesh = PolygonMesh();
+      reader.readSample(0.0, mesh);
+
+      if(this.referencePositions.size() == 1)
+        this.addTargetGeometry(0, mesh);
+      else{
+        for(UInt32 j=0; j<refGeomNames.size(); j++) {
+          if(name.startsWith(refGeomNames[j])){
+            this.addTargetGeometry(j, mesh);
+            break;
+          }
+        }
+      }
+    }
+  }
+}
 
 //////////////////////////////////////
 //
@@ -80,7 +154,7 @@ struct BlendShapesModifier_CollectPointsMapOutput {
 operator blendShapesModifier_collectGeomPointsProduce(
   io BlendShapesModifier_CollectPointsMapOutput result,
   Index index,
-  Size count,
+  UInt32 count,
   BlendShapesModifier_collectGeomPointsSharedData sharedData
 ) {
   Vec3 pos = sharedData.positions[index];
@@ -97,7 +171,7 @@ operator blendShapesModifier_collectGeomPointsProduce(
 operator blendShapesModifier_collectMeshPointsProduce(
   io BlendShapesModifier_CollectPointsMapOutput result,
   Index index,
-  Size count,
+  UInt32 count,
   BlendShapesModifier_collectMeshPointsSharedData sharedData
 ) {
   Vec3 pos = sharedData.mesh.getPointPosition(index);
@@ -116,7 +190,7 @@ operator blendShapesModifier_collectPointsReduce(
   BlendShapesModifier_CollectPointsMapOutput input,
   io BlendShapesModifier_Target output,
   Index index,
-  Size count
+  UInt32 count
 ) {
   if(input.collected){
     output.indices.push(input.index);
@@ -127,17 +201,22 @@ operator blendShapesModifier_collectPointsReduce(
 // First add a reference geometry, followed by a collection of targets. 
 // As the targets are added we generate our sparce blend targets based on the reference.
 // This step must happen before evaluation. 
-function BlendShapesModifier.addReference!(Geometry refGeometry){
+function BlendShapesModifier.addReferenceGeometry!(Geometry refGeometry){
   UInt32 numGeoms = this.targets.size()+1;
+  UInt32 geomIndex = numGeoms-1;
   this.targets.resize(numGeoms);
   this.referencePositions.resize(numGeoms);
+
+  Ref<GeometryAttributes> attributes = refGeometry.getAttributes();
+  Vec3Attribute positionsAttribute = attributes.positionsAttribute;
+  this.referencePositions[geomIndex] = positionsAttribute.values;
 }
 
-function BlendShapesModifier.addTarget!(UInt32 geomIndex, Geometry targetGeometry){
+function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targetGeometry){
   UInt32 numTargets = this.targets[geomIndex].size()+1;
   UInt32 targetIndex = numTargets-1;
   this.targets[geomIndex].resize(numTargets);
-  this.referencePositions[geomIndex].resize(numTargets);
+  this.weights.resize(numTargets);
 
   PolygonMesh targetMesh = targetGeometry;
   if(!targetMesh){
@@ -179,25 +258,39 @@ function BlendShapesModifier.addTarget!(UInt32 geomIndex, Geometry targetGeometr
 }
 
 
-operator BlendShapesModifier_applyGeomDeltas<<<index>>>(
-  io Vec3 positions[],
-  BlendShapesModifier_Target target
-){
-  positions[target.indices[index]] += target.deltas[index];
+
+function BlendShapesModifier.setBlendWeights!(Scalar weights[]){
+  this.weights = weights;
+  String data;
+  this.notify('changed', data);
 }
 
-operator BlendShapesModifier_applyMeshDeltas<<<index>>>(
+
+//////////////////////////////////////
+//
+
+operator blendShapesModifier_applyGeomDeltas<<<index>>>(
+  io Vec3 positions[],
+  BlendShapesModifier_Target target,
+  Scalar weight
+){
+  positions[target.indices[index]] += target.deltas[index] * weight;
+}
+
+operator blendShapesModifier_applyMeshDeltas<<<index>>>(
   io PolygonMesh mesh,
   BlendShapesModifier_Target target,
+  Scalar weight
 ){
   Vec3 pos = mesh.getPointPosition(target.indices[index]);
-  mesh.setPointPosition(Size(target.indices[index]), pos + target.deltas[index]);
+  mesh.setPointPosition(UInt32(target.indices[index]), pos + (target.deltas[index] * weight));
 }
 
 
 operator blendShapesModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
-  BlendShapesModifier_Target targets[][]
+  BlendShapesModifier_Target targets[][],
+  Scalar weights[]
 ){
   Geometry geom = geomSet.get(index);
   Ref<GeometryAttributes> attributes = geom.getAttributes();
@@ -206,15 +299,17 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   PolygonMesh mesh = geom;
   for(UInt32 i=0; i<targets[index].size; i++){
     if(!mesh){
-      BlendShapesModifier_applyGeomDeltas<<<attributes.size()>>>(
+      blendShapesModifier_applyGeomDeltas<<<attributes.size()>>>(
         positionsAttribute.values,
-        targets[index][i]
+        targets[index][i],
+        weights[i]
       );
     }
     else{
-      BlendShapesModifier_applyMeshDeltas<<<mesh.pointCount()>>>(
+      blendShapesModifier_applyMeshDeltas<<<mesh.pointCount()>>>(
         mesh,
-        targets[index][i]
+        targets[index][i],
+        weights[i]
       );
     }
   }
@@ -223,6 +318,39 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 
 function BlendShapesModifier.evaluate(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets);
+  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets, this.weights);
+}
+
+
+function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  json.setString('filePath', this.filePath);
+  json.setString('referenceGeometryPrefix', this.referenceGeometryPrefix);
+  json.setString('targetGeometriesPrefix', this.targetGeometriesPrefix);
+  return json;
+}
+
+function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  this.parent#loadJSON(persistenceContext, json);
+
+  if(json.has('filePath')){
+    this.filePath = json.getString('filePath');
+    this.referenceGeometryPrefix = json.getString('referenceGeometryPrefix');
+    this.targetGeometriesPrefix = json.getString('targetGeometriesPrefix');
+    
+    this.loadTargetsFromAlembic(this.filePath);
+  }
+}
+
+
+/// Generates a Description string of this pose.
+/// \param indent The indentation to use when generating the string. 
+function String BlendShapesModifier.getDesc(String indent) {
+  String desc;
+  desc += indent + "{\n";
+  desc += indent + "  type: "+ this.type() + ",\n";
+  desc += indent + "  filePath: "+ this.filePath + "\n";
+  desc += indent + "}";
+  return desc;
 }
 
