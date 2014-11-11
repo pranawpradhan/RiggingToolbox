@@ -35,8 +35,8 @@ struct BlendShapesModifier_Target {
 /// The Blend Shapes modifier stores a sparce data set of offsets. 
 object BlendShapesModifier : BaseModifier {
   String filePath;
-  String referenceGeometryPrefix;
-  String targetGeometriesPrefix;
+  String referenceGeometryName;
+  String targetGeometryNames[];
 
   Vec3 referencePositions[][];
   BlendShapesModifier_Target targets[][];
@@ -81,15 +81,9 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String filePath){
   readers.resize(polymeshPaths.size());
   String refGeomNames[];
 
-  // The Alembic file should contain a collection of geometries that are grouped by naming convention.
-  // 'MyGeometry' <- The reference geometry used to compute the blend shapes. 
-  // 'MyGeometry_Shape1' <- Shape1 target
-  // 'MyGeometry_Shape2' <- Shape2 target
-  // 'MyGeometry_Shape3' <- Shape3 target
-
   for(UInt32 i=0; i<polymeshPaths.size(); i++) {
     String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
-    if(name.startsWith(this.referenceGeometryPrefix)){
+    if(applyNameFilter(name, this.referenceGeometryName)){
       AlembicPolyMeshReader reader = archive.getPolyMesh(polymeshPaths[i]);
       PolygonMesh mesh = PolygonMesh();
       reader.readSample(0.0, mesh);
@@ -101,12 +95,13 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String filePath){
 
   for(UInt32 i=0; i<polymeshPaths.size(); i++) {
     String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
-    if(name.startsWith(this.targetGeometriesPrefix)){
+
+    if(applyNameFilters(name, this.targetGeometryNames)){
       AlembicPolyMeshReader reader = archive.getPolyMesh(polymeshPaths[i]);
       PolygonMesh mesh = PolygonMesh();
       reader.readSample(0.0, mesh);
 
-      if(this.referencePositions.size() == 1)
+      if(refGeomNames.size() == 1)
         this.addTargetGeometry(0, mesh);
       else{
         for(UInt32 j=0; j<refGeomNames.size(); j++) {
@@ -159,7 +154,7 @@ operator blendShapesModifier_collectGeomPointsProduce(
 ) {
   Vec3 pos = sharedData.positions[index];
   Vec3 delta = pos - sharedData.refpositions[index];
-  if(delta.length() < sharedData.threshold){
+  if(delta.length() > sharedData.threshold){
     result.collected = true;
     result.index = index;
     result.delta = delta;
@@ -176,7 +171,7 @@ operator blendShapesModifier_collectMeshPointsProduce(
 ) {
   Vec3 pos = sharedData.mesh.getPointPosition(index);
   Vec3 delta = pos - sharedData.refpositions[index];
-  if(delta.length() < sharedData.threshold){
+  if(delta.length() > sharedData.threshold){
     result.collected = true;
     result.index = index;
     result.delta = delta;
@@ -202,6 +197,8 @@ operator blendShapesModifier_collectPointsReduce(
 // As the targets are added we generate our sparce blend targets based on the reference.
 // This step must happen before evaluation. 
 function BlendShapesModifier.addReferenceGeometry!(Geometry refGeometry){
+  AutoProfilingEvent p(FUNC);
+
   UInt32 numGeoms = this.targets.size()+1;
   UInt32 geomIndex = numGeoms-1;
   this.targets.resize(numGeoms);
@@ -213,6 +210,8 @@ function BlendShapesModifier.addReferenceGeometry!(Geometry refGeometry){
 }
 
 function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targetGeometry){
+  AutoProfilingEvent p(FUNC);
+
   UInt32 numTargets = this.targets[geomIndex].size()+1;
   UInt32 targetIndex = numTargets-1;
   this.targets[geomIndex].resize(numTargets);
@@ -299,14 +298,14 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   PolygonMesh mesh = geom;
   for(UInt32 i=0; i<targets[index].size; i++){
     if(!mesh){
-      blendShapesModifier_applyGeomDeltas<<<attributes.size()>>>(
+      blendShapesModifier_applyGeomDeltas<<<targets[index].size()>>>(
         positionsAttribute.values,
         targets[index][i],
         weights[i]
       );
     }
     else{
-      blendShapesModifier_applyMeshDeltas<<<mesh.pointCount()>>>(
+      blendShapesModifier_applyMeshDeltas<<<targets[index].size()>>>(
         mesh,
         targets[index][i],
         weights[i]
@@ -325,8 +324,13 @@ function BlendShapesModifier.evaluate(EvalContext context, io GeometrySet geomSe
 function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json = this.parent#saveJSON(persistenceContext);
   json.setString('filePath', this.filePath);
-  json.setString('referenceGeometryPrefix', this.referenceGeometryPrefix);
-  json.setString('targetGeometriesPrefix', this.targetGeometriesPrefix);
+  json.setString('referenceGeometryName', this.referenceGeometryName);
+
+  JSONArrayValue targetGeometryNamesData();
+  for(Integer i=0; i<this.targetGeometryNames.size; i++)
+    targetGeometryNamesData.addString(this.targetGeometryNames[i]);
+  json.set('targetGeometryNames', targetGeometryNamesData);
+
   return json;
 }
 
@@ -335,8 +339,17 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
 
   if(json.has('filePath')){
     this.filePath = json.getString('filePath');
-    this.referenceGeometryPrefix = json.getString('referenceGeometryPrefix');
-    this.targetGeometriesPrefix = json.getString('targetGeometriesPrefix');
+
+
+  // The Alembic file should contain a collection of geometries that are grouped by naming convention.
+  // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
+  // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
+
+    this.referenceGeometryName = json.getString('referenceGeometryName');
+
+    JSONArrayValue targetGeometryNamesData = json.get('targetGeometryNames');
+    if(targetGeometryNamesData)
+      this.targetGeometryNames = targetGeometryNamesData.toStringArray();
     
     this.loadTargetsFromAlembic(this.filePath);
   }
@@ -350,6 +363,9 @@ function String BlendShapesModifier.getDesc(String indent) {
   desc += indent + "{\n";
   desc += indent + "  type: "+ this.type() + ",\n";
   desc += indent + "  filePath: "+ this.filePath + "\n";
+  desc += indent + "  refGeoms: "+ this.targets.size + "\n";
+  for(Integer i=0; i<this.targets.size; i++)
+    desc += indent + "    blendTargets: "+ + i +":" + this.targets[i].size + "\n";
   desc += indent + "}";
   return desc;
 }

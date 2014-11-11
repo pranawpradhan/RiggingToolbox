@@ -213,3 +213,38 @@ function GeometryAttribute cloneAttribute(GeometryAttribute attr) {
   setError("Invalid Attribute type:" + attr.type());
   return null;
 }
+
+
+function Boolean applyNameFilter(String name, String filter){
+  UInt32 result[];
+  String filterStr = filter;
+  Boolean wildCardStart = filter.startsWith("*");
+  Boolean wildCardEnd = filter.endsWith("*");
+  if(wildCardStart){
+    filterStr = filterStr.subString(1, -1);
+  }
+  if(wildCardEnd){
+    filterStr = filterStr.subString(0, filterStr.length()-2);
+  }
+  if(wildCardStart && name.endsWith(filterStr)){
+    return true;
+  }
+  else if(wildCardEnd && name.startsWith(filterStr)){
+    return true;
+  }
+  else if(name == filterStr){
+    return true;
+  }
+  return false;
+}
+
+
+
+function Boolean applyNameFilters(String name, String filters[]){
+  for(Integer i=0; i<filters.size; i++){
+    if(applyNameFilter(name, filters[i])){
+      return true;
+    }
+  }
+  return false;
+}

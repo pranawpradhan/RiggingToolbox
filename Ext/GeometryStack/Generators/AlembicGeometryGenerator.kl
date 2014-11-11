@@ -352,41 +352,6 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
   return result;
 }
 
-function Boolean AlembicGeometryGenerator_applyFilter(String name, String filter){
-  report("AlembicGeometryGenerator_applyFilter:" + name + ":" + filter);
-  UInt32 result[];
-  String filterStr = filter;
-  Boolean wildCardStart = filter.startsWith("*");
-  Boolean wildCardEnd = filter.endsWith("*");
-  if(wildCardStart){
-    filterStr = filterStr.subString(1, -1);
-  }
-  if(wildCardEnd){
-    filterStr = filterStr.subString(0, filterStr.length()-2);
-  }
-  if(wildCardStart && name.endsWith(filterStr)){
-    return true;
-  }
-  else if(wildCardEnd && name.startsWith(filterStr)){
-    return true;
-  }
-  else if(name == filterStr){
-    return true;
-  }
-  return false;
-}
-
-function Boolean AlembicGeometryGenerator_applyFilters(String name, String filters[]){
-  for(Integer i=0; i<filters.size; i++){
-    if(AlembicGeometryGenerator_applyFilter(name, filters[i])){
-      report("true");
-      return true;
-    }
-
-  }
-  report("false");
-  return false;
-}
 
 
 /// Loads the data from the alembic file
@@ -434,7 +399,7 @@ function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet g
     for(Size i=0; i<polymeshPaths.size(); i++) {
       String name = this.getNameFromPath(polymeshPaths[i]);
 
-      if(this.geometryNames.size != 0 && !AlembicGeometryGenerator_applyFilters(name, this.geometryNames))
+      if(this.geometryNames.size != 0 && !applyNameFilters(name, this.geometryNames))
         continue;
 
       readers[i] = archive.getPolyMesh(polymeshPaths[i]);
