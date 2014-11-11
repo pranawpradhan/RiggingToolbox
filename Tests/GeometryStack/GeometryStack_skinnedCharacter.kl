@@ -12,7 +12,7 @@ operator entry(){
   stack.addGeometryOperator(alembicGenerator);
   stack.addGeometryOperator(skiningModifier);
 
-  alembicGenerator.setFilePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/cubeTest.abc");
+  alembicGenerator.setFilePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/cubeTest.abc");
 
   EvalContext context();
   GeometrySet geomSet = stack.evaluate(context);

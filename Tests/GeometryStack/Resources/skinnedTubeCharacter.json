@@ -1,0 +1,16 @@
+{
+  "geomOperators": [
+    {
+     "type": "AlembicGeometryGenerator",
+     "filePath": "sphereBlendShapes.abc",
+     "geometryNames": ["SphereRefShape"]
+    },
+    {
+     "type": "SkinningModifier"
+    },
+    {
+     "type": "ComputeNormalsModifier",
+     "hardAngle": 3.1
+    }
+  ]
+}

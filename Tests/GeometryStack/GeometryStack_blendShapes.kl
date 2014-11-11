@@ -6,7 +6,7 @@ operator entry(){
   StartFabricProfiling();
 
 
-  FilePath basePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/");
+  FilePath basePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/");
   basePath = basePath.expandEnvVars();
 
   String json = "    {\n\

@@ -3,7 +3,7 @@ require RiggingToolbox;
 
 operator entry(){
 
-  FilePath path("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/cubeTest.abc");
+  FilePath path("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/cubeTest.abc");
   AlembicGeometryGenerator alembicGenerator(path);
 
   EvalContext context();
