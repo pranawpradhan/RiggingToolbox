@@ -57,8 +57,8 @@ function GeometryAttributeCache.update!(GeometrySet geomSet, GeometryOperator op
     Ref<GeometryAttributes> attributes = geomSet.get(i).getAttributes();
     this.cachedAttributes[i].resize(this.attributesNames.size);
     this.attributeVersions[i].resize(this.attributesNames.size);
-    for(Integer j=0; j<this.cachedAttributes.size; j++){
-      Ref<GeometryAttribute> attr = attributes.getAttribute(this.attributesNames[i]);
+    for(Integer j=0; j<this.attributesNames.size; j++){
+      Ref<GeometryAttribute> attr = attributes.getAttribute(this.attributesNames[j]);
       if(attr){
         this.cachedAttributes[i][j] = cloneAttribute(attr);
         this.attributeVersions[i][j] = attr.getVersion();

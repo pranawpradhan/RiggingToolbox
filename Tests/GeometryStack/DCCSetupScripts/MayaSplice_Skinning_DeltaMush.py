@@ -25,6 +25,8 @@ operator skinnedTubeCharacter_Init(
   String filePath,
   io GeometryStack stack
 ) {
+  //StartFabricProfiling();
+
   report("Loading Character Definition:" + filePath);
   stack.loadJSONFile(filePath);
 }
@@ -58,13 +60,15 @@ operator skinnedTubeCharacter_SetPose(
   Mat44 joint3,
   Mat44 joint4
 ) {
-  SkinningModifier skinningModifier = stack.getGeometryOperator(1);
-  Mat44 pose[];
-  pose.push(joint1);
-  pose.push(joint2);
-  pose.push(joint3);
-  pose.push(joint4);
-  skinningModifier.setPose(pose);
+  if(stack.numGeometryOperators() >= 2){
+    SkinningModifier skinningModifier = stack.getGeometryOperator(1);
+    Mat44 pose[];
+    pose.push(joint1);
+    pose.push(joint2);
+    pose.push(joint3);
+    pose.push(joint4);
+    skinningModifier.setPose(pose);
+  }
 }
 """)
 
@@ -79,6 +83,7 @@ mushNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_DeltaM
 cmds.fabricSplice('addIOPort', mushNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', mushNode, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
 
+cmds.setAttr(mushNode + '.iterations', 30);
 
 cmds.fabricSplice('addKLOperator', mushNode, '{"opName":"skinnedTubeCharacter_DeltaMush"}', """
 
@@ -116,6 +121,10 @@ operator skinnedTubeCharacter_Eval(
 ) {
   EvalContext context();
   stack.evaluate(context);
+
+  //StopFabricProfiling();
+  //report( GetEvalPathReport() );
+  //report(stack.getDesc());
 }
 """)
 

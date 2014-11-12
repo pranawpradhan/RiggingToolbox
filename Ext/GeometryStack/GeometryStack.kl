@@ -84,11 +84,12 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
     for(Integer i=0; i<this.geomOperators.size; i++){
       Notifier op = this.geomOperators[i];
       if(op === notifier){
-        this.dirtyPoint = i;
-        for(Integer j=i; j<this.geomOperators.size; j++){
-          if(this.cachePoints[j] != null)
-            this.cachePoints[j].invalidate();
-        }
+        if(i < this.dirtyPoint)
+          this.dirtyPoint = i;
+        // for(Integer j=i; j<this.geomOperators.size; j++){
+        //   if(this.cachePoints[j] != null)
+        //     this.cachePoints[j].invalidate();
+        // }
         break;
       }
     }
@@ -102,7 +103,9 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 //                                  |
 //             [ LoadAlembic, WrapModifier ] ->
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
-    AutoProfilingEvent p(FUNC);
+  AutoProfilingEvent p(FUNC);
+
+  report("GeometryStack.evaluate:" + this.dirtyPoint);
 
   // this.dirtyPoint = 0;// force evlauation all the time.
   if(this.dirtyPoint < this.geomOperators.size){

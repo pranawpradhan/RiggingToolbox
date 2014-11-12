@@ -195,7 +195,7 @@ function String[] AlembicIWStringArrayProperty.get() {
 
 object AlembicGeometryGenerator : BaseGenerator {
 
-  /// the file path of the alembic file. 
+  /// the file path of the alembic file.
   String filePath;
 
   /// \internal
@@ -215,7 +215,7 @@ object AlembicGeometryGenerator : BaseGenerator {
   /// Colors can be overridden at any point in the hierarchy.
   Color chainColors[String];
 
-  /// A dictionary of name suffixes used to generate bone colors. 
+  /// A dictionary of name suffixes used to generate bone colors.
   /// All joints whose names end in a specified suffix will be assigned the
   /// mapped color. The suffixColors override the chainColors.
   Color suffixColors[String];
@@ -384,8 +384,9 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
 function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
 {
   AutoProfilingEvent p(FUNC);
-  if(!this.expandedPath.exists())
-    return;
+  if(!this.expandedPath.exists()){
+    throw("File not found:" + this.expandedPath.string());
+  }
 
   report("Importing:" + this.expandedPath.string());
 
@@ -900,6 +901,7 @@ function String AlembicGeometryGenerator.getDesc(String indent) {
   desc += indent + "{\n";
   desc += indent + "  type: "+ this.type() + ",\n";
   desc += indent + "  filePath: "+ this.filePath + "\n";
+  desc += indent + "  expandedPath: "+ this.expandedPath.string() + "\n";
   desc += indent + "}";
   return desc;
 }

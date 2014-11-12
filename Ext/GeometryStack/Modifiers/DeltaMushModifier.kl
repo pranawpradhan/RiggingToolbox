@@ -208,12 +208,12 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   // Re-apply the deltas to re-inflate the mesh.
   // (Even when binding, the mesh is deflated, so it must be re-inflated)
   Vec3 positionsClone[] = mesh.positionsAttribute.values.clone();
-  // deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
-  //   mesh,
-  //   /*tangents,*/
-  //   positionsClone,
-  //   deltas[index]
-  // );
+  deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
+    mesh,
+    /*tangents,*/
+    positionsClone,
+    deltas[index]
+  );
   mesh.incrementPointPositionsVersion();
 
 }
@@ -222,7 +222,6 @@ function DeltaMushModifier.evaluate(EvalContext context, io GeometrySet geomSet)
   AutoProfilingEvent p(FUNC);
   
   Ref<DeltaMushModifier> io_this = this;
-  report("geomSet.getVersion():" + geomSet.getVersion());
   if(geomSet.getVersion() != this.boundVersion){
     io_this.bound = false;
     io_this.deltas.resize(geomSet.size());
