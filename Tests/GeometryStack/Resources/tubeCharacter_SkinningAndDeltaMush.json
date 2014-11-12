@@ -1,0 +1,20 @@
+{
+  "geomOperators": [
+    {
+     "type": "AlembicGeometryGenerator",
+     "filePath": "skinnedTube.abc",
+     "geometryNames": ["pCylinderShape1"]
+    },
+    {
+     "type": "SkinningModifier"
+    },
+    {
+     "type": "DeltaMushModifier",
+     "iterations": 30
+    },
+    {
+     "type": "ComputeNormalsModifier",
+     "hardAngle": 3.1
+    }
+  ]
+}

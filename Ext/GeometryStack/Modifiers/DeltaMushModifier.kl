@@ -38,8 +38,8 @@ function DeltaMushModifier(){
 function String[] DeltaMushModifier.getRequiredAttributes(){
   String result[];
   result.push('positions');
-  result.push('normals');
-  result.push('tangents');
+  // result.push('normals');
+  // result.push('tangents');
   return result;
 }
 
@@ -49,9 +49,22 @@ function String[] DeltaMushModifier.getModifiedAttributes(){
   return result;
 }
 
+function DeltaMushModifier.setNumIterations!(UInt32 iterations){
+  this.iterations = iterations;
+  String data;
+  this.notify('changed', data);
+}
 
-function Mat44 deltaMushModifier_buildRefFrame(Vec3 pos, Vec3 nrm, Vec4 tngnt){
-  return Mat44();
+
+
+function Mat44 deltaMushModifier_buildRefFrame(Vec3 pos, Vec3 vec1, Vec3 vec2){
+  Vec3 dir = vec1 - pos;
+  Vec3 nrm = dir.cross(vec2 - pos);
+  Quat q;
+  q.setFromDirectionAndUpvector(dir, nrm);
+  Mat44 m;
+  m.set(pos, q.toMat33(), Vec3(1,1,1));
+  return m;
 }
 
 
@@ -79,43 +92,51 @@ operator deltaMushModifier_smoothPos<<<index>>>(io Vec3 positions[], io PolygonM
   }
 }
 
-operator deltaMushModifier_smoothPosNorm<<<index>>>(io Vec3 positions[], io Vec3 normals[], io PolygonMesh mesh) {
-  //Pseudo-gaussian: center weight = 0.5, neighbor weights sum = 0.5
-  Vec3 position = positions[ index ];
-  Vec3 normal = normals[ index ];
+// operator deltaMushModifier_smoothPosNorm<<<index>>>(io Vec3 positions[], io Vec3 normals[], io PolygonMesh mesh) {
+//   //Pseudo-gaussian: center weight = 0.5, neighbor weights sum = 0.5
+//   Vec3 position = positions[ index ];
+//   Vec3 normal = normals[ index ];
 
-  LocalL16UInt32Array surroundingPoints;
-  mesh.getPointSurroundingPoints( index, false, surroundingPoints );
-  UInt32 nbNei = surroundingPoints.size();
-  if( nbNei ) {
-    Vec3 neiPosSum = Vec3(0,0,0);
-    Vec3 neiNormSum = Vec3(0,0,0);
-    for( UInt32 i = 0; i < nbNei; ++i ) {
-      UInt32 neiPt = surroundingPoints.get(i);
-      neiPosSum += positions[neiPt];
-      neiNormSum += normals[neiPt];
-    }
-    neiPosSum /= Scalar(nbNei);
-    mesh.setPointPosition( index, ( position + neiPosSum ) * 0.5 );
-    normal += neiNormSum;
-    normal.setUnit();
-    mesh.setPointNormal( index, normal );
-  }
-}
+//   LocalL16UInt32Array surroundingPoints;
+//   mesh.getPointSurroundingPoints( index, false, surroundingPoints );
+//   UInt32 nbNei = surroundingPoints.size();
+//   if( nbNei ) {
+//     Vec3 neiPosSum = Vec3(0,0,0);
+//     Vec3 neiNormSum = Vec3(0,0,0);
+//     for( UInt32 i = 0; i < nbNei; ++i ) {
+//       UInt32 neiPt = surroundingPoints.get(i);
+//       neiPosSum += positions[neiPt];
+//       neiNormSum += normals[neiPt];
+//     }
+//     neiPosSum /= Scalar(nbNei);
+//     mesh.setPointPosition( index, ( position + neiPosSum ) * 0.5 );
+//     normal += neiNormSum;
+//     normal.setUnit();
+//     mesh.setPointNormal( index, normal );
+//   }
+// }
 
 
 operator deltaMushModifier_computeBinding<<<index>>>(
   io PolygonMesh mesh,
-  Ref<Vec4Attribute> tangents,
+  /*Ref<Vec4Attribute> tangents,*/
   Vec3 initialPositions[],
   io Vec3 deltas[]
 ){
-  Vec3 newPos = mesh.positionsAttribute.values[index];
-  Vec3 newNormal = mesh.normalsAttribute.values[index];
-  Vec4 newTangent = tangents.values[index];
+  Vec3 position = mesh.positionsAttribute.values[index];
+  // Vec3 normal = mesh.normalsAttribute.values[index];
+  // Vec4 newTangent = tangents.values[index];
+
+  LocalL16UInt32Array surroundingPoints;
+  mesh.getPointSurroundingPoints( index, false, surroundingPoints );
+  UInt32 nbNei = surroundingPoints.size();
+  if( nbNei == 0 ) 
+    return;
+  Vec3 vec1 = (mesh.positionsAttribute.values[surroundingPoints.get(0)] - position).unit();
+  Vec3 vec2 = (mesh.positionsAttribute.values[surroundingPoints.get(1)] - position).unit();
 
   // Build a reference frame. 
-  Mat44 mat44 = deltaMushModifier_buildRefFrame(newPos, newNormal, newTangent);
+  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, vec1, vec2);
 
   // Compute the delta between the relaxed frame and the original position.
   deltas[index] = mat44.inverse() * initialPositions[index];
@@ -123,15 +144,24 @@ operator deltaMushModifier_computeBinding<<<index>>>(
 
 operator deltaMushModifier_applyDeltas<<<index>>>(
   io PolygonMesh mesh,
-  Ref<Vec4Attribute> tangents,
+  /*Ref<Vec4Attribute> tangents,*/
+  Vec3 positionsClone[],
   Vec3 deltas[]
 ){
-  Vec3 newPos = mesh.positionsAttribute.values[index];
-  Vec3 newNormal = mesh.normalsAttribute.values[index];
-  Vec4 newTangent = tangents.values[index];
+  Vec3 position = positionsClone[index];
+  // Vec3 normal = mesh.normalsAttribute.values[index];
+  // Vec4 tangent = tangents.values[index];
+
+  LocalL16UInt32Array surroundingPoints;
+  mesh.getPointSurroundingPoints( index, false, surroundingPoints );
+  UInt32 nbNei = surroundingPoints.size();
+  if( nbNei == 0 ) 
+    return;
+  Vec3 vec1 = (positionsClone[surroundingPoints.get(0)] - position).unit();
+  Vec3 vec2 = (positionsClone[surroundingPoints.get(1)] - position).unit();
 
   // Build a reference frame. 
-  Mat44 mat44 = deltaMushModifier_buildRefFrame(newPos, newNormal, newTangent);
+  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, vec1, vec2);
 
   mesh.setPointPosition( index, mat44 * deltas[index] );
 }
@@ -149,13 +179,14 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     return;
   }
 
-  if(!mesh.getAttributes().has("tangents")){
-    report("Warning in DeltaMushModifier: mesh does not have tangents computed:" + getGeomDebugName(mesh));
-    return;
-  }
-  Ref<Vec4Attribute> tangents = mesh.getAttribute("tangents");
+  // if(!mesh.getAttributes().has("tangents")){
+  //   report("Warning in DeltaMushModifier: mesh does not have tangents computed:" + getGeomDebugName(mesh));
+  //   return;
+  // }
+  // Ref<Vec4Attribute> tangents = mesh.getAttribute("tangents");
 
   if(!bound){
+    report("deltaMushModifier_deformGeometries ================= Binding");
     // Cache the initial positions of the points before relaxing.
     Vec3 initialPositions[] = mesh.positionsAttribute.values.clone();
 
@@ -168,7 +199,7 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     // compute the deltas between the relaxed mesh, and the original vertex positions.
     deltaMushModifier_computeBinding<<<mesh.pointCount()>>>(
       mesh,
-      tangents,
+      /*tangents,*/
       initialPositions,
       deltas[index]
     );
@@ -182,11 +213,13 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
 
   // Re-apply the deltas to re-inflate the mesh.
   // (Even when binding, the mesh is deflated, so it must be re-inflated)
-  deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
-    mesh,
-    tangents,
-    deltas[index]
-  );
+  Vec3 positionsClone[] = mesh.positionsAttribute.values.clone();
+  // deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
+  //   mesh,
+  //   /*tangents,*/
+  //   positionsClone,
+  //   deltas[index]
+  // );
   mesh.incrementPointPositionsVersion();
 
 }
@@ -195,14 +228,31 @@ function DeltaMushModifier.evaluate(EvalContext context, io GeometrySet geomSet)
   AutoProfilingEvent p(FUNC);
   
   Ref<DeltaMushModifier> io_this = this;
+  report("geomSet.getVersion():" + geomSet.getVersion());
   if(geomSet.getVersion() != this.boundVersion){
     io_this.bound = false;
+    io_this.deltas.resize(geomSet.size());
   }
-  deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, io_this.deltas, this.iterations, io_this.bound);
+  if( this.iterations > 0)
+    deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, io_this.deltas, this.iterations, io_this.bound);
 
   if(!io_this.bound){
     io_this.boundVersion = geomSet.getVersion();
     io_this.bound = true;
   }
 }
+
+
+function JSONDictValue DeltaMushModifier.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  json.setInteger('iterations', this.iterations);
+  return json;
+}
+
+function DeltaMushModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  this.parent#loadJSON(persistenceContext, json);
+  if(json.has('iterations'))
+    this.iterations = json.getInteger('iterations');
+}
+
 

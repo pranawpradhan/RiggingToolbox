@@ -24,6 +24,10 @@ function GeometryOperator SkinningModifierFactory.constructGeometryOperator(){
 
 
 object SkinningModifier : BaseModifier {
+  /// toggle the transformation of normals. 
+  /// If the subsequent deformer would cause the normals to be invalidated(BlendShapes)
+  /// then there is no value in transforming the normals. 
+  Boolean transformNormals;
 
   UInt32 dataVersion;
   Boolean poseDirty;
@@ -32,7 +36,6 @@ object SkinningModifier : BaseModifier {
   Mat44 skinningMatrices[];
   Mat44 bindShapeTransforms[];
 
-  Boolean transformNormals;
 };
 
 function SkinningModifier(){
@@ -262,4 +265,18 @@ function SkinningModifier.evaluate(EvalContext context, io GeometrySet geomSet){
     skinningModifier_deformGeometries_skinPositions<<<geomSet.size()>>>(geomSet, this.skinningMatrices, this.bindShapeTransforms);
   }
 }
+
+
+function JSONDictValue SkinningModifier.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  json.setBoolean('transformNormals', this.transformNormals);
+  return json;
+}
+
+function SkinningModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  this.parent#loadJSON(persistenceContext, json);
+  if(json.has('transformNormals'))
+    this.transformNormals = json.getBoolean('transformNormals');
+}
+
 

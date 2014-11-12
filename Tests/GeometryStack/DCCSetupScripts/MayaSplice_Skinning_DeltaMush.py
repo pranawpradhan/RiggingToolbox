@@ -14,7 +14,7 @@ initnode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_Init")
 cmds.fabricSplice('addInputPort', initnode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(initnode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json", type="string");
+cmds.setAttr(initnode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', initnode, '{"opName":"skinnedTubeCharacter_Init"}', """
@@ -72,6 +72,31 @@ cmds.connectAttr(initnode + '.stack', poseNode + '.stack')
 
 
 ##############################################
+## Set up the delta mush node.
+
+mushNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_DeltaMush")
+
+cmds.fabricSplice('addIOPort', mushNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
+cmds.fabricSplice('addInputPort', mushNode, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
+
+
+cmds.fabricSplice('addKLOperator', mushNode, '{"opName":"skinnedTubeCharacter_DeltaMush"}', """
+
+require RiggingToolbox;
+
+operator skinnedTubeCharacter_DeltaMush(
+  io GeometryStack stack,
+  Integer iterations
+) {
+  DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
+  deltaMushModifier.setNumIterations(iterations);
+}
+""")
+
+cmds.connectAttr(poseNode + '.stack', mushNode + '.stack')
+
+
+##############################################
 ## Set up the eval/render node.
 
 evalStackNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_Eval")
@@ -79,7 +104,7 @@ evalStackNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_E
 cmds.fabricSplice('addInputPort', evalStackNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addOutputPort', evalStackNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
 
-cmds.connectAttr(poseNode + '.stack', evalStackNode + '.stack')
+cmds.connectAttr(mushNode + '.stack', evalStackNode + '.stack')
 
 cmds.fabricSplice('addKLOperator', evalStackNode, '{"opName":"skinnedTubeCharacter_Eval"}', """
 

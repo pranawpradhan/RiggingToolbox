@@ -28,7 +28,7 @@ object ComputeTangentsModifier : BaseModifier {
 function String[] ComputeTangentsModifier.getRequiredAttributes(){
   String result[];
   result.push('positions');
-  result.push('normals');
+  result.push('uvs0');
   return result;
 }
 
