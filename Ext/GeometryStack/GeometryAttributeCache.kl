@@ -40,11 +40,17 @@ function GeometryAttributeCache.setCachedAttributeNames!(String attributesNames[
   this.attributesNames = attributesNames.clone();
 }
 
-function GeometryAttributeCache.update!(GeometrySet geomSet, String attributesNames[]) {
+function GeometryAttributeCache.update!(GeometrySet geomSet, GeometryOperator op) {
   if(this.disabled)
     return;
-  AutoProfilingEvent p(FUNC);
-  this.attributesNames = attributesNames.clone();
+  UInt32 deps[String] = op.getAttributeDependencies();
+  this.attributesNames.resize(0);
+  for(key, value in deps){
+    if(value == AttrDependency_IO)
+      this.attributesNames.push(key);
+  }
+  AutoProfilingEvent p(FUNC+":" + this.attributesNames);
+
   this.cachedAttributes.resize(geomSet.size);
   this.attributeVersions.resize(geomSet.size);
   for(Integer i=0; i<geomSet.size; i++){
@@ -70,7 +76,7 @@ function GeometryAttributeCache.update!(GeometrySet geomSet, String attributesNa
 function GeometryAttributeCache.restore(io GeometrySet geomSet){
   if(this.disabled)
     return;
-  AutoProfilingEvent p(FUNC);
+  AutoProfilingEvent p(FUNC+":"+this.attributesNames);
   for(Integer i=0; i<geomSet.size; i++){
     Ref<GeometryAttributes> attributes = geomSet.get(i).getAttributes();
     for(Integer j=0; j<this.attributesNames.size; j++){

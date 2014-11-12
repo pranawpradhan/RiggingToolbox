@@ -35,17 +35,11 @@ function DeltaMushModifier(){
   this.iterations = 20;
 }
 
-function String[] DeltaMushModifier.getRequiredAttributes(){
-  String result[];
-  result.push('positions');
-  // result.push('normals');
-  // result.push('tangents');
-  return result;
-}
 
-function String[] DeltaMushModifier.getModifiedAttributes(){
-  String result[];
-  result.push('positions');
+
+function UInt32[String] DeltaMushModifier.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_IO;
   return result;
 }
 

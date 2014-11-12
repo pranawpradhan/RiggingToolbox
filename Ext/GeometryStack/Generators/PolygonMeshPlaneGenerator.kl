@@ -36,13 +36,13 @@ function PolygonMeshPlaneGenerator(){
   this.enableCaching = true;
 }
 
-function String[] PolygonMeshPlaneGenerator.getModifiedAttributes(){
-  String result[];
-  result.push('positions');
+function UInt32[String] PolygonMeshPlaneGenerator.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_Out;
   if(this.normals)
-    result.push('normals');
+    result['normals'] = AttrDependency_Out;
   if(this.uvs)
-    result.push('uvs');
+    result['uvs0'] = AttrDependency_Out;
   return result;
 }
 

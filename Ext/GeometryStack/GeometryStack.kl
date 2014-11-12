@@ -78,7 +78,7 @@ function GeometryStack.enableCachePoint!(UInt32 index) {
 }
 
 function GeometryStack.notify!(Notifier notifier, String type, String data) {
-  AutoProfilingEvent p(FUNC+":" + type);
+  AutoProfilingEvent p(FUNC+":" + notifier.type() + "." +type);
   switch(type){
   case 'changed':
     for(Integer i=0; i<this.geomOperators.size; i++){
@@ -104,7 +104,7 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
     AutoProfilingEvent p(FUNC);
 
-  this.dirtyPoint = 0;// force evlauation all the time.
+  // this.dirtyPoint = 0;// force evlauation all the time.
   if(this.dirtyPoint < this.geomOperators.size){
     for(Integer i=this.dirtyPoint; i<this.geomOperators.size; i++){
       GeometryOperator op = this.geomOperators[i];
@@ -112,13 +112,15 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
       // Now check the geometries if they have the attributes required by the next operation.
       Boolean debug = true;
       if(debug){
-        String requiredAttributes[] = op.getRequiredAttributes();
+        UInt32 deps[String] = op.getAttributeDependencies();
         for(Integer k=0; k<this.geomSet.size; k++){
           String missingAttributes[];
-          for(Integer j=0; j<requiredAttributes.size; j++){
-            Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
-            if(!attributes.has(requiredAttributes[j]))
-              missingAttributes.push(requiredAttributes[j]);
+          for(key, value in deps){
+            if(value == AttrDependency_In || value == AttrDependency_IO){
+              Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
+              if(!attributes.has(key))
+                missingAttributes.push(key);
+            }
           }
           if(missingAttributes.size > 0){
             setError("Cannot evaluate '" + op.type() + "'. Geometry missing required attributes:" + missingAttributes);
@@ -126,29 +128,25 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
           }
         }
       }
-
+      
       CachePoint cachePoint = this.cachePoints[i];
-      if(cachePoint != null && cachePoint.isValid())
-        cachePoint.restore(this.geomSet);
-      else{
-        op.evaluate(context, this.geomSet);
-
-        // If the op requests the results to be cached. (this may depend on the size of the data)
-        // we then generate an appropriate cache point and initialize it. 
-        if(op.cacheResults()){
-          if(cachePoint == null){
-            Generator generator = op;
-            if(generator)
-              cachePoint = GeometryCache();
-            else
-              cachePoint = GeometryAttributeCache();
-            this.cachePoints[i] = cachePoint;
-          }
-          cachePoint.update(this.geomSet, op.getModifiedAttributes());
-        }
+      if(cachePoint == null){
+        Generator generator = op;
+        if(generator)
+          cachePoint = GeometryCache();
+        else
+          cachePoint = GeometryAttributeCache();
+        this.cachePoints[i] = cachePoint;
       }
-      this.dirtyPoint++;
+      if(this.dirtyPoint < i){
+        cachePoint.update(this.geomSet, op);
+      }
+      else{
+        cachePoint.restore(this.geomSet);
+      }
+      op.evaluate(context, this.geomSet);
     }
+    this.dirtyPoint = this.geomOperators.size;
   }
 
   if(this.geomSetVersion != this.geomSet.getVersion()){
@@ -193,12 +191,9 @@ function GeometryStack.loadJSONString!(PersistenceContext persistenceContext, St
 
 
 function GeometryStack.loadJSONFile!(PersistenceContext persistenceContext, String filePath){
-  FilePath expandedPath(filePath);
-  expandedPath = expandedPath.expandEnvVars();
-
-  if(expandedPath.isRelative()){
+  FilePath expandedPath = FilePath(filePath).expandEnvVars();
+  if(expandedPath.isRelative())
     expandedPath = FilePath(persistenceContext.filePath) / expandedPath;
-  }
 
   if(!expandedPath.exists()){
     throw("File not found:" + expandedPath.string());

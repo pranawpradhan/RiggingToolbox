@@ -25,16 +25,12 @@ object ComputeTangentsModifier : BaseModifier {
   Scalar hardAngleRadians;
 };
 
-function String[] ComputeTangentsModifier.getRequiredAttributes(){
-  String result[];
-  result.push('positions');
-  result.push('uvs0');
-  return result;
-}
 
-function String[] ComputeTangentsModifier.getModifiedAttributes(){
-  String result[];
-  result.push('tangents');
+function UInt32[String] ComputeTangentsModifier.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_In;
+  result['uvs0'] = AttrDependency_In;
+  result['tangents'] = AttrDependency_Out;
   return result;
 }
 

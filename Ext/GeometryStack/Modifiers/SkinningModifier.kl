@@ -43,20 +43,13 @@ function SkinningModifier(){
   this.poseDirty = true;
 }
 
-function String[] SkinningModifier.getRequiredAttributes(){
-  String result[];
-  result.push('positions');
-  if(this.transformNormals)
-    result.push('normals');
-  result.push('skinningData');
-  return result;
-}
 
-function String[] SkinningModifier.getModifiedAttributes(){
-  String result[];
-  result.push('positions');
+function UInt32[String] SkinningModifier.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_IO;
   if(this.transformNormals)
-    result.push('normals');
+    result['normals'] = AttrDependency_IO;
+  result['skinningData'] = AttrDependency_In;
   return result;
 }
 

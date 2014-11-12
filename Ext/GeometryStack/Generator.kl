@@ -18,15 +18,10 @@ function BaseGenerator(){
 
 }
 
-function String[] BaseGenerator.getRequiredAttributes(){
-  // Generators should never require attributes to exist. 
-  String result[];
-  return result;
-}
 
-function String[] BaseGenerator.getModifiedAttributes(){
-  String result[];
-  result.push('positions');
+function UInt32[String] BaseGenerator.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_Out;
   return result;
 }
 

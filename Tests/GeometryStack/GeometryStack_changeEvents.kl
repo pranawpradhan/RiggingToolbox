@@ -20,5 +20,6 @@ operator entry(){
   StopFabricProfiling();
 
   report( GetEvalPathReport() );
+  report( stack.getDesc());
 }
 

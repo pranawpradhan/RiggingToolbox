@@ -12,13 +12,9 @@ object BaseModifier : Notifier, Modifier, GeometryOperator {
 
 };
 
-function String[] BaseModifier.getRequiredAttributes(){
-  String result[];
-  return result;
-}
 
-function String[] BaseModifier.getModifiedAttributes(){
-  String result[];
+function UInt32[String] BaseModifier.getAttributeDependencies(){
+  UInt32 result[String];
   return result;
 }
 

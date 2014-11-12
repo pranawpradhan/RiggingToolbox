@@ -33,16 +33,11 @@ function PushModifier(Scalar push){
   this.push = push;
 }
 
-function String[] PushModifier.getRequiredAttributes(){
-  String result[];
-  result.push('positions');
-  result.push('normals');
-  return result;
-}
 
-function String[] PushModifier.getModifiedAttributes(){
-  String result[];
-  result.push('positions');
+function UInt32[String] PushModifier.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_IO;
+  result['normals'] = AttrDependency_In;
   return result;
 }
 

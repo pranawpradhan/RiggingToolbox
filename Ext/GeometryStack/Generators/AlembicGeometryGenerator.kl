@@ -229,6 +229,9 @@ object AlembicGeometryGenerator : BaseGenerator {
 function AlembicGeometryGenerator() {
 }
 
+
+
+
 /// Sets the file path of the alembic file. 
 inline  AlembicGeometryGenerator.setFilePath!(String filePath){
   this.filePath = filePath;

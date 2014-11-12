@@ -5,12 +5,14 @@
 require Math;
 require Geometry;
 
+const UInt32 AttrDependency_In = 0;
+const UInt32 AttrDependency_Out = 1;
+const UInt32 AttrDependency_IO = 2;
+
 interface GeometryOperator {
-  // returns the list of attributes modifed by the deformer. 
-  String[] getRequiredAttributes();
   
-  // returns the list of attributes modifed by the deformer. 
-  String[] getModifiedAttributes();
+  // returns the list of attributes that the geomery operator is dependnt on in some way. 
+  UInt32[String] getAttributeDependencies();
   
   Boolean cacheResults();
 

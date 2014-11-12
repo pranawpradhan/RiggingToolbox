@@ -30,15 +30,11 @@ function ComputeNormalsModifier(){
   this.hardAngle = 1.0;
 }
 
-function String[] ComputeNormalsModifier.getRequiredAttributes(){
-  String result[];
-  result.push('positions');
-  return result;
-}
 
-function String[] ComputeNormalsModifier.getModifiedAttributes(){
-  String result[];
-  result.push('normals');
+function UInt32[String] ComputeNormalsModifier.getAttributeDependencies(){
+  UInt32 result[String];
+  result['positions'] = AttrDependency_In;
+  result['normals'] = AttrDependency_Out;
   return result;
 }
 
