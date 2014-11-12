@@ -19,9 +19,9 @@ function BaseGenerator(){
 }
 
 
-function UInt32[String] BaseGenerator.getAttributeDependencies(){
+function UInt32[String] BaseGenerator.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_Out;
+  result['positions'] = AttrMode_Write;
   return result;
 }
 

@@ -44,12 +44,12 @@ function SkinningModifier(){
 }
 
 
-function UInt32[String] SkinningModifier.getAttributeDependencies(){
+function UInt32[String] SkinningModifier.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_IO;
+  result['positions'] = AttrMode_ReadWrite;
   if(this.transformNormals)
-    result['normals'] = AttrDependency_IO;
-  result['skinningData'] = AttrDependency_In;
+    result['normals'] = AttrMode_ReadWrite;
+  result['skinningData'] = AttrMode_Read;
   return result;
 }
 

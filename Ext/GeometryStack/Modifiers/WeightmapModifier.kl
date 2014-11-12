@@ -29,10 +29,10 @@ object WeightmapModifier : BaseModifier {
 };
 
 
-function UInt32[String] WeightmapModifier.getAttributeDependencies(){
+function UInt32[String] WeightmapModifier.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_In;
-  result[this.weightmapName] = AttrDependency_Out;
+  result['positions'] = AttrMode_Read;
+  result[this.weightmapName] = AttrMode_Write;
   return result;
 }
 

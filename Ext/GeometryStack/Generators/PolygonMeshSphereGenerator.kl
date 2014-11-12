@@ -46,13 +46,13 @@ function PolygonMeshSphereGenerator(Scalar radius, UInt32 detail, Boolean setNor
   this.enableCaching = true;
 }
 
-function UInt32[String] PolygonMeshSphereGenerator.getAttributeDependencies(){
+function UInt32[String] PolygonMeshSphereGenerator.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_Out;
+  result['positions'] = AttrMode_Write;
   if(this.normals)
-    result['normals'] = AttrDependency_Out;
+    result['normals'] = AttrMode_Write;
   if(this.uvs)
-    result['uvs0'] = AttrDependency_Out;
+    result['uvs0'] = AttrMode_Write;
   return result;
 }
 

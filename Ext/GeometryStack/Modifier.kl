@@ -13,7 +13,7 @@ object BaseModifier : Notifier, Modifier, GeometryOperator {
 };
 
 
-function UInt32[String] BaseModifier.getAttributeDependencies(){
+function UInt32[String] BaseModifier.getAttributeInteractions(){
   UInt32 result[String];
   return result;
 }

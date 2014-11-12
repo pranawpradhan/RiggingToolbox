@@ -112,11 +112,11 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
       // Now check the geometries if they have the attributes required by the next operation.
       Boolean debug = true;
       if(debug){
-        UInt32 deps[String] = op.getAttributeDependencies();
+        UInt32 deps[String] = op.getAttributeInteractions();
         for(Integer k=0; k<this.geomSet.size; k++){
           String missingAttributes[];
           for(key, value in deps){
-            if(value == AttrDependency_In || value == AttrDependency_IO){
+            if(value == AttrMode_Read || value == AttrMode_ReadWrite){
               Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
               if(!attributes.has(key))
                 missingAttributes.push(key);

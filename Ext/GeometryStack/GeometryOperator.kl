@@ -5,14 +5,14 @@
 require Math;
 require Geometry;
 
-const UInt32 AttrDependency_In = 0;
-const UInt32 AttrDependency_Out = 1;
-const UInt32 AttrDependency_IO = 2;
+const UInt32 AttrMode_Read = 0;
+const UInt32 AttrMode_Write = 1;
+const UInt32 AttrMode_ReadWrite = 2;
 
 interface GeometryOperator {
   
   // returns the list of attributes that the geomery operator is dependnt on in some way. 
-  UInt32[String] getAttributeDependencies();
+  UInt32[String] getAttributeInteractions();
   
   Boolean cacheResults();
 

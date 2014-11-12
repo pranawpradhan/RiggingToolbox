@@ -37,9 +37,9 @@ function DeltaMushModifier(){
 
 
 
-function UInt32[String] DeltaMushModifier.getAttributeDependencies(){
+function UInt32[String] DeltaMushModifier.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_IO;
+  result['positions'] = AttrMode_ReadWrite;
   return result;
 }
 

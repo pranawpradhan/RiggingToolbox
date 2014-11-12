@@ -43,10 +43,10 @@ function GeometryAttributeCache.setCachedAttributeNames!(String attributesNames[
 function GeometryAttributeCache.update!(GeometrySet geomSet, GeometryOperator op) {
   if(this.disabled)
     return;
-  UInt32 deps[String] = op.getAttributeDependencies();
+  UInt32 deps[String] = op.getAttributeInteractions();
   this.attributesNames.resize(0);
   for(key, value in deps){
-    if(value == AttrDependency_IO)
+    if(value == AttrMode_ReadWrite)
       this.attributesNames.push(key);
   }
   AutoProfilingEvent p(FUNC+":" + this.attributesNames);

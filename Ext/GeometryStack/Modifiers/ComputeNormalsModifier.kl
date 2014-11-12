@@ -31,10 +31,10 @@ function ComputeNormalsModifier(){
 }
 
 
-function UInt32[String] ComputeNormalsModifier.getAttributeDependencies(){
+function UInt32[String] ComputeNormalsModifier.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_In;
-  result['normals'] = AttrDependency_Out;
+  result['positions'] = AttrMode_Read;
+  result['normals'] = AttrMode_Write;
   return result;
 }
 

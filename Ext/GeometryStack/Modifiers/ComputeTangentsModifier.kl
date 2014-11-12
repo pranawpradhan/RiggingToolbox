@@ -26,11 +26,11 @@ object ComputeTangentsModifier : BaseModifier {
 };
 
 
-function UInt32[String] ComputeTangentsModifier.getAttributeDependencies(){
+function UInt32[String] ComputeTangentsModifier.getAttributeInteractions(){
   UInt32 result[String];
-  result['positions'] = AttrDependency_In;
-  result['uvs0'] = AttrDependency_In;
-  result['tangents'] = AttrDependency_Out;
+  result['positions'] = AttrMode_Read;
+  result['uvs0'] = AttrMode_Read;
+  result['tangents'] = AttrMode_Write;
   return result;
 }
 
