@@ -9,7 +9,7 @@ cmds.file("C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/S
 ##############################################
 ## Set up the loader node.
 
-initnode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_Init")
+initnode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Init")
 
 cmds.fabricSplice('addInputPort', initnode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
@@ -17,11 +17,11 @@ cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'da
 cmds.setAttr(initnode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
 
 
-cmds.fabricSplice('addKLOperator', initnode, '{"opName":"skinnedTubeCharacter_Init"}', """
+cmds.fabricSplice('addKLOperator', initnode, '{"opName":"tubeCharacter_Init"}', """
 
 require RiggingToolbox;
 
-operator skinnedTubeCharacter_Init(
+operator tubeCharacter_Init(
   String filePath,
   io GeometryStack stack
 ) {
@@ -36,7 +36,7 @@ operator skinnedTubeCharacter_Init(
 ##############################################
 ## Set up the skinning pose node.
 
-poseNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_SetPose")
+poseNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_SetPose")
 
 cmds.fabricSplice('addIOPort', poseNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'joint1', 'dataType':'Mat44', 'addMayaAttr': True}))
@@ -49,11 +49,11 @@ cmds.connectAttr('SkinnedTube_hierarchy_joint2.worldMatrix[0]', poseNode + '.joi
 cmds.connectAttr('SkinnedTube_hierarchy_joint3.worldMatrix[0]', poseNode + '.joint3')
 cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', poseNode + '.joint4')
 
-cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"skinnedTubeCharacter_SetPose"}', """
+cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"tubeCharacter_SetPose"}', """
 
 require RiggingToolbox;
 
-operator skinnedTubeCharacter_SetPose(
+operator tubeCharacter_SetPose(
   io GeometryStack stack,
   Mat44 joint1,
   Mat44 joint2,
@@ -78,23 +78,25 @@ cmds.connectAttr(initnode + '.stack', poseNode + '.stack')
 ##############################################
 ## Set up the delta mush node.
 
-mushNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_DeltaMush")
+mushNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_DeltaMush")
 
 cmds.fabricSplice('addIOPort', mushNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', mushNode, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
 
 cmds.setAttr(mushNode + '.iterations', 30);
 
-cmds.fabricSplice('addKLOperator', mushNode, '{"opName":"skinnedTubeCharacter_DeltaMush"}', """
+cmds.fabricSplice('addKLOperator', mushNode, '{"opName":"tubeCharacter_DeltaMush"}', """
 
 require RiggingToolbox;
 
-operator skinnedTubeCharacter_DeltaMush(
+operator tubeCharacter_DeltaMush(
   io GeometryStack stack,
   Integer iterations
 ) {
-  DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
-  deltaMushModifier.setNumIterations(iterations);
+  if(stack.numGeometryOperators() >= 3){
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
+    deltaMushModifier.setNumIterations(iterations);
+  }
 }
 """)
 
@@ -104,18 +106,18 @@ cmds.connectAttr(poseNode + '.stack', mushNode + '.stack')
 ##############################################
 ## Set up the eval/render node.
 
-evalStackNode = cmds.createNode("spliceMayaNode", name = "skinnedTubeCharacter_Eval")
+evalStackNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Eval")
 
 cmds.fabricSplice('addInputPort', evalStackNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addOutputPort', evalStackNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
 
 cmds.connectAttr(mushNode + '.stack', evalStackNode + '.stack')
 
-cmds.fabricSplice('addKLOperator', evalStackNode, '{"opName":"skinnedTubeCharacter_Eval"}', """
+cmds.fabricSplice('addKLOperator', evalStackNode, '{"opName":"tubeCharacter_Eval"}', """
 
 require RiggingToolbox;
 
-operator skinnedTubeCharacter_Eval(
+operator tubeCharacter_Eval(
   io GeometryStack stack,
   Scalar eval
 ) {

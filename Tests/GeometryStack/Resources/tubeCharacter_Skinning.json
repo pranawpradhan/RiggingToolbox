@@ -7,10 +7,6 @@
     },
     {
      "type": "SkinningModifier"
-    },
-    {
-     "type": "ComputeNormalsModifier",
-     "hardAngle": 3.1
     }
   ]
 }

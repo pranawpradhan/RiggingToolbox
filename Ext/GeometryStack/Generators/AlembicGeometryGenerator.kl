@@ -29,6 +29,7 @@ from itertools import chain
 import time
 import pymel.core as pm
 from pymel import *
+from maya import cmds
 start = time.time()
 
 def packWeights(w, weights, boneIDs, idMapping):
