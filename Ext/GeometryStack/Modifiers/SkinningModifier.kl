@@ -79,11 +79,11 @@ function SkinningModifier.setPose!(Mat44 pose[]){
 /// The per-point operator that computes the linear blend skinning. 
 /// \internal
 operator skinningModifier_skinPositions<<<index>>>(
-  io Vec3 positions[],
+  io PolygonMesh mesh,
   SkinningAttribute skinningAttr,
   Mat44 skinningMatrices[]
 ){
-  Vec3 srcPos = positions[index];
+  Vec3 srcPos = mesh.getPointPosition( index );
 
   LocalL16UInt32Array indices;
   LocalL16ScalarArray weights;
@@ -101,7 +101,8 @@ operator skinningModifier_skinPositions<<<index>>>(
   }
 
   // report("srcPos:" + srcPos + ":" + index+":"+ position+":"+ weighSum);
-  positions[index] = position;
+  // positions[index] = position;
+  mesh.setPointPosition( index, position );
 }
 
 /// The per-point operator that computes the linear blend skinning. 
@@ -144,8 +145,13 @@ operator skinningModifier_deformGeometries_skinPositions<<<index>>>(
   Mat44 skinningMatrices[],
   Mat44 bindShapeTransforms[]
 ){
-  Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
+  PolygonMesh mesh = geomSet.get(index);
+  if(!mesh){
+    setError("ERROR: Geometry is not a mesh");
+    return;
+  }
 
+  Ref<GeometryAttributes> attributes = mesh.getAttributes();
   if(!attributes.has("skinningData")){
     setError("ERROR: Geometry does not have skinningData");
     return;
@@ -160,8 +166,8 @@ operator skinningModifier_deformGeometries_skinPositions<<<index>>>(
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
   SkinningAttribute skinningAttr = attributes.getAttribute("skinningData");
 
-  skinningModifier_skinPositions<<<attributes.size()>>>(
-    positionsAttribute.values,
+  skinningModifier_skinPositions<<<mesh.pointCount()>>>(
+    mesh,
     skinningAttr,
     skinninMatricesWithBindOffset
   );
@@ -198,12 +204,12 @@ operator skinningModifier_deformGeometries_skinPositionsAndNormals<<<index>>>(
   Vec3Attribute normalsAttribute = attributes.normalsAttribute;
   SkinningAttribute skinningAttr = attributes.getAttribute("skinningData");
 
-  skinningModifier_skinPositionsAndNormals<<<attributes.size()>>>(
-    positionsAttribute.values,
-    normalsAttribute.values,
-    skinningAttr,
-    skinningPosAndNormMatrices
-  );
+  // skinningModifier_skinPositionsAndNormals<<<attributes.size()>>>(
+  //   positionsAttribute.values,
+  //   normalsAttribute.values,
+  //   skinningAttr,
+  //   skinningPosAndNormMatrices
+  // );
   positionsAttribute.incrementVersion();
   normalsAttribute.incrementVersion();
 }
