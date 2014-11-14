@@ -421,7 +421,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
 
   for(Size i=0; i<polymeshPaths.size(); i++) {
     String name = this.getNameFromPath(polymeshPaths[i]);
-
+    
     if(this.geometryNames.size != 0 && !applyNameFilters(name, this.geometryNames))
       continue;
 
@@ -429,6 +429,14 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
 
     PolygonMesh mesh = PolygonMesh();
     readers[i].readSample(0.0, mesh);
+
+
+    Xfo globalXfo = this.computeGlobalPose(archive, polymeshPaths[i]);
+
+    GenericMat44Value bindShapeTransform(globalXfo.toMat44());
+    AutoLock AL(mesh.metaData.simpleLock);
+    mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
+
     geomSet.add(mesh);
 
     //-----------------------------------------
@@ -483,12 +491,16 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     // Gather the list of all deformers. this list will be the sub-set of the 
     // Skeleton that is used to generate the skining matricies. 
     this.mergeSet(deformerNamesUnion, deformerNames);
+  }
 
-    Xfo globalXfo = this.computeGlobalPose(archive, polymeshPaths[i]);
-
-    GenericMat44Value bindShapeTransform(globalXfo.toMat44());
-    AutoLock AL(mesh.metaData.simpleLock);
-    mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
+  if(geomSet.size() == 0){
+    // Generate a helpfull message because its unlikely that users want no geometries from a file.
+    report("Warning: No geomeries found in file that match the name filters specified:" + this.geometryNames);
+    for(Size i=0; i<polymeshPaths.size(); i++) {
+      String name = this.getNameFromPath(polymeshPaths[i]);
+      report("Name:" + name + " path:" + polymeshPaths[i]);
+    }
+    return;
   }
 
   //  ensure any manually included bones are part of the skeleton.
