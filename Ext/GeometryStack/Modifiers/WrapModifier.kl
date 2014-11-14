@@ -191,8 +191,6 @@ operator wrapModifier_deformGeometries<<<index>>>(
   Ref<Vec4Attribute> srcTangentsAttribute = srcMesh.getAttribute("tangents");
 
   if(!bound){
-    report("Binding:===================================");
-
     GenericValueContainer options = GenericValueContainer();
     PrepareForSpatialQueries_setSparseGrid(options);
 
@@ -217,26 +215,24 @@ operator wrapModifier_deformGeometries<<<index>>>(
     );
     srcMesh.endSpatialQuery(query);
   }
-  else{
-    wrapModifier_applyDeltas<<<positionsAttribute.size()>>>(
-      srcMesh,
-      srcPositionsAttribute,
-      srcNormalsAttribute,
-      srcTangentsAttribute,
-      locations[index],
-      deltas[index],
-      positionsAttribute.values,
 
-      displayDebugging,
-      debugLines[index]
-    );
-    positionsAttribute.incrementVersion();
-  }
+  wrapModifier_applyDeltas<<<positionsAttribute.size()>>>(
+    srcMesh,
+    srcPositionsAttribute,
+    srcNormalsAttribute,
+    srcTangentsAttribute,
+    locations[index],
+    deltas[index],
+    positionsAttribute.values,
+
+    displayDebugging,
+    debugLines[index]
+  );
+  positionsAttribute.incrementVersion();
 }
 
 function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  report("WrapModifier.evaluate:" + this.displayDebugging);
 
   GeometrySet srcGeomSet = this.influenceGeometryStack.evaluate(context);
   if(srcGeomSet.size() == 0){
@@ -282,7 +278,7 @@ function WrapModifier.setupRendering!(){
     String name = "WrapModifier_" + String(geomId);
     InlineShape shape = InlineLinesShape(name, this.debugLines[geomId]);
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
-    instance.setInstanceUniform(InlineUniform('u_color', Color(1.0,0.0,0.0)));
+    instance.setInstanceUniform(InlineUniform('u_color', Color(1.0,1.0,0.0)));
   }
 }
 
