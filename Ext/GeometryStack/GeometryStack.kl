@@ -9,7 +9,7 @@ require FabricStatistics;
 // pre-declaring the regsitry because it is loaded last in the fpm file. 
 object RiggingToolboxRegistry;
 
-object GeometryStack : Listener {
+object GeometryStack : Notifier, Listener {
   String name;
   String filePath;
 
@@ -95,6 +95,9 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
         break;
       }
     }
+    // Emit a notification that other object might recieve. 
+    // e.g. A Wrap deformer would recieve this notication and dirty it's stack. 
+    this.notify('changed', data);
     break;
   }
 }

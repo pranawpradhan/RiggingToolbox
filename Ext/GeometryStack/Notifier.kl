@@ -18,6 +18,19 @@ function Notifier.addListener!(Listener listener){
   this.listeners.push(listener);
 }
 
+function Notifier.removeListener!(Listener listener){
+  // TODO: make this method threadsafe. 
+  for(Integer i=0; i<this.listeners.size; i++){
+    if(this.listeners[i] === listener){
+      for(Integer j=i; i<this.listeners.size-1; i++){
+        this.listeners[j] = this.listeners[j+1];
+      }
+      this.listeners.resize(this.listeners.size-1);
+      break;
+    }
+  }
+}
+
 
 function Notifier.notify(String type, String data){
   for(Integer i=0; i<this.listeners.size; i++){

@@ -3,22 +3,14 @@
     {
      "type": "AlembicGeometryGenerator",
      "filePath": "skinnedTube.abc",
-     "geometryNames": ["pCylinderShape1"]
+     "geometryNames": ["pPlaneShape*"]
     },
     {
-     "type": "SkinningModifier"
-    },
-    {
-     "type": "DeltaMushModifier",
-     "iterations": 30,
+     "type": "WrapModifier",
      "displayDebugging": true
     },
     {
      "type": "ComputeNormalsModifier",
-     "hardAngle": 3.1
-    },
-    {
-     "type": "ComputeTangentsModifier",
      "hardAngle": 3.1
     }
   ]

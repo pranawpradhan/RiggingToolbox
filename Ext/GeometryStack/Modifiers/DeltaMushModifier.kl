@@ -57,16 +57,26 @@ function DeltaMushModifier.setNumIterations!(UInt32 iterations){
 }
 
 
+function DeltaMushModifier.setDisplayDebugging!(Boolean displayDebugging){
+  if(this.displayDebugging != displayDebugging){
+    this.displayDebugging = displayDebugging;
+    String data;
+    this.notify('changed', data);
+  }
+}
+
+
 
 function Mat44 deltaMushModifier_buildRefFrame(PolygonMesh mesh, UInt32 index, Vec3 positionValues[]){
 
+  Mat44 m;
   Vec3 p1 = positionValues[index];
-  
+
   LocalL16UInt32Array surroundingPoints;
   mesh.getPointSurroundingPoints( index, false, surroundingPoints );
   UInt32 nbNei = surroundingPoints.size();
   if( nbNei == 0 ) 
-    return;
+    return m;
   Vec3 p2 = positionValues[surroundingPoints.get(0)];
   Vec3 p3 = positionValues[surroundingPoints.get(1)];
 
@@ -74,7 +84,6 @@ function Mat44 deltaMushModifier_buildRefFrame(PolygonMesh mesh, UInt32 index, V
   Vec3 nrm = dir.cross(p3 - p1);
   Quat q;
   q.setFromDirectionAndUpvector(dir, nrm);
-  Mat44 m;
   m.set(p1, q.toMat33(), Vec3(1,1,1));
   return m;
 }
@@ -156,7 +165,7 @@ operator deltaMushModifier_applyDeltas<<<index>>>(
   if(displayDebugging){
     debugLines.indices[(index*2)] = (index*2);
     debugLines.indices[(index*2)+1] = (index*2)+1;
-    debugLines.setPosition((index*2), position);
+    debugLines.setPosition((index*2), positionsClone[index]);
     debugLines.setPosition((index*2)+1, newPos);
   }
 }

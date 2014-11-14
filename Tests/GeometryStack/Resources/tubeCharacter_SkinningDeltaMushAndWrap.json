@@ -16,10 +16,6 @@
     {
      "type": "ComputeNormalsModifier",
      "hardAngle": 3.1
-    },
-    {
-     "type": "ComputeTangentsModifier",
-     "hardAngle": 3.1
     }
   ]
 }
