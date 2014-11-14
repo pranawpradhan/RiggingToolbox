@@ -58,7 +58,18 @@ function DeltaMushModifier.setNumIterations!(UInt32 iterations){
 
 
 
-function Mat44 deltaMushModifier_buildRefFrame(Vec3 p1, Vec3 p2, Vec3 p3){
+function Mat44 deltaMushModifier_buildRefFrame(PolygonMesh mesh, UInt32 index, Vec3 positionValues[]){
+
+  Vec3 p1 = positionValues[index];
+  
+  LocalL16UInt32Array surroundingPoints;
+  mesh.getPointSurroundingPoints( index, false, surroundingPoints );
+  UInt32 nbNei = surroundingPoints.size();
+  if( nbNei == 0 ) 
+    return;
+  Vec3 p2 = positionValues[surroundingPoints.get(0)];
+  Vec3 p3 = positionValues[surroundingPoints.get(1)];
+
   Vec3 dir = p2 - p1;
   Vec3 nrm = dir.cross(p3 - p1);
   Quat q;
@@ -120,24 +131,11 @@ operator deltaMushModifier_smoothPos<<<index>>>(io Vec3 positions[], io PolygonM
 
 operator deltaMushModifier_computeBinding<<<index>>>(
   io PolygonMesh mesh,
-  /*Ref<Vec4Attribute> tangents,*/
   Vec3 initialPositions[],
   io Vec3 deltas[]
 ){
-  Vec3 position = mesh.positionsAttribute.values[index];
-  // Vec3 normal = mesh.normalsAttribute.values[index];
-  // Vec4 newTangent = tangents.values[index];
-
-  LocalL16UInt32Array surroundingPoints;
-  mesh.getPointSurroundingPoints( index, false, surroundingPoints );
-  UInt32 nbNei = surroundingPoints.size();
-  if( nbNei == 0 ) 
-    return;
-  Vec3 p2 = mesh.positionsAttribute.values[surroundingPoints.get(0)];
-  Vec3 p3 = mesh.positionsAttribute.values[surroundingPoints.get(1)];
-
   // Build a reference frame. 
-  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, p2, p3);
+  Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, mesh.positionsAttribute.values);
 
   // Compute the delta between the relaxed frame and the original position.
   deltas[index] = mat44.inverse() * initialPositions[index];
@@ -145,26 +143,12 @@ operator deltaMushModifier_computeBinding<<<index>>>(
 
 operator deltaMushModifier_applyDeltas<<<index>>>(
   io PolygonMesh mesh,
-  /*Ref<Vec4Attribute> tangents,*/
   Vec3 positionsClone[],
   Vec3 deltas[],
   Boolean displayDebugging,
   io Lines debugLines
 ){
-  Vec3 position = positionsClone[index];
-  // Vec3 normal = mesh.normalsAttribute.values[index];
-  // Vec4 tangent = tangents.values[index];
-
-  LocalL16UInt32Array surroundingPoints;
-  mesh.getPointSurroundingPoints( index, false, surroundingPoints );
-  UInt32 nbNei = surroundingPoints.size();
-  if( nbNei == 0 ) 
-    return;
-  Vec3 p2 = positionsClone[surroundingPoints.get(0)];
-  Vec3 p3 = positionsClone[surroundingPoints.get(1)];
-
-  // Build a reference frame. 
-  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, p2, p3);
+  Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, positionsClone);
 
   Vec3 newPos = mat44 * deltas[index];
   mesh.setPointPosition( index, newPos );
@@ -204,12 +188,6 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     debugLines[index].incrementPositionsVersion();
   }
 
-  // if(!mesh.getAttributes().has("tangents")){
-  //   report("Warning in DeltaMushModifier: mesh does not have tangents computed:" + getGeomDebugName(mesh));
-  //   return;
-  // }
-  // Ref<Vec4Attribute> tangents = mesh.getAttribute("tangents");
-
   if(!bound){
     // Cache the initial positions of the points before relaxing.
     Vec3 initialPositions[] = mesh.positionsAttribute.values.clone();
@@ -223,7 +201,6 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     // compute the deltas between the relaxed mesh, and the original vertex positions.
     deltaMushModifier_computeBinding<<<mesh.pointCount()>>>(
       mesh,
-      /*tangents,*/
       initialPositions,
       deltas[index]
     );
@@ -240,7 +217,6 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   Vec3 positionsClone[] = mesh.positionsAttribute.values.clone();
   deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
     mesh,
-    /*tangents,*/
     positionsClone,
     deltas[index],
     displayDebugging,
