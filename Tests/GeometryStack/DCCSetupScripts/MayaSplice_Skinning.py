@@ -58,13 +58,15 @@ operator tubeCharacter_SetPose(
   Mat44 joint3,
   Mat44 joint4
 ) {
-  SkinningModifier skinningModifier = stack.getGeometryOperator(1);
-  Mat44 pose[];
-  pose.push(joint1);
-  pose.push(joint2);
-  pose.push(joint3);
-  pose.push(joint4);
-  skinningModifier.setPose(pose);
+  if(stack.numGeometryOperators() >= 2){
+    SkinningModifier skinningModifier = stack.getGeometryOperator(1);
+    Mat44 pose[];
+    pose.push(joint1);
+    pose.push(joint2);
+    pose.push(joint3);
+    pose.push(joint4);
+    skinningModifier.setPose(pose);
+  }
 }
 """)
 

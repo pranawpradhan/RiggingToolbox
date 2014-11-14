@@ -12,7 +12,11 @@ operator entry(){
   stack.addGeometryOperator(alembicGenerator);
   stack.addGeometryOperator(skiningModifier);
 
-  alembicGenerator.setFilePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/cubeTest.abc");
+  alembicGenerator.setFilePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/skinnedTube.abc");
+
+  String geometryNames[];
+  geometryNames.push("pCylinderShape1");
+  alembicGenerator.setGeometryNames(geometryNames);
 
   EvalContext context();
   GeometrySet geomSet = stack.evaluate(context);

@@ -35,11 +35,11 @@ start = time.time()
 def packWeights(w, weights, boneIDs, idMapping):
     for i,v in enumerate(w):
         for j,x in enumerate(list(v)):
+            if j == 0:
+                idMapping.append(len(weights))
             if x != 0:
                 weights.append(float(x))
                 boneIDs.append(j)
-            if j == 0:
-                idMapping.append(len(weights))
 
 def fnFindSkinCluster(mesh):
     skincluster = None
@@ -242,6 +242,13 @@ inline  AlembicGeometryGenerator.setFilePath!(String filePath){
   this.notify('changed', data);
 }
 
+/// Sets the file path of the alembic file. 
+inline  AlembicGeometryGenerator.setGeometryNames!(String geometryNames[]){
+  this.geometryNames = geometryNames;
+  String data;
+  this.notify('changed', data);
+}
+
 /// Returns the file path of the alembic file. 
 inline String AlembicGeometryGenerator.getFilePath(){
   return this.filePath;
@@ -424,7 +431,6 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     
     if(this.geometryNames.size != 0 && !applyNameFilters(name, this.geometryNames))
       continue;
-
     readers[i] = archive.getPolyMesh(polymeshPaths[i]);
 
     PolygonMesh mesh = PolygonMesh();
@@ -592,7 +598,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
       continue;
 
     if(mesh.pointCount() != subArrayIndices.size)
-      throw("Invalid skinning data");
+      throw("Invalid skinning data. The skinning data count doesn't match the PolygonMesh point count.");
 
     UInt32 nbBones = bonesIDs[i].size;
     UInt32 nbPoints = subArrayIndices.size;
@@ -607,10 +613,9 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
         }
       }
     }
-
     Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
     UInt32 usedWeights = 0;
-    for(Integer pnt = 0; pnt < nbPoints; ++pnt ) {
+    for(Integer pnt = 0; pnt < nbPoints; pnt++ ) {
       UInt32 startIndex = subArrayIndices[pnt];
       UInt32 deformerCount = ((pnt < (nbPoints-1)) ? subArrayIndices[pnt+1] : envelopeWeights.size) - startIndex;
 
@@ -627,8 +632,10 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
       }
       if(weightsSum > DIVIDEPRECISION){
         for(Integer j = 0; j < deformerCount; ++j ) {
-          indices.set(j, boneMapping[ envelopeDeformerIndices[startIndex + j] ]);
-          weights.set(j, envelopeWeights[startIndex + j] / weightsSum);
+          UInt32 index = boneMapping[ envelopeDeformerIndices[startIndex + j] ];
+          Scalar weight = envelopeWeights[startIndex + j] / weightsSum;
+          indices.set(j, index);
+          weights.set(j, weight);
         }
         mesh.setPointAttribute(pnt, skinningAttr, indices, weights);
       }
