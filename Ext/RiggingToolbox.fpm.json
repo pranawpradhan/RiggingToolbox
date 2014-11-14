@@ -6,6 +6,8 @@
     "Math/pivotDistanceLimit.kl",
     "Kinematics/solveNCFIK.kl",
     
+    "GeometryStack/Shaders/OGLFlatOverlayShader.kl",
+
     "GeometryStack/GeometryHelperFunctions.kl",
     "GeometryStack/StatisticsHelperFunctions.kl",
     "GeometryStack/Listener.kl",
