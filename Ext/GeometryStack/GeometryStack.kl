@@ -18,6 +18,7 @@ object GeometryStack : Listener {
   CachePoint cachePoints[];
   UInt32 dirtyPoint;
 
+  Boolean displayGeometries;
   DrawingHandle handle;
   Boolean renderingInitialized;
   UInt32 geomSetVersion;
@@ -38,6 +39,7 @@ function GeometryStack.init!() {
   this.addAttributeDependency('normals', 'positions');
   this.addAttributeDependency('tangents', 'positions');
   this.addAttributeDependency('tangents', 'normals');
+  this.displayGeometries = true;
 }
 
 function GeometryStack.addAttributeDependency!(String from, String to) {
@@ -105,8 +107,6 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
   AutoProfilingEvent p(FUNC);
 
-  report("GeometryStack.evaluate:" + this.dirtyPoint);
-
   // this.dirtyPoint = 0;// force evlauation all the time.
   if(this.dirtyPoint < this.geomOperators.size){
     for(Integer i=this.dirtyPoint; i<this.geomOperators.size; i++){
@@ -152,11 +152,53 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
     this.dirtyPoint = this.geomOperators.size;
   }
 
+  if(this.displayGeometries && (this.handle==null || this.geomSetVersion != this.geomSet.getVersion()))
+    this.setupRendering();
+  else if(!this.displayGeometries && this.handle!=null)
+    this.handle = null;
+
   if(this.geomSetVersion != this.geomSet.getVersion()){
     this.setupRendering();
     this.geomSetVersion = this.geomSet.getVersion();
   }
+
+
   return this.geomSet;
+}
+
+function GeometryStack.setupRendering!(){
+
+  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
+  this.handle = DrawingHandle(this.name+"Handle");
+
+  // Now setup the rendering
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLSurfaceShader());
+  InlineMaterial material = shader.getOrCreateMaterial(this.name+"Material");
+
+  for(Integer geomId=0; geomId<this.geomSet.size(); geomId++){
+    Geometry geom = this.geomSet.get(geomId);
+    String name = this.name + "_" + getGeomDebugName(geom);
+    InlineShape shape = null;
+    PolygonMesh mesh = geom;
+    if(mesh)
+      shape = InlineMeshShape(name, mesh);
+    else{
+      Lines lines = geom;
+      if(lines)
+        shape = InlineLinesShape(name, lines);
+      else{
+        Points points = geom;
+        if(points)
+          shape = InlinePointsShape(name, points);
+        else{
+          report("Warning in GeometryStack.setupRendering: unsupported geometry type:" + geom.type());
+          continue;
+        }
+      }
+    }
+    InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
+    instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(0.0,0.0,1.0)));
+  }
 }
 
 
@@ -168,6 +210,7 @@ function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceCont
     geomOperatorsData.add(this.geomOperators[i].saveJSON(persistenceContext));
   }
   json.set("geomOperators", geomOperatorsData);
+  json.setBoolean('displayGeometries', this.displayGeometries);
   return json;
 }
 
@@ -183,6 +226,8 @@ function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDict
     geomOp.loadJSON(persistenceContext, geomOperatorData);
     this.addGeometryOperator(geomOp);
   }
+  if(json.has('displayGeometries'))
+    this.displayGeometries = json.getBoolean('displayGeometries');
 }
 
 
@@ -220,41 +265,6 @@ function String GeometryStack.getFilePath(){
   return this.filePath;
 }
 
-
-function GeometryStack.setupRendering!(){
-
-  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
-  this.handle = DrawingHandle(this.name+"Handle");
-
-  // Now setup the rendering
-  InlineShader shader = this.handle.getDrawing().registerShader(OGLSurfaceShader());
-  InlineMaterial material = shader.getOrCreateMaterial(this.name+"Material");
-
-  for(Integer geomId=0; geomId<this.geomSet.size(); geomId++){
-    Geometry geom = this.geomSet.get(geomId);
-    String name = this.name + "_" + getGeomDebugName(geom);
-    InlineShape shape = null;
-    PolygonMesh mesh = geom;
-    if(mesh)
-      shape = InlineMeshShape(name, mesh);
-    else{
-      Lines lines = geom;
-      if(lines)
-        shape = InlineLinesShape(name, lines);
-      else{
-        Points points = geom;
-        if(points)
-          shape = InlinePointsShape(name, points);
-        else{
-          report("Warning in GeometryStack.setupRendering: unsupported geometry type:" + geom.type());
-          continue;
-        }
-      }
-    }
-    InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
-    instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(0.0,0.0,1.0)));
-  }
-}
 
 
 /// Generates a Description string of this pose.
