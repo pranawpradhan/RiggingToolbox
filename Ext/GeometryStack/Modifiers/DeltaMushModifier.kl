@@ -28,6 +28,10 @@ object DeltaMushModifier : BaseModifier {
   UInt32 iterations;
   Boolean bound;
   UInt32 boundVersion;
+
+  Boolean displayDebugging;
+  Lines debugLines[];
+  DrawingHandle handle;
 };
 
 
@@ -44,20 +48,23 @@ function UInt32[String] DeltaMushModifier.getAttributeInteractions(){
 }
 
 function DeltaMushModifier.setNumIterations!(UInt32 iterations){
-  this.iterations = iterations;
-  String data;
-  this.notify('changed', data);
+  if(this.iterations != iterations){
+    this.iterations = iterations;
+    this.bound = false;
+    String data;
+    this.notify('changed', data);
+  }
 }
 
 
 
-function Mat44 deltaMushModifier_buildRefFrame(Vec3 pos, Vec3 vec1, Vec3 vec2){
-  Vec3 dir = vec1 - pos;
-  Vec3 nrm = dir.cross(vec2 - pos);
+function Mat44 deltaMushModifier_buildRefFrame(Vec3 p1, Vec3 p2, Vec3 p3){
+  Vec3 dir = p2 - p1;
+  Vec3 nrm = dir.cross(p3 - p1);
   Quat q;
   q.setFromDirectionAndUpvector(dir, nrm);
   Mat44 m;
-  m.set(pos, q.toMat33(), Vec3(1,1,1));
+  m.set(p1, q.toMat33(), Vec3(1,1,1));
   return m;
 }
 
@@ -126,11 +133,11 @@ operator deltaMushModifier_computeBinding<<<index>>>(
   UInt32 nbNei = surroundingPoints.size();
   if( nbNei == 0 ) 
     return;
-  Vec3 vec1 = (mesh.positionsAttribute.values[surroundingPoints.get(0)] - position).unit();
-  Vec3 vec2 = (mesh.positionsAttribute.values[surroundingPoints.get(1)] - position).unit();
+  Vec3 p2 = mesh.positionsAttribute.values[surroundingPoints.get(0)];
+  Vec3 p3 = mesh.positionsAttribute.values[surroundingPoints.get(1)];
 
   // Build a reference frame. 
-  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, vec1, vec2);
+  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, p2, p3);
 
   // Compute the delta between the relaxed frame and the original position.
   deltas[index] = mat44.inverse() * initialPositions[index];
@@ -140,7 +147,9 @@ operator deltaMushModifier_applyDeltas<<<index>>>(
   io PolygonMesh mesh,
   /*Ref<Vec4Attribute> tangents,*/
   Vec3 positionsClone[],
-  Vec3 deltas[]
+  Vec3 deltas[],
+  Boolean displayDebugging,
+  io Lines debugLines
 ){
   Vec3 position = positionsClone[index];
   // Vec3 normal = mesh.normalsAttribute.values[index];
@@ -151,13 +160,21 @@ operator deltaMushModifier_applyDeltas<<<index>>>(
   UInt32 nbNei = surroundingPoints.size();
   if( nbNei == 0 ) 
     return;
-  Vec3 vec1 = (positionsClone[surroundingPoints.get(0)] - position).unit();
-  Vec3 vec2 = (positionsClone[surroundingPoints.get(1)] - position).unit();
+  Vec3 p2 = positionsClone[surroundingPoints.get(0)];
+  Vec3 p3 = positionsClone[surroundingPoints.get(1)];
 
   // Build a reference frame. 
-  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, vec1, vec2);
+  Mat44 mat44 = deltaMushModifier_buildRefFrame(position, p2, p3);
 
-  mesh.setPointPosition( index, mat44 * deltas[index] );
+  Vec3 newPos = mat44 * deltas[index];
+  mesh.setPointPosition( index, newPos );
+
+  if(displayDebugging){
+    debugLines.indices[(index*2)] = (index*2);
+    debugLines.indices[(index*2)+1] = (index*2)+1;
+    debugLines.setPosition((index*2), position);
+    debugLines.setPosition((index*2)+1, newPos);
+  }
 }
 
 
@@ -165,12 +182,26 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   io Vec3 deltas[][],
   UInt32 iterations,
-  Boolean bound
+  Boolean bound,
+  Boolean displayDebugging,
+  io Lines debugLines[]
 ){
   PolygonMesh mesh = geomSet.get(0);
   if(!mesh){
     report("Warning in DeltaMushModifier: geometry is not a polygon mesh:" + getGeomDebugName(mesh));
     return;
+  }
+
+  if(displayDebugging){
+    if(debugLines[index] == null)
+      debugLines[index] = Lines();
+    if(debugLines[index].lineCount() != mesh.pointCount()){
+      debugLines[index].attributes.resize( mesh.pointCount() * 2 );
+      debugLines[index].indices.resize( mesh.pointCount() * 2 );
+      debugLines[index].incrementVersion();
+    }
+    // Always increment the positoins version as they will be re-geomuted in the following kernel.
+    debugLines[index].incrementPositionsVersion();
   }
 
   // if(!mesh.getAttributes().has("tangents")){
@@ -180,7 +211,6 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   // Ref<Vec4Attribute> tangents = mesh.getAttribute("tangents");
 
   if(!bound){
-    report("deltaMushModifier_deformGeometries ================= Binding");
     // Cache the initial positions of the points before relaxing.
     Vec3 initialPositions[] = mesh.positionsAttribute.values.clone();
 
@@ -212,33 +242,59 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     mesh,
     /*tangents,*/
     positionsClone,
-    deltas[index]
+    deltas[index],
+    displayDebugging,
+    debugLines[index]
   );
   mesh.incrementPointPositionsVersion();
 
 }
 
-function DeltaMushModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
   
-  Ref<DeltaMushModifier> io_this = this;
-  if(geomSet.getVersion() != this.boundVersion){
-    io_this.bound = false;
-    io_this.deltas.resize(geomSet.size());
+  // by adding the iterations to the version, simply changing iterations causes the binding to be invalidated.
+  if(geomSet.getVersion()+this.iterations != this.boundVersion){
+    this.bound = false;
+    this.deltas.resize(geomSet.size());
+    if(this.displayDebugging)
+      this.debugLines.resize(geomSet.size());
   }
   if( this.iterations > 0)
-    deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, io_this.deltas, this.iterations, io_this.bound);
+    deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.deltas, this.iterations, this.bound, this.displayDebugging, this.debugLines);
 
-  if(!io_this.bound){
-    io_this.boundVersion = geomSet.getVersion();
-    io_this.bound = true;
+  if(!this.bound){
+    this.boundVersion = geomSet.getVersion()+this.iterations;
+    this.bound = true;
   }
+
+  if(this.displayDebugging && this.handle==null)
+    this.setupRendering();
+  else if(!this.displayDebugging && this.handle!=null)
+    this.handle = null;
 }
 
+function DeltaMushModifier.setupRendering!(){
+
+  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
+  this.handle = DrawingHandle("DeltaMushModifierHandle");
+
+  // Now setup the rendering
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLFlatOverlayShader());
+  InlineMaterial material = shader.getOrCreateMaterial("DeltaMushModifierMaterial");
+
+  for(Integer geomId=0; geomId<this.debugLines.size(); geomId++){
+    String name = "DeltaMushModifier_" + String(geomId);
+    InlineShape shape = InlineLinesShape(name, this.debugLines[geomId]);
+    InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
+    instance.setInstanceUniform(InlineUniform('u_color', Color(1.0,0.0,0.0)));
+  }
+}
 
 function JSONDictValue DeltaMushModifier.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json = this.parent#saveJSON(persistenceContext);
   json.setInteger('iterations', this.iterations);
+  json.setBoolean('displayDebugging', this.displayDebugging);
   return json;
 }
 
@@ -246,6 +302,8 @@ function DeltaMushModifier.loadJSON!(PersistenceContext persistenceContext, JSON
   this.parent#loadJSON(persistenceContext, json);
   if(json.has('iterations'))
     this.iterations = json.getInteger('iterations');
+  if(json.has('displayDebugging'))
+    this.displayDebugging = json.getBoolean('displayDebugging');
 }
 
 

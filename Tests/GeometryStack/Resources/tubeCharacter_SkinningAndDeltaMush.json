@@ -10,7 +10,8 @@
     },
     {
      "type": "DeltaMushModifier",
-     "iterations": 30
+     "iterations": 30,
+     "displayDebugging": true
     },
     {
      "type": "ComputeNormalsModifier",
