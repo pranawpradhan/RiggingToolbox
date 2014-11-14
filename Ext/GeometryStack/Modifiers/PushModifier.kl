@@ -78,7 +78,7 @@ operator pushModifier_deformGeometries<<<index>>>(
   positionsAttribute.incrementVersion();
 }
 
-function PushModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function PushModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
   pushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.push);
 }

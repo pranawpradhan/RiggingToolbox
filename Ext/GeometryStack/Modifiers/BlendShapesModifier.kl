@@ -323,7 +323,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   positionsAttribute.incrementVersion();
 }
 
-function BlendShapesModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
   blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets, this.weights);
 }

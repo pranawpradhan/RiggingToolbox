@@ -44,7 +44,7 @@ operator computeTangentsModifier_deformGeometries<<<index>>>(
     mesh.recomputeTangentsIfRequired();
 }
 
-function ComputeTangentsModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function ComputeTangentsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
   computeTangentsModifier_deformGeometries<<<geomSet.size()>>>(geomSet);
 }

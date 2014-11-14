@@ -227,7 +227,7 @@ function GeometryStack.setupRendering!(){
   this.handle = DrawingHandle(this.name+"Handle");
 
   // Now setup the rendering
-  InlineShader shader = this.handle.getDrawing().registerShader(OGLSurfaceShader('skinnedSurfaceShader'));
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLSurfaceShader());
   InlineMaterial material = shader.getOrCreateMaterial(this.name+"Material");
 
   for(Integer geomId=0; geomId<this.geomSet.size(); geomId++){
@@ -252,7 +252,7 @@ function GeometryStack.setupRendering!(){
       }
     }
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
-    instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(1.0,0.0,0.0)));
+    instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(0.0,0.0,1.0)));
   }
 }
 

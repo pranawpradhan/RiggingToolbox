@@ -382,7 +382,7 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
 
 /// Loads the data from the alembic file
 /// \internal
-function AlembicGeometryGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
+function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
 {
   AutoProfilingEvent p(FUNC);
   if(!this.expandedPath.exists()){

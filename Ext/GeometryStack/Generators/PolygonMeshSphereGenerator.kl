@@ -61,7 +61,7 @@ function Boolean PolygonMeshSphereGenerator.cacheResults(){
   return this.enableCaching;
 }
 
-function PolygonMeshSphereGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
+function PolygonMeshSphereGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
 
   PolygonMesh mesh();

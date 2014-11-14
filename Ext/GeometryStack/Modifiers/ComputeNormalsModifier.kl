@@ -57,7 +57,7 @@ operator computeNormalsModifier_deformGeometries<<<index>>>(
     mesh.recomputePointNormalsIfRequired( hardAngle );
 }
 
-function ComputeNormalsModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function ComputeNormalsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
   computeNormalsModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.hardAngle);
 }

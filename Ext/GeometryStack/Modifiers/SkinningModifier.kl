@@ -214,7 +214,7 @@ operator skinningModifier_deformGeometries_skinPositionsAndNormals<<<index>>>(
   normalsAttribute.incrementVersion();
 }
 
-function SkinningModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
 
   if(this.dataVersion != geomSet.getVersion()){

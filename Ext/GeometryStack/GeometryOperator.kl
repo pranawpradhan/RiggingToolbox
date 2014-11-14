@@ -16,7 +16,7 @@ interface GeometryOperator {
   
   Boolean cacheResults();
 
-  evaluate(EvalContext context, io GeometrySet geomSet);
+  evaluate!(EvalContext context, io GeometrySet geomSet);
 
   JSONDictValue saveJSON(PersistenceContext persistenceContext);
 

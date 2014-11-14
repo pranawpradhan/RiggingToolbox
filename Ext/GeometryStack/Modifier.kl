@@ -24,7 +24,7 @@ function Boolean BaseModifier.cacheResults(){
 }
 
 
-function BaseModifier.evaluate(EvalContext context, io GeometrySet geomSet){
+function BaseModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
 }
 

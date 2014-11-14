@@ -50,7 +50,7 @@ function Boolean PolygonMeshPlaneGenerator.cacheResults(){
   return this.enableCaching;
 }
 
-function PolygonMeshPlaneGenerator.evaluate(EvalContext context, io GeometrySet geomSet){
+function PolygonMeshPlaneGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
   PolygonMesh mesh();
   mesh.addPlane(Xfo(), this.length, this.width, this.lengthSections, this.widthSections, this.normals, this.uvs);
   geomSet.resize(1);
