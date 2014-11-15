@@ -36,14 +36,7 @@ function UInt32[String] WeightmapModifier.getAttributeInteractions(){
   return result;
 }
 
-/// Return true if the generation of the geometries is expensive and the results should be cached.
-function Boolean WeightmapModifier.cacheResults(){
-  // Teh weightmap does not need to bac cached 
-  return false;
-}
-
-
-/// Per-geometry computation of the push. 
+/// Per-geometry setup of the weightmap
 /// \internal
 operator weightmapModifier_connectWeightmaps<<<index>>>(
   io GeometrySet geomSet,
@@ -61,9 +54,7 @@ operator weightmapModifier_connectWeightmaps<<<index>>>(
 
 function WeightmapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  
-  Ref<WeightmapModifier> io_this = this;
-  weightmapModifier_connectWeightmaps<<<geomSet.size()>>>(geomSet, io_this.weightmaps, this.weightmapName);
+  weightmapModifier_connectWeightmaps<<<geomSet.size()>>>(geomSet, this.weightmaps, this.weightmapName);
 }
 
 

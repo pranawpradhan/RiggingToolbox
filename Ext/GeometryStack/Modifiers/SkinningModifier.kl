@@ -218,9 +218,7 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
   AutoProfilingEvent p(FUNC);
 
   if(this.dataVersion != geomSet.getVersion()){
-    // create an io this pointer so we can cache the values. 
-    Ref<SkinningModifier> io_this = this;
-    io_this.bindShapeTransforms.resize(geomSet.size);
+    this.bindShapeTransforms.resize(geomSet.size);
     for(Integer i=0; i<geomSet.size; i++){
       Geometry geometry = geomSet.get(i);
       Ref<GeometryAttributes> attributes = geometry.getAttributes();
@@ -231,29 +229,29 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
       ThreadsafeMetaDataContainer metaData = getGeomMetaData(geometry);
       GenericMat44Value bindShapeTransform = metaData.get('bindShapeTransform');
       if(bindShapeTransform){
-        io_this.bindShapeTransforms[i] = bindShapeTransform.value;
+        this.bindShapeTransforms[i] = bindShapeTransform.value;
       }
     }
     if(geomSet.hasMetaData('skeleton')){
       Skeleton skeleton = geomSet.getMetaData('skeleton');
       if(skeleton)
-        io_this.setReferencePoseFromSkeleton(skeleton);
+        this.setReferencePoseFromSkeleton(skeleton);
       else
         throw("No skeleton found in geometry set");
     }
-    io_this.dataVersion = geomSet.getVersion();
+    this.dataVersion = geomSet.getVersion();
   }
 
   if(this.poseDirty){
-    Ref<SkinningModifier> io_this = this;
+    Ref<SkinningModifier> this = this;
     if(this.pose.size != this.invReferencePose.size){
       report('Warning: Pose count does not match the reference pose count. referencePose:' + this.invReferencePose.size + " != pose:" + this.pose.size + ". Skinning disabled");
       return;
     }
     for (Integer i = 0; i < this.pose.size; i++) {
-      io_this.skinningMatrices[i] = this.pose[i] * this.invReferencePose[i];
+      this.skinningMatrices[i] = this.pose[i] * this.invReferencePose[i];
     }
-    io_this.poseDirty = false;
+    this.poseDirty = false;
   }
 
 
