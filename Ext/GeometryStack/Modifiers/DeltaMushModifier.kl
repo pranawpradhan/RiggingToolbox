@@ -255,7 +255,7 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
 
   if(this.displayDebugging && this.handle==null)
     this.setupRendering();
-  else if(!this.displayDebugging && this.handle!=null)
+  else if((!this.displayDebugging && this.handle!=null) || this.iterations == 0)
     this.handle = null;
 }
 
