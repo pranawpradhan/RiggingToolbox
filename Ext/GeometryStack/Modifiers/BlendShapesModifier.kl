@@ -25,11 +25,52 @@ function GeometryOperator BlendShapesModifierFactory.constructGeometryOperator()
 struct BlendShapesModifier_Target {
   UInt32 indices[];
   Vec3 deltas[];
+
+  OGLBuffer buffers[2];
+  CudaGLResource resources[2];
 };
 
-function UInt32 BlendShapesModifier_Target.pointCount(){
+inline UInt32 BlendShapesModifier_Target.pointCount(){
   return this.indices.size;
 }
+
+function BlendShapesModifier_Target.loadToOGLBuffer!( ) {
+  if(this.buffers][0] == null)
+    this.buffers][0] = OGLBuffer();
+  this.buffers][0].genBuffer(this.indices.data(), this.indices.dataSize(), this.indices.size());
+  // TODO: flag this resource as 'readonly'. check performance. 
+  this.resources[0] = CudaGLResource(this.buffers][0].bufferID);
+
+  if(this.buffers[1] == null)
+    this.buffers[1] = OGLBuffer();
+  this.buffers[1].genBuffer(this.deltas.data(), this.deltas.dataSize(), this.deltas.size());
+  // TODO: flag this resource as 'readonly'. check performance. 
+  this.resources[1] = CudaGLResource(this.buffers[1].bufferID);
+}
+
+inline BlendShapesModifier_Target.map!(){
+  for(UInt32 i=0; i<2; i++)
+    this.resources[i].map();
+}
+inline BlendShapesModifier_Target.unmap!(){
+  for(UInt32 i=0; i<2; i++)
+    this.resources[i].unmap();
+}
+
+inline UInt32<> BlendShapesModifier_Target.getIndices(Boolean useGPU){
+  if(useGPU)
+    return this.resources[0].getVec3Array();
+  else
+    return this.indices;
+}
+
+inline Vec3<> BlendShapesModifier_Target.getDeltas(Boolean useGPU){
+  if(useGPU)
+    return this.resources[1].getUInt32Array();
+  else
+    return this.deltas;
+}
+
 
 //////////////////////////////////////
 //
@@ -46,6 +87,8 @@ object BlendShapesModifier : BaseModifier {
   Scalar threshold;
 
   Scalar weights[];
+
+  Boolean buffersLoaded;
 };
 
 
@@ -278,23 +321,26 @@ function BlendShapesModifier.setBlendWeights!(Scalar weights[]){
 
 operator blendShapesModifier_applyGeomDeltas<<<index>>>(
   io Vec3 positions[],
-  BlendShapesModifier_Target target,
+  UInt32 targetIndices<>,
+  Vec3 targetDeltas<>,
   Scalar weight
 ){
-  positions[target.indices[index]] += target.deltas[index] * weight;
+  positions[targetIndices[index]] += targetDeltas[index] * weight;
 }
 
 operator blendShapesModifier_applyMeshDeltas<<<index>>>(
   io PolygonMesh mesh,
-  BlendShapesModifier_Target target,
+  UInt32 targetIndices<>,
+  Vec3 targetDeltas<>,
   Scalar weight
 ){
-  Vec3 pos = mesh.getPointPosition(target.indices[index]);
-  mesh.setPointPosition(target.indices[index], pos + (target.deltas[index] * weight));
+  Vec3 pos = mesh.getPointPosition(targetIndices[index]);
+  mesh.setPointPosition(targetIndices[index], pos + (targetDeltas[index] * weight));
 }
 
 
 operator blendShapesModifier_deformGeometries<<<index>>>(
+  Boolean useGPU,
   io GeometrySet geomSet,
   BlendShapesModifier_Target targets[][],
   Scalar weights[]
@@ -306,16 +352,18 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   PolygonMesh mesh = geom;
   for(UInt32 i=0; i<targets[index].size; i++){
     if(!mesh){
-      blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()>>>(
+      blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()@useGPU>>>(
         positionsAttribute.values,
-        targets[index][i],
+        targets[index][i].getIndices(useGPU),
+        targets[index][i].getDeltas(useGPU),
         weights[i]
       );
     }
     else{
-      blendShapesModifier_applyMeshDeltas<<<targets[index][i].pointCount()>>>(
+      blendShapesModifier_applyMeshDeltas<<<targets[index][i].pointCount()@useGPU>>>(
         mesh,
-        targets[index][i],
+        targets[index][i].getIndices(useGPU),
+        targets[index][i].getDeltas(useGPU),
         weights[i]
       );
     }
@@ -325,7 +373,32 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 
 function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets, this.weights);
+
+  Boolean useGPU = false;
+  if(useGPU){
+    if(!this.buffersLoaded){
+      for(UInt32 i=0; i<this.targets.size; i++){
+        for(UInt32 j=0; j<this.targets[i].size; j++){
+          this.targets[i][j].loadToOGLBuffer();
+        }
+      }
+    }
+    for(UInt32 i=0; i<this.targets.size; i++){
+      for(UInt32 j=0; j<this.targets[i].size; j++){
+        this.targets[i][j].map();
+      }
+    }
+  }
+
+  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(useGPU, geomSet, this.targets, this.weights);
+
+  if(useGPU){
+    for(UInt32 i=0; i<this.targets.size; i++){
+      for(UInt32 j=0; j<this.targets[i].size; j++){
+        this.targets[i][j].unmap();
+      }
+    }
+  }
 }
 
 
