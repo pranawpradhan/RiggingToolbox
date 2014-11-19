@@ -164,6 +164,9 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
       }
     }
   }
+  // The reference positions are only used to generate the sparse blend targets. 
+  // We can safely remove them now to reduce memory usage. 
+  this.referencePositions.resize(0);
 }
 
 //////////////////////////////////////
