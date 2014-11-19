@@ -26,48 +26,50 @@ struct BlendShapesModifier_Target {
   UInt32 indices[];
   Vec3 deltas[];
 
-  OGLBuffer buffers[2];
-  CudaGLResource resources[2];
+  // OGLBuffer buffers[2];
+  // CudaGLResource resources[2];
 };
 
 inline UInt32 BlendShapesModifier_Target.pointCount(){
   return this.indices.size;
 }
 
-function BlendShapesModifier_Target.loadToOGLBuffer!( ) {
-  if(this.buffers][0] == null)
-    this.buffers][0] = OGLBuffer();
-  this.buffers][0].genBuffer(this.indices.data(), this.indices.dataSize(), this.indices.size());
-  // TODO: flag this resource as 'readonly'. check performance. 
-  this.resources[0] = CudaGLResource(this.buffers][0].bufferID);
+function BlendShapesModifier_Target.loadToGPU!( ) {
+  this.indices.convertToGPU();
+  this.deltas.convertToGPU();
+  // if(this.buffers][0] == null)
+  //   this.buffers][0] = OGLBuffer();
+  // this.buffers][0].genBuffer(this.indices.data(), this.indices.dataSize(), this.indices.size());
+  // // TODO: flag this resource as 'readonly'. check performance. 
+  // this.resources[0] = CudaGLResource(this.buffers][0].bufferID);
 
-  if(this.buffers[1] == null)
-    this.buffers[1] = OGLBuffer();
-  this.buffers[1].genBuffer(this.deltas.data(), this.deltas.dataSize(), this.deltas.size());
-  // TODO: flag this resource as 'readonly'. check performance. 
-  this.resources[1] = CudaGLResource(this.buffers[1].bufferID);
+  // if(this.buffers[1] == null)
+  //   this.buffers[1] = OGLBuffer();
+  // this.buffers[1].genBuffer(this.deltas.data(), this.deltas.dataSize(), this.deltas.size());
+  // // TODO: flag this resource as 'readonly'. check performance. 
+  // this.resources[1] = CudaGLResource(this.buffers[1].bufferID);
 }
 
-inline BlendShapesModifier_Target.map!(){
-  for(UInt32 i=0; i<2; i++)
-    this.resources[i].map();
-}
-inline BlendShapesModifier_Target.unmap!(){
-  for(UInt32 i=0; i<2; i++)
-    this.resources[i].unmap();
-}
+// inline BlendShapesModifier_Target.map!(){
+//   for(UInt32 i=0; i<2; i++)
+//     this.resources[i].map();
+// }
+// inline BlendShapesModifier_Target.unmap!(){
+//   for(UInt32 i=0; i<2; i++)
+//     this.resources[i].unmap();
+// }
 
 inline UInt32<> BlendShapesModifier_Target.getIndices(Boolean useGPU){
-  if(useGPU)
-    return this.resources[0].getVec3Array();
-  else
+  // if(useGPU)
+  //   return this.resources[0].getVec3Array();
+  // else
     return this.indices;
 }
 
 inline Vec3<> BlendShapesModifier_Target.getDeltas(Boolean useGPU){
-  if(useGPU)
-    return this.resources[1].getUInt32Array();
-  else
+  // if(useGPU)
+  //   return this.resources[1].getUInt32Array();
+  // else
     return this.deltas;
 }
 
@@ -308,6 +310,7 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
     );
     this.targets[geomIndex][targetIndex] = reducer.produce();
   }
+  this.buffersLoaded = false;
 }
 
 
@@ -321,6 +324,7 @@ function BlendShapesModifier.setBlendWeights!(Scalar weights[]){
 
 //////////////////////////////////////
 //
+
 
 operator blendShapesModifier_applyGeomDeltas<<<index>>>(
   io Vec3 positions[],
@@ -374,34 +378,27 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   positionsAttribute.incrementVersion();
 }
 
+function BlendShapesModifier.loadToGPU!( ) {
+  for(UInt32 i=0; i<this.targets.size; i++){
+    for(UInt32 j=0; j<this.targets[i].size; j++){
+      this.targets[i][j].loadToGPU();
+    }
+  }
+}
+
 function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
 
   Boolean useGPU = false;
   if(useGPU){
     if(!this.buffersLoaded){
-      for(UInt32 i=0; i<this.targets.size; i++){
-        for(UInt32 j=0; j<this.targets[i].size; j++){
-          this.targets[i][j].loadToOGLBuffer();
-        }
-      }
-    }
-    for(UInt32 i=0; i<this.targets.size; i++){
-      for(UInt32 j=0; j<this.targets[i].size; j++){
-        this.targets[i][j].map();
-      }
+      this.loadToGPU();
+      this.buffersLoaded = true;
     }
   }
 
   blendShapesModifier_deformGeometries<<<geomSet.size()>>>(useGPU, geomSet, this.targets, this.weights);
 
-  if(useGPU){
-    for(UInt32 i=0; i<this.targets.size; i++){
-      for(UInt32 j=0; j<this.targets[i].size; j++){
-        this.targets[i][j].unmap();
-      }
-    }
-  }
 }
 
 

@@ -14,6 +14,8 @@ object GeometryAttributeCache : CachePoint {
   String attributesNames[];
   GeometryAttribute cachedAttributes[][];
   UInt32 attributeVersions[][];
+
+  Boolean gpuAttributes[];
 };
 
 function GeometryAttributeCache() {
@@ -40,6 +42,7 @@ function GeometryAttributeCache.setCachedAttributeNames!(String attributesNames[
   this.attributesNames = attributesNames.clone();
 }
 
+
 function GeometryAttributeCache.update!(GeometrySet geomSet, GeometryOperator op) {
   if(this.disabled)
     return;
@@ -60,8 +63,19 @@ function GeometryAttributeCache.update!(GeometrySet geomSet, GeometryOperator op
     for(Integer j=0; j<this.attributesNames.size; j++){
       Ref<GeometryAttribute> attr = attributes.getAttribute(this.attributesNames[j]);
       if(attr){
-        this.cachedAttributes[i][j] = cloneAttribute(attr);
-        this.attributeVersions[i][j] = attr.getVersion();
+
+        // Clone the attribute that is already on the GPU into another array that is already on the GPU.
+        // Note: all attributes used in Read/ReadWrite are already onthe GPU. 
+        Boolean onGPU = geomSet.getAttributeOnGPU(this.attributesNames[j]);
+        if(onGPU){
+          this.cachedAttributes[i][j] = cloneGPUAttribute(attr);
+        }
+        else{
+          this.cachedAttributes[i][j] = cloneAttribute(attr);
+          convertAttributeToGPU();
+          this.attributeVersions[i][j] = attr.getVersion();
+        }
+        this.gpuAttributes[j] = onGPU;
       }
       else{
         // report("Warning: geometry does not have required attribute ");
@@ -72,6 +86,113 @@ function GeometryAttributeCache.update!(GeometrySet geomSet, GeometryOperator op
   this.valid = true;
 }
 
+
+
+function GeometryAttributeCache.restoreAttr( GeometryAttribute srcAttr, GeometryAttribute tgtAttr, Boolean useGPU) {
+  // Note: we need clone to be part of the Geometry interface. 
+  switch(attr.type()){
+    case ColorAttribute:{
+      ColorAttribute concreteSrcAttr = srcAttr;
+      ColorAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneColorAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case IntegerAttribute:{
+      IntegerAttribute concreteSrcAttr = srcAttr;
+      IntegerAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneIntegerAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case Mat33Attribute:{
+      Mat33Attribute concreteSrcAttr = srcAttr;
+      Mat33Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneMat33Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case Mat44Attribute:{
+      Mat44Attribute concreteSrcAttr = srcAttr;
+      Mat44Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneMat44Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case QuatAttribute:{
+      QuatAttribute concreteSrcAttr = srcAttr;
+      QuatAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneQuatAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case RGBAAttribute:{
+      RGBAAttribute concreteSrcAttr = srcAttr;
+      RGBAAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneRGBAAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case RGBAttribute:{
+      RGBAttribute concreteSrcAttr = srcAttr;
+      RGBAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneRGBAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);;
+      break;
+    }
+    case ScalarAttribute:{
+      ScalarAttribute concreteSrcAttr = srcAttr;
+      ScalarAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneScalarAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case ScalarConstantArrayAttribute:{
+      ScalarConstantArrayAttribute concreteSrcAttr = srcAttr;
+      ScalarConstantArrayAttribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneScalarAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+       }
+    case SkinningAttribute:{
+      // IntegerAttribute concreteSrcAttr = srcAttr;
+      // IntegerAttribute concreteTgtAttr = tgtAttr;
+      // geometryAttributeCache_cloneIntegerAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case UInt16ConstantArrayAttribute:{
+      UInt16Attribute concreteSrcAttr = srcAttr;
+      UInt16Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneUInt16Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case UInt32Attribute:{
+      UInt32Attribute concreteSrcAttr = srcAttr;
+      UInt32Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneUInt32Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case Vec2Attribute:{
+      Vec2Attribute concreteSrcAttr = srcAttr;
+      Vec2Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneVec2Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case Vec3_dAttribute:{
+      // IntegerAttribute concreteSrcAttr = srcAttr;
+      // IntegerAttribute concreteTgtAttr = tgtAttr;
+      // geometryAttributeCache_cloneIntegerAttr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);    
+      break;
+    }
+    case Vec3Attribute:{
+      Vec3Attribute concreteSrcAttr = srcAttr;
+      Vec3Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneVec3Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    case Vec4Attribute:{
+      Vec4Attribute concreteSrcAttr = srcAttr;
+      Vec4Attribute concreteTgtAttr = tgtAttr;
+      geometryAttributeCache_cloneVec4Attr<<<concreteAttr.size()@useGPU>>>(concreteSrcAttr.values, concreteTgtAttr.values);
+      break;
+    }
+    default:
+      throw("Invalid Attribute type:" + attr.type());
+  }
+  tgtAttr.incrementVersion();
+}
+
+
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.restore(io GeometrySet geomSet){
   if(this.disabled)
@@ -80,11 +201,13 @@ function GeometryAttributeCache.restore(io GeometrySet geomSet){
   for(Integer i=0; i<geomSet.size; i++){
     Ref<GeometryAttributes> attributes = geomSet.get(i).getAttributes();
     for(Integer j=0; j<this.attributesNames.size; j++){
-      Ref<GeometryAttribute> attr = attributes.getAttribute(this.attributesNames[j]);
       if(this.cachedAttributes[i][j] != null){
+        Ref<GeometryAttribute> attr = attributes.getAttribute(this.attributesNames[j]);
         if(this.attributeVersions[i][j] != attr.getVersion()){
           Ref<Object> cachedAttr = this.cachedAttributes[i][j];
-          attr.copyFrom( cachedAttr );
+          // attr.copyFrom( cachedAttr );
+          Boolean useGPU = false;
+          this.restoreAttr(cachedAttr, attr, useGPU);
         }
       }
       else{

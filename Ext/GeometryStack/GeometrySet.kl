@@ -4,12 +4,34 @@
 
 require Geometry;
 
+struct GeometryPolygonMesh_PointAttrIndices
+  UInt32 offsets[];
+  UInt32 indices[];
+}
+
 object GeometrySet {
   Geometry geometries[];
 
   ///Container for holding various user data, such as the Skeleton.
   Object metaData[String];
   UInt32 version;
+
+  Boolean useGPU;
+
+  GeometryPolygonMesh_PointAttrIndices pointAttrIndices[];
+  // As attributes are generated, they often start on the CPU.
+  // (e.g. when Generators create attributes)
+  // Sometimes a modifier might create a new attribute, and immedietly move it to the GPU.
+  // TOOD: example needed.
+  // If a modifier is gonig to utilize an attirbute in Read or ReadWrite mode, then we need
+  // to move it to the GPU first.
+  // We are assuming that all modifiers run on the GPU.
+  Boolean gpuAttributes[String];
+
+  // for any render attrs, we generate OGLBuffers during evaluation of the stack.
+  Boolean renderAttributes[String];
+  OGLBufferDictionary bufferDicts[];
+  CudaGLResource resources[][String];
 };
 
 /// returns the size of the contained value array
@@ -40,6 +62,76 @@ inline GeometrySet.add!(Geometry value) {
   this.version++;
 }
 
+function GeometrySet.extactPointAttrIndices(UInt32 index) {
+  if(index <= this.pointAttrIndices.size)
+    this.pointAttrIndices.resize(index+1);
+
+  PolgonMesh mesh = this.geometries[index];
+  if(!mesh)
+    return;
+  GeometryPolygonMesh_PointAttrIndices pointAttrIndices;
+  UInt32 offset = 0;
+  for(UInt32 i=0; i<mesh.pointCount(); i++){
+    pointAttrIndices.offsets.push(offset);
+    DataIter pointIter = this.getPointIter( point );
+    if( pointIter ){
+      PolygonMesh_UnsharedAttributeIndexIter iter = mesh.getPointIterUnsharedAttributeIndexIter( pointIter );
+      UInt32 attributeIndex;
+      while( mesh.PolygonMesh_UnsharedAttributeIndexIterGetNext(iter, attributeIndex) ){
+        pointAttrIndices.indices.push(attributeIndex);
+        offset++;
+      }
+    }
+    else{
+      pointAttrIndices.indices.push(i);
+      offset++;
+    }
+  }
+
+  this.pointAttrIndices[index] = pointAttrIndices;
+}
+
+// As attributes are moved to the GPU, this dict is filled out. 
+// Note: attributes are never moved back to the CPU.
+function GeometrySet.setAttributeOnGPU(String name) {
+  this.attributeOnGPU[name] = true;
+}
+
+function Boolean GeometrySet.getAttributeOnGPU(String name) {
+  return this.attributeOnGPU.has(name);
+}
+
+// As attributes are moved to the GPU, this dict is filled out. 
+// Note: attributes are never moved back to the CPU.
+function GeometrySet.moveAttrToGPU(String name, Boolean renderAttr) {
+  for(Integer k=0; k<this.geometries.size; k++){
+    if(renderAttr){
+      OGLBuffer buffer = this.bufferDicts[k].get(name);
+      if(!buffer) {
+        OGLBuffer buffer = OGLBuffer();
+        buffer.bufferType = GL_ARRAY_BUFFER;
+        buffer.bufferUsage = GL_DYNAMIC_DRAW;
+        buffer.numBufferElementComponents = 1;
+        buffer.bufferElementComponentType = GL_BYTE;
+        buffer.genBuffer(dummyData.data(), dummyData.dataSize(), dummyData.size(), 0);
+        this.bufferDicts[k].set(name, buffer);
+      }
+      this.resources[k][name] = CudaGLResource(buffer.bufferID);
+      this.renderAttributes[name] = true;
+    }
+    else{
+      Ref<GeometryAttributes> attributes = this.geometries[k].getAttributes();
+      GeometryAttribute attr = attributes.get(key);
+      convertAttributeToGPU(attr);
+    }
+  }
+}
+
+//
+function OGLBufferDictionary GeometrySet.getBufferDict( UInt32 geomId ) {
+  return this.bufferDicts[geomId];
+}
+
 /// returns true if the geometry set owns a meta data under the given key
 function Boolean GeometrySet.hasMetaData( String name ) {
   return this.metaData.has( name );
@@ -58,4 +150,92 @@ function GeometrySet.setMetaData!( String name, Object value ) {
 /// sets a single object in the metadata
 function UInt32 GeometrySet.getVersion() {
   return this.version;
+}
+
+
+function Boolean<> GeometrySet.getBooleanAttributeData(UInt32 geomId, String name) {
+  if(this.renderAttributes.has(name)){
+    if(!this.resources[geomId].has(name))
+      throw("GeometrySet::getBooleanAttributeData: CudaGLResource '"+name+"' not found!");
+    return this.resources[geomId][name].getBooleanArray();
+  }
+  else{
+    Geometry geometry = this.get(geomId);
+    Ref<GeometryAttributes> attributes = geometry.getAttributes();
+    Ref<BooleanAttribute> attr = attributes.getAttribute(name);
+    Boolean result<>(attr.values.data, attr.values.size());
+    return result;
+  }
+}
+
+function SInt32<> GeometrySet.getSInt32AttributeData(UInt32 geomId, String attrName) {
+  SInt32 value;
+  SInt32 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function UInt32<> GeometrySet.getUInt32AttributeData(UInt32 geomId, String attrName) {
+  UInt32 value;
+  UInt32 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function UInt64<> GeometrySet.getUInt64AttributeData(UInt32 geomId, String attrName) {
+  UInt64 value;
+  UInt64 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Float32<> GeometrySet.getFloat32AttributeData(UInt32 geomId, String attrName) {
+  Float32 value;
+  Float32 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Float64<> GeometrySet.getFloat64AttributeData(UInt32 geomId, String attrName) {
+  Float64 value;
+  Float64 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Vec2<> GeometrySet.getVec2AttributeData(UInt32 geomId, String attrName) {
+  Vec2 value;
+  Vec2 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Vec3<> GeometrySet.getVec3AttributeData(UInt32 geomId, String attrName) {
+  Vec3 value;
+  Vec3 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Vec4<> GeometrySet.getVec4AttributeData(UInt32 geomId, String attrName) {
+  Vec4 value;
+  Vec4 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Quat<> GeometrySet.getQuatAttributeData(UInt32 geomId, String attrName) {
+  Quat value;
+  Quat result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Color<> GeometrySet.getColorAttributeData(UInt32 geomId, String attrName) {
+  Color value;
+  Color result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Mat33<> GeometrySet.getMat33AttributeData(UInt32 geomId, String attrName) {
+  Mat33 value;
+  Mat33 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
+}
+
+function Mat44<> GeometrySet.getMat44AttributeData(UInt32 geomId, String attrName) {
+  Mat44 value;
+  Mat44 result<>(this.pointer(), UInt32(this.bytes()/value.dataSize()));
+  return result;
 }

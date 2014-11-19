@@ -6,6 +6,8 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
+require CudaGLHelpers;
+
 // pre-declaring the regsitry because it is loaded last in the fpm file. 
 object RiggingToolboxRegistry;
 
@@ -18,15 +20,24 @@ object GeometryStack : Notifier, Listener {
   CachePoint cachePoints[];
   UInt32 dirtyPoint;
 
+  // e.g. If a deformer modifies positions, and the subsequent deformer
+  // ultilizes normals, and there is a dependeny from normals to positions
+  // then normals have to be automatically recomputed before the next deformer is run. 
+  String implicitDependencies[String][];
+
+  // Attributes used in rendering.
+  // If using GPU compute, these attributes are immedietly uploaded as an openGL buffer,
+  // and the buffer id used to retrieve the shared data for Cuda. 
+  String renderAttributes[];
+
   Boolean displayGeometries;
   DrawingHandle handle;
   Boolean renderingInitialized;
   UInt32 geomSetVersion;
 
-  // e.g. If a deformer modifies positions, and the subsequent deformer
-  // ultilizes normals, and there is a dependeny from normals to positions
-  // then normals have to be automatically recomputed before the next deformer is run. 
-  String implicitDependencies[String][];
+  Boolean useGPUCompute;
+  // Resourcec managers for the geometries when using CUDA compute. 
+  CudaGLResourceManager cudaGLResourceManagers[];
 };
 
 function GeometryStack() {
@@ -39,6 +50,10 @@ function GeometryStack.init!() {
   this.addAttributeDependency('normals', 'positions');
   this.addAttributeDependency('tangents', 'positions');
   this.addAttributeDependency('tangents', 'normals');
+
+  this.renderAttributes.push('positions');
+  this.renderAttributes.push('normals');
+
   this.displayGeometries = true;
 }
 
@@ -134,7 +149,23 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
           }
         }
       }
-      
+
+      // Convert any CPU attributes to GPU attributes before caching or running the op
+      {
+        Generator generator = op;
+        if(!generator){
+          UInt32 deps[String] = op.getAttributeInteractions();
+          for(key, value in deps){
+            if(value == AttrMode_Read || value == AttrMode_ReadWrite){
+              Boolean onGPU = geomSet.getAttributeOnGPU(key);
+              if(!onGPU){
+                geomSet.moveAttrToGPU(key);
+              }
+            }
+          }
+        }
+      }
+
       CachePoint cachePoint = this.cachePoints[i];
       if(cachePoint == null){
         Generator generator = op;
@@ -164,7 +195,6 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
     this.setupRendering();
     this.geomSetVersion = this.geomSet.getVersion();
   }
-
 
   return this.geomSet;
 }
@@ -199,6 +229,29 @@ function GeometryStack.setupRendering!(){
         }
       }
     }
+
+    // if(this.useGPUCompute){
+    //   CudaGLResourceManager resources();
+    //   resources.enableGPU(true);
+
+    //   // generate all resources for the sphere
+    //   resources.setGeometryAttributes(geom.getAttributes());
+    //   resources.setInlineShape(shape);
+    //   // Now 
+    //   resources.addVec3Resource('positions');
+    //   resources.addVec3Resource('normals');
+    //   resources.addVec3Resource('originalPositions');
+    //   resources.addVec3Resource('originalNormals');
+    //   resources.addVec3Resource('velocities');
+    //   resources.addUInt32Resource('neighborA');
+    //   resources.addUInt32Resource('neighborB');
+
+    //   this.cudaGLResourceManagers[geomId] = resources;
+    //   report('Mapped all resources.');
+
+    // }
+
+
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
     instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(0.0,0.0,1.0)));
   }

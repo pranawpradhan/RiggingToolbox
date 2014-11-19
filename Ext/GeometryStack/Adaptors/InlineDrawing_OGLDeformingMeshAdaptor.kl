@@ -1,0 +1,34 @@
+/*
+ *  Copyright 2010-2014 Fabric Engine Inc. All rights reserved.
+ */
+
+/**
+\versionadded 1.12.0
+
+The OGLMeshShapeAdaptor implements the InlineShapeAdaptor interface. It is used to draw a InlineMeshShape within an OpenGL viewport.
+*/
+object InlineDrawing_OGLDeformingMeshAdaptor : OGLMeshShapeAdaptor {};
+
+/// default constructor
+function InlineDrawing_OGLDeformingMeshAdaptor() {}
+
+/// returns the types this adaptor is capable of drawing
+function String[] InlineDrawing_OGLDeformingMeshAdaptor.getShapeTypes() {
+  String result[];
+  result.push('InlineMeshShape');
+  return result;
+}
+
+/// draws the mesh to the screen. this is used by the 
+/// InlineInstance, and should not be called manually.
+/// \internal
+function Boolean InlineDrawing_OGLDeformingMeshAdaptor.draw!(io DrawContext context, io Ref<InlineShape> shape, Index index, Size count) {
+
+  InlineMeshShape meshShape = shape;
+  GeometryStack stack = meshShape.getMetaData('geometryStack');
+  if(stack){
+    EvalContext evalContext;
+    stack.evaluate(evalContext);
+  }
+  return this.parent#draw!( context, shape, index, count);
+}

@@ -36,6 +36,12 @@ object SkinningModifier : BaseModifier {
   Mat44 skinningMatrices[];
   Mat44 bindShapeTransforms[];
 
+  // Data extracted from the SkinningAttribute into flat arrays 
+  // so that we can easily move them to the GPU. 
+  Float32 weights[][];
+  UInt32 indices[][];
+  UInt32 offsets[][];
+  Boolean buffersLoaded;
 };
 
 function SkinningModifier(){
@@ -74,6 +80,39 @@ function SkinningModifier.setPose!(Mat44 pose[]){
   this.poseDirty = true;
   String data;
   this.notify('changed', data);
+}
+
+function SkinningModifier.extractSkinningDataToArrays!(PolygonMesh mesh, UInt32 geomIndex){
+  if(geomIndex <= this.weights.size)
+    this.weights.resize(geomIndex+1);
+  if(geomIndex <= this.indices.size)
+    this.indices.resize(geomIndex+1);
+  if(geomIndex <= this.offsets.size)
+    this.offsets.resize(geomIndex+1);
+
+  Ref<GeometryAttributes> attributes = mesh.getAttributes();
+  if(!attributes.has("skinningData")){
+    setError("ERROR: Geometry does not have skinningData");
+    return;
+  }
+  SkinningAttribute skinningAttr = attributes.getAttribute("skinningData");
+
+  this.weights[geomIndex].resize(0);
+  this.indices[geomIndex].resize(0);
+  this.offsets[geomIndex].resize(0);
+
+  UInt32 offset = 0;
+  for(UInt32 i=0; i<mesh.pointCount(); i++){
+    LocalL16UInt32Array indices;
+    LocalL16ScalarArray weights;
+    skinningAttr.getPairs(index, indices, weights);
+    this.offsets.push(offset);
+    for(UInt32 j=0; j<indices.size(); j++){
+      this.indices[geomIndex].push(indices.get(j));
+      this.weights[geomIndex].push(weights.get(j));
+      offset++;
+    }
+  }
 }
 
 /// The per-point operator that computes the linear blend skinning. 
@@ -214,6 +253,12 @@ operator skinningModifier_deformGeometries_skinPositionsAndNormals<<<index>>>(
   normalsAttribute.incrementVersion();
 }
 
+function SkinningModifier.loadToGPU!( ) {
+  this.weights.convertToGPU();
+  this.indices.convertToGPU();
+  this.offsets.convertToGPU();
+}
+
 function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
 
@@ -231,6 +276,10 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
       if(bindShapeTransform){
         this.bindShapeTransforms[i] = bindShapeTransform.value;
       }
+
+      PolygonMesh mesh = geometry;
+      if(mesh)
+        this.extractSkinningDataToArrays( mesh, i );
     }
     if(geomSet.hasMetaData('skeleton')){
       Skeleton skeleton = geomSet.getMetaData('skeleton');
@@ -252,6 +301,14 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
       this.skinningMatrices[i] = this.pose[i] * this.invReferencePose[i];
     }
     this.poseDirty = false;
+  }
+
+  Boolean useGPU = false;
+  if(useGPU){
+    if(!this.buffersLoaded){
+      this.loadToGPU();
+      this.buffersLoaded = true;
+    }
   }
 
 
