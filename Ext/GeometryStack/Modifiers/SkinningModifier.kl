@@ -243,7 +243,6 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
   }
 
   if(this.poseDirty){
-    Ref<SkinningModifier> this = this;
     if(this.pose.size != this.invReferencePose.size){
       report('Warning: Pose count does not match the reference pose count. referencePose:' + this.invReferencePose.size + " != pose:" + this.pose.size + ". Skinning disabled");
       return;

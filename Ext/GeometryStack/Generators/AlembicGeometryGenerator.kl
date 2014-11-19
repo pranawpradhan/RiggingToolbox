@@ -440,7 +440,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     Xfo globalXfo = this.computeGlobalPose(archive, polymeshPaths[i]);
 
     GenericMat44Value bindShapeTransform(globalXfo.toMat44());
-    AutoLock AL(mesh.metaData.simpleLock);
+    AutoLock AL(mesh.metaData.lock);
     mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
 
     geomSet.add(mesh);
