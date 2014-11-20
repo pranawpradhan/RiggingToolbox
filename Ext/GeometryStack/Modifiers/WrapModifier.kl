@@ -91,9 +91,14 @@ function Mat44 wrapModifier_buildRefFrame(
   Vec4Attribute srcTangentsAttribute,
   GeometryLocation location
   ){
-  Vec3 pos = GetAttributeAtLocation( srcMesh, location, srcPositionsAttribute );
-  Vec3 nrm = GetAttributeAtLocation( srcMesh, location, srcNormalsAttribute );
-  Vec4 tgt = GetAttributeAtLocation( srcMesh, location, srcTangentsAttribute );
+
+  LocalL16UInt32Array attributeIndices;
+  LocalL16ScalarArray weights;
+  srcMesh.getLocationAttributeIndicesAndWeights( location, attributeIndices, weights );
+
+  Vec3 pos = srcPositionsAttribute.getLinearCombination( attributeIndices, weights );
+  Vec3 nrm = srcNormalsAttribute.getLinearCombination( attributeIndices, weights );
+  Vec4 tgt = srcTangentsAttribute.getLinearCombination( attributeIndices, weights );
 
   Quat q;
   q.setFromDirectionAndUpvector(nrm, Vec3(tgt.x, tgt.y, tgt.z));
@@ -277,7 +282,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
     this.debugLines.resize(geomSet.size());
     this.bound = false;
   }
-  
+
   {
     AutoProfilingEvent p2("wrapModifier_deformGeometries");
     wrapModifier_deformGeometries<<<geomSet.size()>>>(
