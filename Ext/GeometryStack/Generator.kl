@@ -6,6 +6,11 @@
 require Math;
 require Geometry;
 
+/**
+  
+
+  \seealso GeometrySet, GeometryStack
+*/
 interface Generator {
   Boolean cacheResults();
 };

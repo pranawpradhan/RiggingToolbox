@@ -134,7 +134,6 @@ Skinning data can be extracted to ICE attributes and exported as AlembicAttribut
 
   \endrst
  
-  \endexample
   \seealso PolygonMeshPlaneGenerator, PolygonMeshSphereGenerator
 */
 object AlembicGeometryGenerator : BaseGenerator {
