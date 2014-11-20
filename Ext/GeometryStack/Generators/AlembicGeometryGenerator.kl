@@ -22,101 +22,137 @@ function GeometryOperator AlembicGeometryGeneratorFactory.constructGeometryOpera
 //////////////////////////////////////
 //
 
-/*
-# The following python script extracts the Skinning weights and ids 
-# into a custom attribute that is then exported to Alembic.
-from itertools import chain
-import time
-import pymel.core as pm
-from pymel import *
-from maya import cmds
-start = time.time()
-
-def packWeights(w, weights, boneIDs, idMapping):
-    for i,v in enumerate(w):
-        for j,x in enumerate(list(v)):
-            if j == 0:
-                idMapping.append(len(weights))
-            if x != 0:
-                weights.append(float(x))
-                boneIDs.append(j)
-
-def fnFindSkinCluster(mesh):
-    skincluster = None
-    for each in pm.listHistory(mesh):
-        if type(each)==pm.nodetypes.SkinCluster:
-            skincluster = each
-    return skincluster
-
-def fnSaveSkinning(mesh, weights, boneIDs, idMapping, boneList):
-    skincluster = fnFindSkinCluster(mesh)
-    if skincluster!=None:
-        w = skincluster.getWeights(skincluster.getGeometry()[0])
-        packWeights(w, weights, boneIDs, idMapping)
-        for each in skincluster.getInfluence():
-            boneList.append(str(each))
-        return True
-    else:
-        return False
-
-    #return [weights, boneIDs, idMapping, boneList]
-start = time.time()
-obj = pm.ls(selection=True)
-allObjects = pm.ls(type='mesh')
-for obj in allObjects:
-    mesh = pm.PyNode(obj)
-    if cmds.objExists(obj+'.EnvelopeWeights'):
-        mesh.deleteAttr('EnvelopeWeights')
-    if cmds.objExists(obj+'.EnvelopeDeformerIndices'):
-        mesh.deleteAttr('EnvelopeDeformerIndices')
-    if cmds.objExists(obj+'.MappingIndices'):
-        mesh.deleteAttr('MappingIndices')
-    if cmds.objExists(obj+'.EnvelopeDeformers'):
-        mesh.deleteAttr('EnvelopeDeformers')
-    weights = []
-    boneIDs = []
-    idMapping = []
-    boneList = []
-    hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
-    if hasSkin:
-        print "HasSkin:" + str(obj)
-        mesh = pm.PyNode(obj)
-
-        selected = pm.ls(sl=True)
-        mesh.addAttr('EnvelopeWeights', dataType='doubleArray')
-        mesh.addAttr('EnvelopeDeformerIndices', dataType='Int32Array')
-        mesh.addAttr('MappingIndices', dataType='Int32Array')
-        mesh.addAttr('EnvelopeDeformers', dataType='stringArray')
-
-        mesh.EnvelopeWeights.set( weights )
-        mesh.EnvelopeDeformerIndices.set( boneIDs )
-        mesh.MappingIndices.set( idMapping )
-        mesh.EnvelopeDeformers.set( boneList , type='stringArray')
-*/
-
-
 /**
+  The AlembicGeometryGenerator generates geometry data by loading an parsing an alembic file.
+  Multiple geometries might be loaded by the AlembicGeometryGenerator and these geometries woul propagate
+  up the stack. 
+  The AlembicGeometryGenerator also handles loading of skinning data from custom Alembic attributes.
+
+  The loaded skinnind meshes are used to collect deformers used in the skinning deformation. The deformers
+  are collected into a union and this union is used to generate a skeleton. The skeleton is passed up the stack
+  as a piece of meta data and used by the SkinningModifier to provide a reference pose for skinning deformation.
+  
+  The JSON data provided to load an alembic asset might look like the following.
+    {
+     "type": "AlembicGeometryGenerator",
+     "filePath": "AlembicData/skinnedTube.abc",
+     "geometryNames": ["pPlaneShape*"],
+     "includedSubtrees": ["pRootJoint"]
+    }
+
+  - The 'filePath' item specifies the relative file to the alembic file to be loaded.
+  - The 'geometryNames' item specifies a string to use to resolve loaded geometries. Note: wildcards can be used to specify many geometires at once.
+  - The 'includedSubtrees' item specifies 'pRootJoint' and indicates that the generated skeleton should include that xform and all of its descendants.
+
+\rst
+
+Geometry Preparation in Maya
+----------------------------
+
+.. code:: python
+
+  # The following Maya python script extracts the Skinning weights and ids
+  # into a custom attribute that is then exported to Alembic. Use this script
+  # to prepare your geomtries for export to Alembic.
+  # When exporting the geometries from Maya, ensure to add the extra Attributes
+  # to the Attributes list in the export dialog. 
+  from itertools import chain
+  import time
+  import pymel.core as pm
+  from pymel import *
+  from maya import cmds
+  start = time.time()
+
+  def packWeights(w, weights, boneIDs, idMapping):
+      for i,v in enumerate(w):
+          for j,x in enumerate(list(v)):
+              if j == 0:
+                  idMapping.append(len(weights))
+              if x != 0:
+                  weights.append(float(x))
+                  boneIDs.append(j)
+
+  def fnFindSkinCluster(mesh):
+      skincluster = None
+      for each in pm.listHistory(mesh):
+          if type(each)==pm.nodetypes.SkinCluster:
+              skincluster = each
+      return skincluster
+
+  def fnSaveSkinning(mesh, weights, boneIDs, idMapping, boneList):
+      skincluster = fnFindSkinCluster(mesh)
+      if skincluster!=None:
+          w = skincluster.getWeights(skincluster.getGeometry()[0])
+          packWeights(w, weights, boneIDs, idMapping)
+          for each in skincluster.getInfluence():
+              boneList.append(str(each))
+          return True
+      else:
+          return False
+
+      #return [weights, boneIDs, idMapping, boneList]
+  start = time.time()
+  obj = pm.ls(selection=True)
+  allObjects = pm.ls(type='mesh')
+  for obj in allObjects:
+      mesh = pm.PyNode(obj)
+      if cmds.objExists(obj+'.EnvelopeWeights'):
+          mesh.deleteAttr('EnvelopeWeights')
+      if cmds.objExists(obj+'.EnvelopeDeformerIndices'):
+          mesh.deleteAttr('EnvelopeDeformerIndices')
+      if cmds.objExists(obj+'.MappingIndices'):
+          mesh.deleteAttr('MappingIndices')
+      if cmds.objExists(obj+'.EnvelopeDeformers'):
+          mesh.deleteAttr('EnvelopeDeformers')
+      weights = []
+      boneIDs = []
+      idMapping = []
+      boneList = []
+      hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
+      if hasSkin:
+          print "HasSkin:" + str(obj)
+          mesh = pm.PyNode(obj)
+
+          selected = pm.ls(sl=True)
+          mesh.addAttr('EnvelopeWeights', dataType='doubleArray')
+          mesh.addAttr('EnvelopeDeformerIndices', dataType='Int32Array')
+          mesh.addAttr('MappingIndices', dataType='Int32Array')
+          mesh.addAttr('EnvelopeDeformers', dataType='stringArray')
+
+          mesh.EnvelopeWeights.set( weights )
+          mesh.EnvelopeDeformerIndices.set( boneIDs )
+          mesh.MappingIndices.set( idMapping )
+          mesh.EnvelopeDeformers.set( boneList , type='stringArray')
+
+Geometry Preparation in Softimage
+---------------------------------
+
+Skinning data can be extracted to ICE attributes and exported as AlembicAttributes. 
+
+// TODO: Get more details from the guys at Hybride. 
+
+
+  \endrst
  
   \endexample
-  \seealso FbxCharacter
+  \seealso PolygonMeshPlaneGenerator, PolygonMeshSphereGenerator
 */
-
 object AlembicGeometryGenerator : BaseGenerator {
 
   /// the file path of the alembic file.
+  /// \note the Path can be relative to the path of the JSON file being loaded. this is 
+  /// usually the JSON file for the GeometryStack its self. The path can also include environment variables
+  /// and these variables will automatically be resolved at runtime. 
   String filePath;
 
   /// \internal
   FilePath expandedPath;
 
+  /// The names of the geometry name queries to use to select geometries to be included in the deformation pipeline.
   String geometryNames[];
 
-  /// An array of joints which must be included in the skeleton
-  String includedBones[];
-
-  /// An array of joints whose subtrees must be included in the skeleton
+  /// An array of xforms whose descendants must be included in the generated skeleton
   String includedSubtrees[];
-
 
   /// A dictionary of colors to assign the bone chains. Only the root of a given
   /// chain needs to be specified, and all children willl be assigned the color.
@@ -128,16 +164,10 @@ object AlembicGeometryGenerator : BaseGenerator {
   /// mapped color. The suffixColors override the chainColors.
   Color suffixColors[String];
 
+  /// The Skeleton generated from the skinned meshes and included subtress.
+  /// \internal 
   Skeleton skeleton;
 };
-
-
-
-/// Constructor taking a file path to load the alembic file on disk
-function AlembicGeometryGenerator() {
-}
-
-
 
 
 /// Sets the file path of the alembic file. 
@@ -161,11 +191,18 @@ inline String AlembicGeometryGenerator.getFilePath(){
   return this.filePath;
 }
 
+////////////////////////////////////////////////////
+// Internal methods.
+
+/// Returns the name of an o path for any alembic path
+/// \internal
 inline String AlembicGeometryGenerator.getNameFromPath(String pathStr) {
   String path[] = pathStr.split('/');
   return path[path.size-1];
 }
 
+/// Returns the parent path for any alembic path
+/// \internal
 function String AlembicGeometryGenerator.getParentPath(String pathStr) {
   String path[] = pathStr.split('/');
   String parentPath;
@@ -178,23 +215,19 @@ function String AlembicGeometryGenerator.getParentPath(String pathStr) {
   return parentPath;
 }
 
-function Integer AlembicGeometryGenerator.findItem(String set[], String item) {
-  for(Integer j=0; j<set.size; j++){
-    if(item == set[j])
+/// Finds and item in the list with the given path.
+/// \internal
+function Integer AlembicGeometryGenerator.findItem(String list[], String pathStr) {
+  for(Integer j=0; j<list.size; j++){
+    if(pathStr == list[j])
       return j;
   }
   return -1;
 }
 
-function Integer AlembicGeometryGenerator.findItemByName(String set[], String item) {
-  String name = this.getNameFromPath(item);
-  for(Integer j=0; j<set.size; j++){
-    if(name == set[j])
-      return j;
-  }
-  return -1;
-}
 
+/// Merges 2 sets giving a new set with unique members
+/// \internal
 function AlembicGeometryGenerator.mergeSet(io String set[], String merge[]) {
   for(Integer i=0; i<merge.size; i++){
     Boolean found = false;
@@ -206,29 +239,44 @@ function AlembicGeometryGenerator.mergeSet(io String set[], String merge[]) {
   }
 }
 
-function AlembicGeometryGenerator.collectHierarchy(String pathStr, io String skeletonBonePaths[]) {
-  if(this.findItem(skeletonBonePaths, pathStr) == -1){
+/// Collects all items in the hierachy starting at the given item, up to the root of the hierarchy and adds them to the list.
+/// \internal
+function AlembicGeometryGenerator.collectAncestralHierarchy(String pathStr, io String list[]) {
+  if(this.findItem(list, pathStr) == -1){
     String parentPath = this.getParentPath(pathStr);
     if(parentPath != "")
-      this.collectHierarchy(parentPath, skeletonBonePaths);
-    skeletonBonePaths.push(pathStr);
+      this.collectAncestralHierarchy(parentPath, list);
+    list.push(pathStr);
   }
 }
 
 
 
-/// Collects all items in the hierachy below the given item and adds them to the bone identifiers list
+/// Collects all items in the hierachy below the given item and adds them to the list
 /// \internal
-function AlembicGeometryGenerator.addChildrenToSkeleton(String pathStr, String xformPaths[], io String skeletonBonePaths[]) {
-  for(Integer i=0; i<xformPaths.size; i++){
-    if(xformPaths[i].startsWith(pathStr) && this.findItem(skeletonBonePaths, xformPaths[i]) == -1){
-      skeletonBonePaths.push(xformPaths[i]);
+function AlembicGeometryGenerator.collectDescendantHierarchy(String pathStr, String paths[], io String list[]) {
+  for(Integer i=0; i<paths.size; i++){
+    // Alembic paths are hierarchical, so any path starting with the given path is a child.
+    if(paths[i].startsWith(pathStr) && this.findItem(list, paths[i]) == -1){
+      list.push(paths[i]);
     }
   }
 }
 
 
-function Xfo AlembicGeometryGenerator.computeGlobalPose(io AlembicArchiveReader archive, String pathStr){
+/// Collects all items in the hierachy above and below the given item and add them to the list
+/// \internal
+function AlembicGeometryGenerator.includeTree(String pathStr, String paths[], io String list[]) {
+  // collect items in the hierarchy above. 
+  String parentPath = this.getParentPath(pathStr);
+  if(parentPath != '')
+    this.collectAncestralHierarchy( parentPath, list );
+  this.collectDescendantHierarchy( pathStr, paths, list );
+}
+
+/// computes the global transform of an item in the alembic hierarchy./
+/// \internal
+function Xfo AlembicGeometryGenerator.computeGlobalXfo(io AlembicArchiveReader archive, String pathStr){
   AlembicXformReader xformReader = archive.getXform(pathStr);
   Xfo xfo();
   if(xformReader)
@@ -236,13 +284,14 @@ function Xfo AlembicGeometryGenerator.computeGlobalPose(io AlembicArchiveReader 
 
   String parentPath = this.getParentPath(pathStr);
   if(parentPath != ""){
-    xfo = this.computeGlobalPose(archive, parentPath) * xfo;
+    xfo = this.computeGlobalXfo(archive, parentPath) * xfo;
   }
   return xfo;
 }
 
 
 
+/// \internal
 function String[] AlembicGeometryGenerator_loadStringArrayProperty( AlembicICompoundProperty compound, io AlembicPropertyHeader header, String prop ){
   String result[];
   if(header.getDataType().getPod() == Alembic_kWstringPOD){
@@ -253,6 +302,7 @@ function String[] AlembicGeometryGenerator_loadStringArrayProperty( AlembicIComp
   return result;
 }
 
+/// \internal
 function Float32[] AlembicGeometryGenerator_loadFloat32ArrayProperty( AlembicICompoundProperty compound, io AlembicPropertyHeader header, String prop ){
   Float32 result[];
   if(header.getDataType().getPod() == Alembic_kFloat64POD){
@@ -266,6 +316,7 @@ function Float32[] AlembicGeometryGenerator_loadFloat32ArrayProperty( AlembicICo
   return result;
 }
 
+/// \internal
 function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicICompoundProperty compound, io AlembicPropertyHeader header, String prop ){
   UInt32 result[];
   if(header.getDataType().getPod() == Alembic_kInt64POD){
@@ -293,9 +344,9 @@ function UInt32[] AlembicGeometryGenerator_loadUInt32ArrayProperty( AlembicIComp
 
 
 
-
-/// Loads the data from the alembic file
-/// \internal
+/// Evaluate the generator.
+/// \param context The current eval context
+/// \param geomSet The geomSet to be populated
 function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
 {
   AutoProfilingEvent p(FUNC);
@@ -346,7 +397,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     readers[i].readSample(0.0, mesh);
 
 
-    Xfo globalXfo = this.computeGlobalPose(archive, polymeshPaths[i]);
+    Xfo globalXfo = this.computeGlobalXfo(archive, polymeshPaths[i]);
 
     GenericMat44Value bindShapeTransform(globalXfo.toMat44());
     AutoLock AL(mesh.metaData.lock);
@@ -397,7 +448,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
         if (/*"deformers:"+*/transformNames[k] == deformerNames[j]){
           // Store the index of the deformer in the transformNames array
           bonesIDs[i][j] = k;
-          this.collectHierarchy(xformPaths[k], skeletonBonePaths);
+          this.collectAncestralHierarchy(xformPaths[k], skeletonBonePaths);
           break;
         }
     }
@@ -417,23 +468,14 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     return;
   }
 
-  //  ensure any manually included bones are part of the skeleton.
-  for (Integer i=0; i<xformPaths.size; i++){
-    for(Integer j=0; j<this.includedBones.size; j++){
-      if(xformPaths[i] == this.includedBones[j]){
-        if(this.findItem(skeletonBonePaths, xformPaths[j]) == -1){
-          skeletonBonePaths.push(xformPaths[j]);
-        }
-      }
-    }
-  }
-
+  // There might be xforms specified in the file that must be 
   for (Integer i=0; i<this.includedSubtrees.size; i++){
-    this.addChildrenToSkeleton(this.includedSubtrees[i], xformPaths, skeletonBonePaths);
+    this.includeTree(this.includedSubtrees[i], xformPaths, skeletonBonePaths);
   }
 
   if(skeletonBonePaths.size == 0)
     return;
+
   //-----------------------------------------
   // Construct the skeleton
   Skeleton skeleton = this.buildSkeleton(archive, skeletonBonePaths, deformerNamesUnion);
@@ -563,7 +605,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
 
 
 
-/// Generates the skeleton from the Fbx file
+/// Generates the skeleton from the Alembic file
 /// \internal
 function Skeleton AlembicGeometryGenerator.buildSkeleton(io AlembicArchiveReader archive, String skeletonBonePaths[], String deformerNamesUnion[]) {
 
@@ -589,21 +631,12 @@ function Skeleton AlembicGeometryGenerator.buildSkeleton(io AlembicArchiveReader
     // Find bones that are either manually added, or are skinning deformers. 
     // These bones will be drawn with the skeleton.
     visibleBones[i] = false;
-    if(this.findItemByName(deformerNamesUnion, skeletonBonePaths[i]) != -1){
+    if(this.findItem(deformerNamesUnion, skeletonBonePaths[i]) != -1){
       visibleBones[i] = true;
       // Only deformers are used when computing the skinning matricies. 
       bone.setFlag(BONEFLAG_DEFORMER);
     }
-    if(!visibleBones[i]){
-      // check if this bone was manually added to the skeleton.
-      // If so, ensure it is visible. 
-      for(Index j=0; j<this.includedBones.size(); j++) {
-        if(bone.name == this.includedBones[j]){
-          visibleBones[i] = true;
-          break;
-        }
-      }
-    }
+
     String parentPath = this.getParentPath(skeletonBonePaths[i]);
     bone.parentIndex = this.findItem(skeletonBonePaths, parentPath);
 
@@ -773,6 +806,7 @@ function Skeleton AlembicGeometryGenerator.buildSkeleton(io AlembicArchiveReader
 }
 
 
+/// Saves a json dict
 function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json = this.parent#saveJSON(persistenceContext);
 
@@ -783,11 +817,6 @@ function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext pers
     geometryNamesData.addString(this.geometryNames[i]);
   json.set('geometryNames', geometryNamesData);
 
-  JSONArrayValue includedBonesData();
-  for(Integer i=0; i<this.includedBones.size; i++)
-    includedBonesData.addString(this.includedBones[i]);
-  json.set('includedBones', includedBonesData);
-
   JSONArrayValue includedSubtreesData();
   for(Integer i=0; i<this.includedSubtrees.size; i++)
     includedSubtreesData.addString(this.includedSubtrees[i]);
@@ -796,16 +825,13 @@ function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext pers
   return json;
 }
 
+/// Loads a json dict
 function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   this.parent#loadJSON(persistenceContext, json);
 
   JSONArrayValue geometryNamesData = json.get('geometryNames');
   if(geometryNamesData)
     this.geometryNames = geometryNamesData.toStringArray();
-  
-  JSONArrayValue includedBonesData = json.get('includedBones');
-  if(includedBonesData)
-    this.includedBones = includedBonesData.toStringArray();
 
   JSONArrayValue includedSubtreesData = json.get('includedSubtrees');
   if(includedSubtreesData)
@@ -827,7 +853,7 @@ function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContex
 }
 
 
-/// Generates a Description string of this pose.
+/// Generates a Description string of the generator.
 /// \param indent The indentation to use when generating the string. 
 function String AlembicGeometryGenerator.getDesc(String indent) {
   String desc;
