@@ -224,6 +224,17 @@ function Integer AlembicGeometryGenerator.findItem(String list[], String pathStr
   return -1;
 }
 
+/// Finds and item in the list or names with the given name.
+/// \internal
+function Integer AlembicGeometryGenerator.findItemInNameList(String namesList[], String pathStr) {
+  String name = this.getNameFromPath(pathStr);
+  for(Integer j=0; j<namesList.size; j++){
+    if(name == namesList[j])
+      return j;
+  }
+  return -1;
+}
+
 
 /// Merges 2 sets giving a new set with unique members
 /// \internal
@@ -630,7 +641,7 @@ function Skeleton AlembicGeometryGenerator.buildSkeleton(io AlembicArchiveReader
     // Find bones that are either manually added, or are skinning deformers. 
     // These bones will be drawn with the skeleton.
     visibleBones[i] = false;
-    if(this.findItem(deformerNamesUnion, skeletonBonePaths[i]) != -1){
+    if(this.findItemInNameList(deformerNamesUnion, skeletonBonePaths[i]) != -1){
       visibleBones[i] = true;
       // Only deformers are used when computing the skinning matricies. 
       bone.setFlag(BONEFLAG_DEFORMER);
