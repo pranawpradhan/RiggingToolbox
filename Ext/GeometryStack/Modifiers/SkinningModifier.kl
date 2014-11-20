@@ -58,14 +58,16 @@ function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
   for (Integer i = 0; i < referencePose.size; i++)
     this.invReferencePose[i] = referencePose[i].inverse();
   this.skinningMatrices.resize(referencePose.size);
+  this.pose = referencePose;
 }
 
 function SkinningModifier.setReferencePoseFromSkeleton!(Skeleton skeleton){
   Size deformerIndices[] = skeleton.getDeformerIndices();
   Mat44 referencePose[];
   referencePose.resize(deformerIndices.size);
-  for (Integer i = 0; i < deformerIndices.size; i++)
+  for (Integer i = 0; i < deformerIndices.size; i++){
     referencePose[i] = skeleton.getBone(deformerIndices[i]).referencePose.toMat44();
+  }
   this.setReferencePose(referencePose);
 }
 

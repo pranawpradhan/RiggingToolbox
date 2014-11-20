@@ -190,6 +190,14 @@ operator wrapModifier_deformGeometries<<<index>>>(
   Ref<Vec3Attribute> srcNormalsAttribute = srcMesh.normalsAttribute;
   Ref<Vec4Attribute> srcTangentsAttribute = srcMesh.getAttribute("tangents");
 
+  if(!srcNormalsAttribute || !srcTangentsAttribute){
+    if(!srcNormalsAttribute)
+      report("Warning: Influence Mesh does not have Normals.");
+    if(!srcTangentsAttribute)
+      report("Warning: Influence Mesh does not have Tangents.");
+    return;
+  }
+
   if(!bound){
     GenericValueContainer options = GenericValueContainer();
     PrepareForSpatialQueries_setSparseGrid(options);
@@ -233,6 +241,11 @@ operator wrapModifier_deformGeometries<<<index>>>(
 
 function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+
+  if(this.influenceGeometryStack == null){
+    report('Warning: no influence stack set on WrapModifier.');
+    return;
+  }
 
   GeometrySet srcGeomSet = this.influenceGeometryStack.evaluate(context);
   if(srcGeomSet.size() == 0){

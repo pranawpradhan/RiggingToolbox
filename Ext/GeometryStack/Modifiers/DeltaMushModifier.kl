@@ -242,8 +242,7 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
   if(geomSet.getVersion()+this.iterations != this.boundVersion){
     this.bound = false;
     this.deltas.resize(geomSet.size());
-    if(this.displayDebugging)
-      this.debugLines.resize(geomSet.size());
+    this.debugLines.resize(geomSet.size());
   }
   if( this.iterations > 0)
     deltaMushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.deltas, this.iterations, this.bound, this.displayDebugging, this.debugLines);

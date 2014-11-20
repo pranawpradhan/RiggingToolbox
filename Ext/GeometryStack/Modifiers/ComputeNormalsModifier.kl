@@ -25,6 +25,8 @@ function GeometryOperator ComputeNormalsModifierFactory.constructGeometryOperato
 object ComputeNormalsModifier : BaseModifier {
   Scalar hardAngle;
 
+  UInt32 boundVersion;
+
 
   Boolean displayDebugging;
   Lines debugLines[];
@@ -133,8 +135,10 @@ operator computeNormalsModifier_computeGeometries<<<index>>>(
 function ComputeNormalsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
 
-  if(this.displayDebugging)
+  if(geomSet.getVersion() != this.boundVersion){
     this.debugLines.resize(geomSet.size());
+    this.boundVersion = geomSet.getVersion();
+  }
 
   computeNormalsModifier_computeGeometries<<<geomSet.size()>>>(geomSet, this.hardAngle, this.displayDebugging, this.debugLines);
 

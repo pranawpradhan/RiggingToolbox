@@ -272,24 +272,24 @@ function String GeometryStack.getFilePath(){
 
 /// Generates a Description string of this pose.
 /// \param indent The indentation to use when generating the string. 
-function String GeometryStack.getDesc(String indent, Boolean includeGeometries) {
+function String GeometryStack.getDesc(String indent, Boolean includeGeometryTolopology) {
   String desc;
   desc += indent + "GeometryStack { \n";
   desc += indent + "  geomOperators:[ \n";
   for(Integer i=0; i<this.geomOperators.size; i++){
-    desc += this.geomOperators[i].getDesc(indent+'  ') + "\n";
+    desc += this.geomOperators[i].getDesc(indent+'    ') + "\n";
   }
   desc += indent + "  ],\n";
-  if(includeGeometries){
-    desc += indent + "  geometries:[ \n";
-    for(Integer i=0; i<this.geomSet.size; i++){
-      desc += indent + "      " + this.geomSet.get(i).getDesc(false, false) + "\n";
+  desc += indent + "  geometries:[ \n";
+  for(Integer i=0; i<this.geomSet.size; i++){
+    desc += indent + "      " + getGeomDebugName(this.geomSet.get(i)) + ":{\n";
+    
+    if(includeGeometryTolopology){
+      desc += indent + "        " + this.geomSet.get(i).getDesc(false, false);
     }
-    desc += indent + "  ]\n";
+    desc += indent + "    },\n";
   }
-  else{
-    desc += indent + "  numGeometries:" + this.geomSet.size + "\n";
-  }
+  desc += indent + "  ]\n";
   desc += indent + "}";
   return desc;
 }

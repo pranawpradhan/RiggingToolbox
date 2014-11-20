@@ -79,6 +79,7 @@ for obj in allObjects:
     boneList = []
     hasSkin = fnSaveSkinning(obj, weights, boneIDs, idMapping, boneList)
     if hasSkin:
+        print "HasSkin:" + str(obj)
         mesh = pm.PyNode(obj)
 
         selected = pm.ls(sl=True)
@@ -423,7 +424,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
   UInt32 skinnedGeometryIndices[];
   Geometry skinnedGeometries[];
   // The bone ids referenced by each geometry.
-  Integer bonesIDs[][];
+  UInt32 bonesIDs[][];
   bonesIDs.resize(polymeshPaths.size());
 
   for(Size i=0; i<polymeshPaths.size(); i++) {
@@ -431,6 +432,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     
     if(this.geometryNames.size != 0 && !applyNameFilters(name, this.geometryNames))
       continue;
+
     readers[i] = archive.getPolyMesh(polymeshPaths[i]);
 
     PolygonMesh mesh = PolygonMesh();
@@ -448,7 +450,6 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     //-----------------------------------------
     // Get the envelope weights data
     AlembicICompoundProperty compound = readers[i]._schema.getArbGeomParams();
-
     if(!compound.valid())
       continue;
 
@@ -597,22 +598,27 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     if(envelopeWeights.size == 0)
       continue;
 
-    if(mesh.pointCount() != subArrayIndices.size)
-      throw("Invalid skinning data. The skinning data count doesn't match the PolygonMesh point count.");
+    if(mesh.pointCount() != subArrayIndices.size){
+      String name = this.getNameFromPath(polymeshPaths[i]);
+      report("Warning: Invalid skinning data on mesh:'"+name+"'. The skinning data count doesn't match the PolygonMesh point count. mesh.pointCount():" + mesh.pointCount() + " != subArrayIndices.size:" + subArrayIndices.size);
+      continue;
+    }
 
-    UInt32 nbBones = bonesIDs[i].size;
+    UInt32 thisGeom_bonesIDs[] = bonesIDs[skinnedGeometryIndices[i]];
+    UInt32 nbBones = thisGeom_bonesIDs.size;
     UInt32 nbPoints = subArrayIndices.size;
     Integer boneMapping[];
     boneMapping.resize(nbBones);
-    for(Integer j=0; j<bonesIDs[i].size; j++) {
+    for(Integer j=0; j<thisGeom_bonesIDs.size; j++) {
       for(Integer k=0; k<skeletonBonePaths.size(); k++) {
-        String name = this.getNameFromPath(xformPaths[bonesIDs[i][j]]);
+        String name = this.getNameFromPath(xformPaths[thisGeom_bonesIDs[j]]);
         if(name == deformerNamesUnion[k]){
           boneMapping[j] = k;
           break;
         }
       }
     }
+
     Ref<SkinningAttribute> skinningAttr = mesh.getOrCreateAttribute("skinningData", SkinningAttribute);
     UInt32 usedWeights = 0;
     for(Integer pnt = 0; pnt < nbPoints; pnt++ ) {
