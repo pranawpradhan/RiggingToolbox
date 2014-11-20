@@ -1,0 +1,13 @@
+{
+  "geomOperators": [
+    {
+     "type": "AlembicGeometryGenerator",
+     "filePath": "D:/Resources/captainatom_project/cache/CaptainAtom.abc",
+     "geometryNames": ["captainatom_body_geoShape"]
+    },
+    {
+     "type": "WrapModifier",
+     "displayDebugging": false
+    }
+  ]
+}
