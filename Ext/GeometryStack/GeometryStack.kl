@@ -22,6 +22,7 @@ object GeometryStack : Notifier, Listener {
   DrawingHandle handle;
   Boolean renderingInitialized;
   UInt32 geomSetVersion;
+  Color geomColors[String];
 
   // e.g. If a deformer modifies positions, and the subsequent deformer
   // ultilizes normals, and there is a dependeny from normals to positions
@@ -180,7 +181,8 @@ function GeometryStack.setupRendering!(){
 
   for(Integer geomId=0; geomId<this.geomSet.size(); geomId++){
     Geometry geom = this.geomSet.get(geomId);
-    String name = this.name + "_" + getGeomDebugName(geom);
+    String geomName = getGeomDebugName(geom);
+    String name = this.name + "_" + geomName;
     InlineShape shape = null;
     PolygonMesh mesh = geom;
     if(mesh)
@@ -199,12 +201,18 @@ function GeometryStack.setupRendering!(){
         }
       }
     }
+    Color color = this.geomColors.get(geomName, Color(0.0,0.0,1.0));
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
-    instance.setInstanceUniform(InlineUniform('u_diffuseColor', Color(0.0,0.0,1.0)));
+    instance.setInstanceUniform(InlineUniform('u_diffuseColor', color));
   }
 }
 
 
+function GeometryStack.setDisplayGeometries!(Boolean displayGeometries){
+  if(this.displayGeometries != displayGeometries){
+    this.displayGeometries = displayGeometries;
+  }
+}
 
 function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json();
@@ -231,6 +239,13 @@ function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDict
   }
   if(json.has('displayGeometries'))
     this.displayGeometries = json.getBoolean('displayGeometries');
+
+
+  if(json.has('geometryColors')){
+    JSONDictValue geomColorsJson = json.get('geometryColors');
+    for(key, value in geomColorsJson.values)
+      this.geomColors[key] = JSONDictValue(value).toColor();
+  }
 }
 
 

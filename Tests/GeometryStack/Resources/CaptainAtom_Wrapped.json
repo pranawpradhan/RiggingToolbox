@@ -9,5 +9,8 @@
      "type": "WrapModifier",
      "displayDebugging": false
     }
-  ]
+  ],
+  "geometryColors": {
+    "captainatom_body_geoShape": { "r": 200, "g": 200, "b": 200 }
+  }
 }
