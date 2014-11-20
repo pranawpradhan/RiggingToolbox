@@ -436,6 +436,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
     readers[i] = archive.getPolyMesh(polymeshPaths[i]);
 
     PolygonMesh mesh = PolygonMesh();
+    mesh.debugName = name; // Set the debug name so we can easily track this geom in future. 
     readers[i].readSample(0.0, mesh);
 
 
