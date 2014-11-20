@@ -25,7 +25,8 @@ function GeometryOperator WrapModifierFactory.constructGeometryOperator(){
 // the WrapModifier is a Listener because it can listen to changes in the influence object
 object WrapModifier : BaseModifier, Listener {
   GeometryLocation locations[][];
-  Vec3 deltas[][];
+  Vec3 positionDeltas[][];
+  Vec3 normalDeltas[][];
   GeometryStack influenceGeometryStack;
 
   Boolean bound;
@@ -109,17 +110,21 @@ operator wrapModifier_computeBinding<<<index>>>(
   Vec3Attribute srcNormalsAttribute,
   Vec4Attribute srcTangentsAttribute,
   io GeometryLocation locations[],
-  io Vec3 deltas[],
+  io Vec3 positionDeltas[],
+  io Vec3 normalDeltas[],
   Vec3 positions[],
+  Vec3 normals[],
   Mat44 bindShapeTransform
 ){
   Vec3 position = bindShapeTransform * positions[index];
+  Vec3 normal = bindShapeTransform.upperLeft() * normals[index];
   GeometryLocation location = srcMesh.getClosest( position, Vec3(1.0, 1.0, 1.0), SCALAR_INFINITE );
 
   // Build a reference frame.  
   Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh, srcPositionsAttribute, srcNormalsAttribute, srcTangentsAttribute, location);
 
-  deltas[index] = mat44.inverse() * position;
+  positionDeltas[index] = mat44.inverse() * position;
+  normalDeltas[index] = mat44.upperLeft().inverse() * normal;
   locations[index] = location;
 }
 
@@ -129,8 +134,10 @@ operator wrapModifier_applyDeltas<<<index>>>(
   Vec3Attribute srcNormalsAttribute,
   Vec4Attribute srcTangentsAttribute,
   GeometryLocation locations[],
-  Vec3 deltas[],
+  Vec3 positionDeltas[],
+  Vec3 normalDeltas[],
   io Vec3 positions[],
+  io Vec3 normals[],
   
   Boolean displayDebugging,
   io Lines debugLines
@@ -138,8 +145,9 @@ operator wrapModifier_applyDeltas<<<index>>>(
   GeometryLocation location = locations[index];
 
   Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh, srcPositionsAttribute, srcNormalsAttribute, srcTangentsAttribute, location);
-  Vec3 newPos = mat44 * deltas[index];
+  Vec3 newPos = mat44 * positionDeltas[index];
   positions[index] = newPos;
+  normals[index] = mat44.upperLeft() * normalDeltas[index];
 
   if(displayDebugging){
     debugLines.indices[(index*2)] = (index*2);
@@ -154,7 +162,8 @@ operator wrapModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   GeometrySet srcGeomSet,
   io GeometryLocation locations[][],
-  io Vec3 deltas[][],
+  io Vec3 positionDeltas[][],
+  io Vec3 normalDeltas[][],
   Boolean bound,
   Boolean displayDebugging,
   io Lines debugLines[]
@@ -170,6 +179,7 @@ operator wrapModifier_deformGeometries<<<index>>>(
   Geometry geometry = geomSet.get(index);
   Ref<GeometryAttributes> attributes = geometry.getAttributes();
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
+  Vec3Attribute normalsAttribute = attributes.normalsAttribute;
 
   if(displayDebugging){
     if(debugLines[index] == null)
@@ -206,7 +216,8 @@ operator wrapModifier_deformGeometries<<<index>>>(
     Ref<SpatialQuery> query = srcMesh.beginSpatialQuery();
 
     locations[index].resize(positionsAttribute.size());
-    deltas[index].resize(positionsAttribute.size());
+    positionDeltas[index].resize(positionsAttribute.size());
+    normalDeltas[index].resize(positionsAttribute.size());
 
     ThreadsafeMetaDataContainer metaData = getGeomMetaData(geometry);
     GenericMat44Value bindShapeTransform = metaData.get('bindShapeTransform');
@@ -217,8 +228,10 @@ operator wrapModifier_deformGeometries<<<index>>>(
       srcNormalsAttribute,
       srcTangentsAttribute,
       locations[index],
-      deltas[index],
+      positionDeltas[index],
+      normalDeltas[index],
       positionsAttribute.values,
+      normalsAttribute.values,
       bindShapeTransform.value
     );
     srcMesh.endSpatialQuery(query);
@@ -230,8 +243,10 @@ operator wrapModifier_deformGeometries<<<index>>>(
     srcNormalsAttribute,
     srcTangentsAttribute,
     locations[index],
-    deltas[index],
+    positionDeltas[index],
+    normalDeltas[index],
     positionsAttribute.values,
+    normalsAttribute.values,
 
     displayDebugging,
     debugLines[index]
@@ -255,14 +270,27 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
     setError("Warning in wrapModifier_deformGeometries: Source GeometrySet contains zero geometries.");
     return;
   }
-
   if(srcGeomSet.getVersion() != this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
     this.locations.resize(geomSet.size());
-    this.deltas.resize(geomSet.size());
+    this.positionDeltas.resize(geomSet.size());
+    this.normalDeltas.resize(geomSet.size());
     this.debugLines.resize(geomSet.size());
     this.bound = false;
   }
-  wrapModifier_deformGeometries<<<geomSet.size()>>>(geomSet, srcGeomSet, this.locations, this.deltas, this.bound, this.displayDebugging, this.debugLines);
+  
+  {
+    AutoProfilingEvent p2("wrapModifier_deformGeometries");
+    wrapModifier_deformGeometries<<<geomSet.size()>>>(
+      geomSet, 
+      srcGeomSet,
+      this.locations,
+      this.positionDeltas,
+      this.normalDeltas,
+      this.bound,
+      this.displayDebugging,
+      this.debugLines
+      );
+  }
 
   if(!this.bound){
     this.srcBoundVersion = srcGeomSet.getVersion();
