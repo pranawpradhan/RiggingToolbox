@@ -1,7 +1,7 @@
 {
   "geomOperators": [
     {
-     "type": "AlembicGeometryGenerator",
+     "type": "AlembicSkinnedMeshGeometryGenerator",
      "filePath": "D:/Resources/captainatom_project/cache/CaptainAtom.abc",
      "geometryNames": ["captainatom_skinnedMesh_geoShape"]
     },

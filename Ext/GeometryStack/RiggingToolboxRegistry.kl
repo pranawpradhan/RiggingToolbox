@@ -17,6 +17,7 @@ function RiggingToolboxRegistry(){
   Singleton_set('RiggingToolboxRegistry', this);
 
   this.registerGeometryOperator('AlembicGeometryGenerator', AlembicGeometryGeneratorFactory());
+  this.registerGeometryOperator('AlembicSkinnedMeshGeometryGenerator', AlembicSkinnedMeshGeometryGeneratorFactory());
   this.registerGeometryOperator('SkinningModifier', SkinningModifierFactory());
   this.registerGeometryOperator('PolygonMeshPlaneGenerator', PolygonMeshPlaneGeneratorFactory());
   this.registerGeometryOperator('PolygonMeshSphereGenerator', PolygonMeshSphereGeneratorFactory());

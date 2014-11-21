@@ -7,7 +7,7 @@ operator entry(){
 
   GeometryStack stack();
 
-  AlembicGeometryGenerator alembicGenerator();
+  AlembicSkinnedMeshGeometryGenerator alembicGenerator();
   SkinningModifier skiningModifier();
   stack.addGeometryOperator(alembicGenerator);
   stack.addGeometryOperator(skiningModifier);

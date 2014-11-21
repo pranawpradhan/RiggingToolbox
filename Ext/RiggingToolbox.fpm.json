@@ -25,6 +25,7 @@
     "GeometryStack/Generators/PolygonMeshPlaneGenerator.kl",
     "GeometryStack/Generators/PolygonMeshSphereGenerator.kl",
     "GeometryStack/Generators/AlembicGeometryGenerator.kl",
+    "GeometryStack/Generators/AlembicSkinnedMeshGeometryGenerator.kl",
 
     "GeometryStack/Modifiers/PushModifier.kl",
     "GeometryStack/Modifiers/ComputeNormalsModifier.kl",

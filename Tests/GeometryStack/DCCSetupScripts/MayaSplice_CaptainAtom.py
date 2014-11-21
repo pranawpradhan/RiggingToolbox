@@ -103,29 +103,30 @@ cmds.connectAttr(influencePoseNode + '.stack', influenceMushNode + '.stack')
 ##############################################
 ## Set up the eval/render node.
 
-# influenceEvalNode = cmds.createNode("spliceMayaNode", name = "captainAtom_EvalSkinning")
+influenceEvalNode = cmds.createNode("spliceMayaNode", name = "captainAtom_EvalSkinning")
 
-# cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
-# cmds.fabricSplice('addOutputPort', influenceEvalNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
+cmds.fabricSplice('addOutputPort', influenceEvalNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
 
-# cmds.connectAttr(influenceMushNode + '.stack', influenceEvalNode + '.stack')
+cmds.connectAttr(influenceMushNode + '.stack', influenceEvalNode + '.stack')
 
-# cmds.fabricSplice('addKLOperator', influenceEvalNode, '{"opName":"captainAtom_EvalSkinning"}', """
+cmds.fabricSplice('addKLOperator', influenceEvalNode, '{"opName":"captainAtom_EvalSkinning"}', """
 
-# require RiggingToolbox;
+require RiggingToolbox;
 
-# operator captainAtom_EvalSkinning(
-#   io GeometryStack stack,
-#   Scalar eval
-# ) {
-#   EvalContext context();
-#   stack.evaluate(context);
-
-#   //StopFabricProfiling();
-#   //report( GetEvalPathReport() );
-#   //report(stack.getDesc());
-# }
-# """)
+operator captainAtom_EvalSkinning(
+  io GeometryStack stack,
+  Boolean displayGeometries,
+  Scalar eval
+) {
+  //if(displayGeometries){
+  //  stack.setDisplayGeometries(displayGeometries);
+  //  EvalContext context();
+  //  stack.evaluate(context);
+  //}
+}
+""")
 
 
 ##############################################
@@ -161,10 +162,11 @@ wrappedGeomsEvalNode = cmds.createNode("spliceMayaNode", name = "wrappedGeoms_Ev
 
 cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'srcstack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
+cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', wrappedGeomsEvalNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
 
 cmds.connectAttr(wrappedGeomsInitNode + '.stack', wrappedGeomsEvalNode + '.stack')
-cmds.connectAttr(influenceMushNode + '.stack', wrappedGeomsEvalNode + '.srcstack')
+cmds.connectAttr(influenceEvalNode + '.stack', wrappedGeomsEvalNode + '.srcstack')
 
 cmds.fabricSplice('addKLOperator', wrappedGeomsEvalNode, '{"opName":"wrappedGeoms_Eval"}', """
 
@@ -173,12 +175,14 @@ require RiggingToolbox;
 operator wrappedGeoms_Eval(
   io GeometryStack stack,
   io GeometryStack srcstack,
+  Boolean displayGeometries,
   Scalar eval
 ) {
   if(stack.numGeometryOperators() >= 2){
     WrapModifier wrapModifier = stack.getGeometryOperator(1);
     wrapModifier.setSourceGeomStack(srcstack);
   }
+  //stack.setDisplayGeometries(displayGeometries);
 
   UInt64 start = getCurrentTicks();
 

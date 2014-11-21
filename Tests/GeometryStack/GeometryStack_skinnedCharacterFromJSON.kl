@@ -7,7 +7,7 @@ operator entry(){
 
   String json = "    {\n\
     \"geomOperators\": [
-        { \"type\": \"AlembicGeometryGenerator\", \"filePath\": \"${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/skinnedTube.abc\", \"geometryNames\": [\"pCylinderShape1\"] },
+        { \"type\": \"AlembicSkinnedMeshGeometryGenerator\", \"filePath\": \"${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/skinnedTube.abc\", \"geometryNames\": [\"pCylinderShape1\"] },
         { \"type\": \"SkinningModifier\" }
     ]
   }";

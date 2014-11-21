@@ -44,6 +44,7 @@ function DeltaMushModifier(){
 function UInt32[String] DeltaMushModifier.getAttributeInteractions(){
   UInt32 result[String];
   result['positions'] = AttrMode_ReadWrite;
+  result['normals'] = AttrMode_ReadWrite;
   return result;
 }
 

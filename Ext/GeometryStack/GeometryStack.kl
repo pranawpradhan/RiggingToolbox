@@ -201,6 +201,7 @@ function GeometryStack.setupRendering!(){
         }
       }
     }
+    // Color color = Color(0.0,0.0,1.0);
     Color color = this.geomColors.get(geomName, Color(0.0,0.0,1.0));
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
     instance.setInstanceUniform(InlineUniform('u_diffuseColor', color));
