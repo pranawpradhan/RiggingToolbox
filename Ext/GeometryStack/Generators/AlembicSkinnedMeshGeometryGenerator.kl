@@ -408,9 +408,9 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
 
     Xfo globalXfo = this.computeGlobalXfo(archive, polymeshPaths[i]);
 
-    GenericMat44Value bindShapeTransform(globalXfo.toMat44());
+    GenericMat44Value globalTransform(globalXfo.toMat44());
     AutoLock AL(mesh.metaData.lock);
-    mesh.metaData.lockedSet('bindShapeTransform', bindShapeTransform);
+    mesh.metaData.lockedSet('globalTransform', globalTransform);
 
     geomSet.add(mesh);
 
