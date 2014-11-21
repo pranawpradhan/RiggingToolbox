@@ -36,6 +36,8 @@ object SkinningModifier : BaseModifier {
   Mat44 skinningMatrices[];
   Mat44 bindShapeTransforms[];
 
+  UInt32 boundVersion;
+  PolygonMesh debugMeshes[];
 };
 
 function SkinningModifier(){
@@ -240,6 +242,14 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
         this.setReferencePoseFromSkeleton(skeleton);
       else
         throw("No skeleton found in geometry set");
+    }
+    this.debugMeshes.resize(0);
+    this.debugMeshes.resize(geomSet.size);
+    for(Integer i=0; i<geomSet.size; i++){
+      PolygonMesh mesh = geomSet.get(i);
+      if(mesh){
+        this.debugMeshes[i] = mesh.clone();
+      }
     }
     this.dataVersion = geomSet.getVersion();
   }
