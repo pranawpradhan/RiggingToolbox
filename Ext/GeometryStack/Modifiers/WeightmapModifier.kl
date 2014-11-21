@@ -26,6 +26,7 @@ function GeometryOperator WeightmapModifierFactory.constructGeometryOperator(){
 object WeightmapModifier : BaseModifier {
   Weightmap weightmaps[];
   String weightmapName;
+  UInt32 boundVersion;
 };
 
 
@@ -44,7 +45,7 @@ operator weightmapModifier_connectWeightmaps<<<index>>>(
   String weightmapName
 ){
   PolygonMesh mesh = geomSet.get(index);
-  if(mesh != null && !weightmaps[index]){
+  if(mesh != null && weightmaps[index] == null){
     weightmaps[index] = Weightmap();
     weightmaps[index].setName(weightmapName);
     weightmaps[index].connect(mesh, Xfo());
@@ -54,7 +55,27 @@ operator weightmapModifier_connectWeightmaps<<<index>>>(
 
 function WeightmapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+
+  if(geomSet.getVersion() != this.boundVersion){
+    this.weightmaps.resize(geomSet.size());
+    this.boundVersion = geomSet.getVersion();
+  }
+
   weightmapModifier_connectWeightmaps<<<geomSet.size()>>>(geomSet, this.weightmaps, this.weightmapName);
+}
+
+
+
+function JSONDictValue WeightmapModifier.saveJSON(PersistenceContext persistenceContext){
+  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  json.setBoolean('weightmapName', this.weightmapName);
+  return json;
+}
+
+function WeightmapModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  this.parent#loadJSON(persistenceContext, json);
+  if(json.has('weightmapName'))
+    this.weightmapName = json.getBoolean('weightmapName');
 }
 
 
