@@ -119,10 +119,10 @@ operator wrapModifier_computeBinding<<<index>>>(
   io Vec3 normalDeltas[],
   Vec3 positions[],
   Vec3 normals[],
-  Mat44 bindShapeTransform
+  Mat44 globalTransform
 ){
-  Vec3 position = bindShapeTransform * positions[index];
-  Vec3 normal = bindShapeTransform.upperLeft() * normals[index];
+  Vec3 position = globalTransform * positions[index];
+  Vec3 normal = globalTransform.upperLeft() * normals[index];
   GeometryLocation location = srcMesh.getClosest( position, Vec3(1.0, 1.0, 1.0), SCALAR_INFINITE );
 
   // Build a reference frame.  
@@ -225,7 +225,7 @@ operator wrapModifier_deformGeometries<<<index>>>(
     normalDeltas[index].resize(positionsAttribute.size());
 
     ThreadsafeMetaDataContainer metaData = getGeomMetaData(geometry);
-    GenericMat44Value bindShapeTransform = metaData.get('bindShapeTransform');
+    GenericMat44Value globalTransform = metaData.get('globalTransform');
 
     wrapModifier_computeBinding<<<positionsAttribute.size()>>>(
       srcMesh,
@@ -237,7 +237,7 @@ operator wrapModifier_deformGeometries<<<index>>>(
       normalDeltas[index],
       positionsAttribute.values,
       normalsAttribute.values,
-      bindShapeTransform.value
+      globalTransform.value
     );
     srcMesh.endSpatialQuery(query);
   }
