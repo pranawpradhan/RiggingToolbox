@@ -38,33 +38,31 @@ operator captainAtom_Init(
 influencePoseNode = cmds.createNode("spliceMayaNode", name = "captainAtom_SetPose")
 
 cmds.fabricSplice('addIOPort', influencePoseNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
+cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'deformers', 'dataType':'Mat44[]', 'addMayaAttr': True, 'arrayType':"Array (Multi)"}))
 
 deformers = [ "captainatom_hip_joint", "captainatom_spine_ik_2_joint", "captainatom_spine_ik_3_joint", "captainatom_spine_ik_4_joint", "captainatom_spine_ik_5_joint", "captainatom_spine_ik_6_joint", "captainatom_chest_joint", "captainatom_L_main_thigh_joint", "captainatom_L_main_knee_joint", "captainatom_L_main_ankle_joint", "captainatom_L_main_ball_joint", "captainatom_R_main_thigh_joint", "captainatom_R_main_knee_joint", "captainatom_R_main_ankle_joint", "captainatom_R_main_ball_joint", "captainatom_L_thigh_bendy_joint", "captainatom_L_knee_bendy_joint", "captainatom_L_thighBase_joint", "captainatom_L_kneeBase_joint", "captainatom_R_thigh_bendy_joint", "captainatom_R_knee_bendy_joint", "captainatom_R_thighBase_joint", "captainatom_R_kneeBase_joint", "captainatom_neck_joint", "captainatom_head_joint", "captainatom_L_clavicle_joint", "captainatom_R_clavicle_joint", "captainatom_L_main_shoulder_joint", "captainatom_L_main_elbow_joint", "captainatom_L_main_wrist_joint", "captainatom_L_finger_mid_base_joint", "captainatom_L_finger_mid_1_joint", "captainatom_L_finger_mid_2_joint", "captainatom_L_finger_mid_3_joint", "captainatom_L_finger_pointer_base_joint", "captainatom_L_finger_pointer_1_joint", "captainatom_L_finger_pointer_2_joint", "captainatom_L_finger_pointer_3_joint", "captainatom_L_finger_ring_base_joint", "captainatom_L_finger_ring_1_joint", "captainatom_L_finger_ring_2_joint", "captainatom_L_finger_ring_3_joint", "captainatom_L_finger_pinky_base_joint", "captainatom_L_finger_pinky_cup_joint", "captainatom_L_finger_pinky_1_joint", "captainatom_L_finger_pinky_2_joint", "captainatom_L_finger_pinky_3_joint", "captainatom_L_finger_thumb_base_joint", "captainatom_L_finger_thumb_1_joint", "captainatom_L_finger_thumb_2_joint", "captainatom_R_main_shoulder_joint", "captainatom_R_main_elbow_joint", "captainatom_R_main_wrist_joint", "captainatom_R_finger_mid_base_joint", "captainatom_R_finger_mid_1_joint", "captainatom_R_finger_mid_2_joint", "captainatom_R_finger_mid_3_joint", "captainatom_R_finger_pointer_base_joint", "captainatom_R_finger_pointer_1_joint", "captainatom_R_finger_pointer_2_joint", "captainatom_R_finger_pointer_3_joint", "captainatom_R_finger_ring_base_joint", "captainatom_R_finger_ring_1_joint", "captainatom_R_finger_ring_2_joint", "captainatom_R_finger_ring_3_joint", "captainatom_R_finger_pinky_base_joint", "captainatom_R_finger_pinky_cup_joint", "captainatom_R_finger_pinky_1_joint", "captainatom_R_finger_pinky_2_joint", "captainatom_R_finger_pinky_3_joint", "captainatom_R_finger_thumb_base_joint", "captainatom_R_finger_thumb_1_joint", "captainatom_R_finger_thumb_2_joint", "captainatom_L_shoulder_bendy_joint", "captainatom_L_shoulderBase_joint", "captainatom_R_shoulder_bendy_joint", "captainatom_R_shoulderBase_joint", "captainatom_L_forearm_1_joint", "captainatom_L_forearm_2_joint", "captainatom_R_forearm_1_joint", "captainatom_R_forearm_2_joint", "captainatom_onFace_upperLip_joint", "captainatom_onFace_lowerLip_joint", "captainatom_L_onFace_upperLip_joint", "captainatom_L_onFace_lowerLip_joint", "captainatom_L_onFace_lip_joint", "captainatom_R_onFace_upperLip_joint", "captainatom_R_onFace_lowerLip_joint", "captainatom_R_onFace_lip_joint", "captainatom_L_onFace_nose_joint", "captainatom_R_onFace_nose_joint", "captainatom_L_onFace_cheek2_joint", "captainatom_R_onFace_cheek2_joint", "captainatom_L_onFace_eyeBrow1_joint", "captainatom_L_onFace_eyeBrow2_joint", "captainatom_L_onFace_eyeBrow3_joint", "captainatom_R_onFace_eyeBrow1_joint", "captainatom_R_onFace_eyeBrow2_joint", "captainatom_R_onFace_eyeBrow3_joint", "captainatom_jaw_joint", "captainatom_L_onFace_cheek1_joint", "captainatom_R_onFace_cheek1_joint", "captainatom_L_onFace_upperLid_joint", "captainatom_L_onFace_lowerLid_joint", "captainatom_R_onFace_upperLid_joint", "captainatom_R_onFace_lowerLid_joint"]
 deformerPorts = ""
 deformerKLArray = ""
-for deformer in deformers:
-  cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':deformer, 'dataType':'Mat44', 'addMayaAttr': True}))
-  cmds.connectAttr(deformer+'.worldMatrix[0]', influencePoseNode + '.' + deformer)
-  deformerPorts += ',  Mat44 ' + deformer
-  deformerKLArray += '    pose.push('+deformer+');'
+for i in range(len(deformers)):
+  cmds.connectAttr(deformers[i]+'.worldMatrix[0]', influencePoseNode + '.deformers[' + str(i) + ']')
 
-skinningOpSrc = """
+cmds.fabricSplice('addKLOperator', influencePoseNode, '{"opName":"captainAtom_SetPose"}', """
 
 require RiggingToolbox;
 
 operator captainAtom_SetPose(
-  io GeometryStack stack"""+deformerPorts+"""
+  io GeometryStack stack,
+  Mat44 deformers[],
+  Boolean displayDebugging
 ) {
   if(stack.numGeometryOperators() >= 2){
     SkinningModifier skinningModifier = stack.getGeometryOperator(1);
-    Mat44 pose[];
-""" + deformerKLArray + """
-    skinningModifier.setPose(pose);
+    skinningModifier.setPose(deformers);
+    skinningModifier.setDisplayDebugging(displayDebugging);
   }
 }
-"""
-print skinningOpSrc
-cmds.fabricSplice('addKLOperator', influencePoseNode, '{"opName":"captainAtom_SetPose"}', skinningOpSrc)
+""")
 
 cmds.connectAttr(influenceInitNode + '.stack', influencePoseNode + '.stack')
 
@@ -120,6 +118,7 @@ operator captainAtom_EvalSkinning(
   Boolean displayGeometries,
   Scalar eval
 ) {
+
   //if(displayGeometries){
   //  stack.setDisplayGeometries(displayGeometries);
   //  EvalContext context();

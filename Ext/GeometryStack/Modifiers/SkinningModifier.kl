@@ -36,7 +36,7 @@ object SkinningModifier : BaseModifier {
   Mat44 skinningMatrices[];
   Mat44 bindShapeTransforms[];
 
-  Boolean displaySkinweights;
+  Boolean displayDebugging;
   Color deformerColors[];
   DrawingHandle handle;
   UInt32 boundVersion;
@@ -45,7 +45,7 @@ object SkinningModifier : BaseModifier {
 function SkinningModifier(){
   this.transformNormals = false;
   this.poseDirty = true;
-  this.displaySkinweights = false;
+  this.displayDebugging = false;
 }
 
 
@@ -86,9 +86,9 @@ function SkinningModifier.setPose!(Mat44 pose[]){
   this.notify('changed', data);
 }
 
-function SkinningModifier.setDisplaySkinweights!(Boolean displaySkinweights){
-  if(this.displaySkinweights != displaySkinweights){
-    this.displaySkinweights = displaySkinweights;
+function SkinningModifier.setDisplayDebugging!(Boolean displayDebugging){
+  if(this.displayDebugging != displayDebugging){
+    this.displayDebugging = displayDebugging;
     String data;
     this.notify('changed', data);
   }
@@ -184,7 +184,7 @@ operator skinningModifier_deformGeometries_skinPositions<<<index>>>(
   io GeometrySet geomSet,
   Mat44 skinningMatrices[],
   Mat44 bindShapeTransforms[],
-  Boolean displaySkinweights,
+  Boolean displayDebugging,
   Color deformerColors[]
 ){
   PolygonMesh mesh = geomSet.get(index);
@@ -223,7 +223,7 @@ operator skinningModifier_deformGeometries_skinPositionsAndNormals<<<index>>>(
   io GeometrySet geomSet,
   Mat44 skinningMatrices[],
   Mat44 bindShapeTransforms[],
-  Boolean displaySkinweights,
+  Boolean displayDebugging,
   Color deformerColors[]
 ){
   Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
@@ -281,13 +281,14 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
         return;
       }
       ThreadsafeMetaDataContainer metaData = getGeomMetaData(geometry);
-      GenericMat44Value bindShapeTransform = metaData.get('globalTransform');
-      if(bindShapeTransform){
-        this.bindShapeTransforms[i] = bindShapeTransform.value;
+      GenericMat44Value globalTransform = metaData.get('globalTransform');
+      if(globalTransform){
+        this.bindShapeTransforms[i] = globalTransform.value;
       }
 
+      // Update the vertex colors if the data version has changed
       PolygonMesh mesh = geometry;
-      if(this.displaySkinweights && mesh != null){
+      if(this.displayDebugging && mesh != null){
         Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
         Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
         skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
@@ -319,7 +320,7 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
   //     geomSet,
   //     this.skinningMatrices,
   //     this.bindShapeTransforms,
-  //     this.displaySkinweights,
+  //     this.displayDebugging,
   //     this.deformerColors);
   // }
   // else
@@ -328,11 +329,11 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
       geomSet,
       this.skinningMatrices,
       this.bindShapeTransforms,
-      this.displaySkinweights,
+      this.displayDebugging,
       this.deformerColors);
   }
 
-  if(this.displaySkinweights){
+  if(this.displayDebugging){
     if(!this.handle)
       this.setupRendering(geomSet);
   }
@@ -356,6 +357,18 @@ function SkinningModifier.setupRendering!(io GeometrySet geomSet){
   for(Integer geomId=0; geomId<geomSet.size; geomId++){
     PolygonMesh mesh = geomSet.get(geomId);
     if(mesh){
+      if(!mesh.has("vertexColors")){
+        Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
+        Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
+        skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
+          mesh,
+          skinningAttr,
+          vertexColorsAttr,
+          this.deformerColors
+          );
+        vertexColorsAttr.incrementVersion();
+      }
+
       String name = "SkinningModifier_" + String(geomId);
       InlineShape shape = InlineMeshShape(name, mesh);
 
@@ -371,7 +384,7 @@ function SkinningModifier.setupRendering!(io GeometrySet geomSet){
 function JSONDictValue SkinningModifier.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json = this.parent#saveJSON(persistenceContext);
   json.setBoolean('transformNormals', this.transformNormals);
-  json.setBoolean('displaySkinweights', this.displaySkinweights);
+  json.setBoolean('displayDebugging', this.displayDebugging);
   return json;
 }
 
@@ -379,8 +392,8 @@ function SkinningModifier.loadJSON!(PersistenceContext persistenceContext, JSOND
   this.parent#loadJSON(persistenceContext, json);
   if(json.has('transformNormals'))
     this.transformNormals = json.getBoolean('transformNormals');
-  if(json.has('displaySkinweights'))
-    this.displaySkinweights = json.getBoolean('displaySkinweights');
+  if(json.has('displayDebugging'))
+    this.displayDebugging = json.getBoolean('displayDebugging');
 }
 
 
