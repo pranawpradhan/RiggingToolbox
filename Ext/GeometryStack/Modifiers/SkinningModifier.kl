@@ -30,6 +30,7 @@ object SkinningModifier : BaseModifier {
   Boolean transformNormals;
 
   UInt32 dataVersion;
+  Skeleton skeleton;
   Boolean poseDirty;
   Mat44 pose[];
   Mat44 invReferencePose[];
@@ -69,7 +70,8 @@ function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
   this.pose = referencePose;
 }
 
-function SkinningModifier.setReferencePoseFromSkeleton!(Skeleton skeleton){
+function SkinningModifier.setSkeleton!(Skeleton skeleton){
+  this.skeleton = skeleton;
   Size deformerIndices[] = skeleton.getDeformerIndices();
   Mat44 referencePose[];
   referencePose.resize(deformerIndices.size);
@@ -267,7 +269,7 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
     if(geomSet.hasMetaData('skeleton')){
       Skeleton skeleton = geomSet.getMetaData('skeleton');
       if(skeleton)
-        this.setReferencePoseFromSkeleton(skeleton);
+        this.setSkeleton(skeleton);
       else
         throw("No skeleton found in geometry set");
     }
@@ -336,6 +338,15 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
   if(this.displayDebugging){
     if(!this.handle)
       this.setupRendering(geomSet);
+
+    Pose pose(this.skeleton);
+    for (Integer i = 0; i < this.pose.size; i++) {
+      pose.setBoneXfo(i, this.pose[i]);
+    }
+    ISkeleton iskeleton = this.skeleton;
+    IPose ipose = pose;
+    InlineTransform skeletonTransform = this.handle.rootTransform.getChild(this.handle.rootTransform.getChildCount()-1);
+    // drawSkeleton(iskeleton, ipose, skeletonTransform);
   }
   else{
     this.handle = null;
@@ -343,8 +354,6 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
 }
 
 function SkinningModifier.setupRendering!(io GeometrySet geomSet){
-
-  report("setupRendering");
 
   // Construct a handle for this character instance. 
   // The handle will clean up the InlineDrawing when it is destroyed. 
@@ -378,6 +387,9 @@ function SkinningModifier.setupRendering!(io GeometrySet geomSet){
       InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
     }
   }
+  // add an extra transform for the skeleton.
+  InlineTransform rootTransform = this.handle.rootTransform;
+  StaticInlineTransform skeletonTransform("SkinningModifier_Skeleton", rootTransform, Xfo());
 }
 
 
