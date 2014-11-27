@@ -118,12 +118,11 @@ operator captainAtom_EvalSkinning(
   Boolean displayGeometries,
   Scalar eval
 ) {
-
-  //if(displayGeometries){
-  //  stack.setDisplayGeometries(displayGeometries);
-  //  EvalContext context();
-  //  stack.evaluate(context);
-  //}
+  if(displayGeometries){
+    stack.setDisplayGeometries(displayGeometries);
+    EvalContext context();
+    stack.evaluate(context);
+  }
 }
 """)
 
@@ -163,6 +162,8 @@ cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'
 cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'srcstack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', wrappedGeomsEvalNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
+cmds.setAttr(wrappedGeomsEvalNode + '.displayGeometries', 1);
+
 
 cmds.connectAttr(wrappedGeomsInitNode + '.stack', wrappedGeomsEvalNode + '.stack')
 cmds.connectAttr(influenceEvalNode + '.stack', wrappedGeomsEvalNode + '.srcstack')
@@ -181,7 +182,7 @@ operator wrappedGeoms_Eval(
     WrapModifier wrapModifier = stack.getGeometryOperator(1);
     wrapModifier.setSourceGeomStack(srcstack);
   }
-  //stack.setDisplayGeometries(displayGeometries);
+  stack.setDisplayGeometries(displayGeometries);
 
   UInt64 start = getCurrentTicks();
 

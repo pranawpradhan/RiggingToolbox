@@ -37,15 +37,12 @@ operator tubeCharacter_Init(
 poseNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_SetPose")
 
 cmds.fabricSplice('addIOPort', poseNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
-cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'joint1', 'dataType':'Mat44', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'joint2', 'dataType':'Mat44', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'joint3', 'dataType':'Mat44', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'joint4', 'dataType':'Mat44', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'deformers', 'dataType':'Mat44[]', 'addMayaAttr': True, 'arrayType':"Array (Multi)"}))
 
-cmds.connectAttr('SkinnedTube_hierarchy_joint1.worldMatrix[0]', poseNode + '.joint1')
-cmds.connectAttr('SkinnedTube_hierarchy_joint2.worldMatrix[0]', poseNode + '.joint2')
-cmds.connectAttr('SkinnedTube_hierarchy_joint3.worldMatrix[0]', poseNode + '.joint3')
-cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', poseNode + '.joint4')
+cmds.connectAttr('SkinnedTube_hierarchy_joint1.worldMatrix[0]', poseNode + '.deformers[0]')
+cmds.connectAttr('SkinnedTube_hierarchy_joint2.worldMatrix[0]', poseNode + '.deformers[1]')
+cmds.connectAttr('SkinnedTube_hierarchy_joint3.worldMatrix[0]', poseNode + '.deformers[2]')
+cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', poseNode + '.deformers[3]')
 
 cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"tubeCharacter_SetPose"}', """
 
@@ -53,19 +50,11 @@ require RiggingToolbox;
 
 operator tubeCharacter_SetPose(
   io GeometryStack stack,
-  Mat44 joint1,
-  Mat44 joint2,
-  Mat44 joint3,
-  Mat44 joint4
+  Mat44 deformers[]
 ) {
   if(stack.numGeometryOperators() >= 2){
     SkinningModifier skinningModifier = stack.getGeometryOperator(1);
-    Mat44 pose[];
-    pose.push(joint1);
-    pose.push(joint2);
-    pose.push(joint3);
-    pose.push(joint4);
-    skinningModifier.setPose(pose);
+    skinningModifier.setPose(deformers);
   }
 }
 """)
@@ -80,6 +69,8 @@ evalStackNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Eval")
 
 cmds.fabricSplice('addInputPort', evalStackNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addOutputPort', evalStackNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', evalStackNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
+
 
 cmds.connectAttr(poseNode + '.stack', evalStackNode + '.stack')
 
@@ -89,8 +80,11 @@ require RiggingToolbox;
 
 operator tubeCharacter_Eval(
   io GeometryStack stack,
+  Boolean displayGeometries,
   Scalar eval
 ) {
+  //stack.setDisplayGeometries(displayGeometries);
+
   EvalContext context();
   stack.evaluate(context);
 }

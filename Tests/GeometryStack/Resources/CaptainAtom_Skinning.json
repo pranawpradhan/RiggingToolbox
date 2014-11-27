@@ -6,7 +6,8 @@
      "geometryNames": ["captainatom_skinnedMesh_geoShape"]
     },
     {
-     "type": "SkinningModifier"
+     "type": "SkinningModifier",
+     "displayDebugging": true
     },
     {
      "type": "DeltaMushModifier",
