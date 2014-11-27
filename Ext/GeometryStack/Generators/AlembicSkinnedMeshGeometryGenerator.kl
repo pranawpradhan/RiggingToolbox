@@ -216,15 +216,15 @@ function String AlembicSkinnedMeshGeometryGenerator.getParentPath(String pathStr
 
 /// Finds and item in the list with the given path.
 /// \internal
-function Integer AlembicSkinnedMeshGeometryGenerator.findItem(String list[], String pathStr) {
+function Integer AlembicSkinnedMeshGeometryGenerator.findItem(String list[], String item) {
   for(Integer j=0; j<list.size; j++){
-    if(pathStr == list[j])
+    if(item == list[j])
       return j;
   }
   return -1;
 }
 
-/// Finds and item in the list or names with the given name.
+/// Finds and item in the list of names with the given name.
 /// \internal
 function Integer AlembicSkinnedMeshGeometryGenerator.findItemInNameList(String namesList[], String pathStr) {
   String name = this.getNameFromPath(pathStr);
@@ -368,18 +368,22 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
   AlembicArchiveReader archive(this.expandedPath.string());
 
   String xformPaths[] = archive.getPathsOfType('Xform');
-  String transformNames[];
-  transformNames.resize(xformPaths.size());
+  String xformNames[];
+  xformNames.resize(xformPaths.size());
   geomSet.resize(0);
 
-  String skeletonBonePaths[];
+  // An array containing a union of all deformers referenced by all skinned geometries in the file. 
   String deformerNamesUnion[];
+
+  // An array of the collected xforms that will be used in the skeleton.
+  // This array should contain all deformers, and all ancestors and children included in the skeleton.
+  String skeletonBonePaths[];
 
   for(Size i=0;i<xformPaths.size();i++) {
     // xformReaders[i] 
     AlembicXformReader xformReader = archive.getXform(xformPaths[i]);
     String name = this.getNameFromPath(xformPaths[i]);
-    transformNames[i] = name;
+    xformNames[i] = name;
   }
 
   String polymeshPaths[] = archive.getPathsOfType('PolyMesh');
@@ -390,8 +394,8 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
   UInt32 skinnedGeometryIndices[];
   Geometry skinnedGeometries[];
   // The bone ids referenced by each geometry.
-  UInt32 bonesIDs[][];
-  bonesIDs.resize(polymeshPaths.size());
+  UInt32 deformerXformIds[][];
+  deformerXformIds.resize(polymeshPaths.size());
 
   for(Size i=0; i<polymeshPaths.size(); i++) {
     String name = this.getNameFromPath(polymeshPaths[i]);
@@ -451,15 +455,18 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     // while also traversing up the hierarchy and collecting the entire
     // hierarchy. This is because the skeleton must represent the entire
     // transformation from the scene root to each deformer in the skeleton. 
-    bonesIDs[i].resize(deformerNames.size);
+    deformerXformIds[i].resize(deformerNames.size);
     for(Integer j=0; j<deformerNames.size; j++){
-      for (Integer k=0; k<transformNames.size; k++)
-        if (/*"deformers:"+*/transformNames[k] == deformerNames[j]){
-          // Store the index of the deformer in the transformNames array
-          bonesIDs[i][j] = k;
-          this.collectAncestralHierarchy(xformPaths[k], skeletonBonePaths);
-          break;
-        }
+      Integer index = this.findItem(xformNames, deformerNames[j]);
+      if(index >= 0){
+        // Store the index of the deformer in the deformerXformIds array
+        // so we can use it to build the mapping later.
+        deformerXformIds[i][j] = index;
+        this.collectAncestralHierarchy(xformPaths[index], skeletonBonePaths);
+      }
+      else{
+        throw("Deformer '"+deformerNames[j]+"' not found in Alembic file hierarchy:"+this.expandedPath.string());
+      }
     }
 
     // Gather the list of all deformers. this list will be the sub-set of the 
@@ -562,18 +569,20 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
       continue;
     }
 
-    UInt32 thisGeom_bonesIDs[] = bonesIDs[skinnedGeometryIndices[i]];
-    UInt32 nbBones = thisGeom_bonesIDs.size;
+    UInt32 thisGeom_deformerXformIds[] = deformerXformIds[skinnedGeometryIndices[i]];
+    UInt32 nbBones = thisGeom_deformerXformIds.size;
     UInt32 nbPoints = subArrayIndices.size;
     Integer boneMapping[];
     boneMapping.resize(nbBones);
-    for(Integer j=0; j<thisGeom_bonesIDs.size; j++) {
-      for(Integer k=0; k<skeletonBonePaths.size(); k++) {
-        String name = this.getNameFromPath(xformPaths[thisGeom_bonesIDs[j]]);
-        if(name == deformerNamesUnion[k]){
-          boneMapping[j] = k;
-          break;
-        }
+    // Now, for each deformer listed on this geometry, find its index in the deformers union.
+    // It will be the union of deformers that will be used as a single pose in the skinning modifier. 
+    for(Integer j=0; j<thisGeom_deformerXformIds.size; j++) {
+      Integer index = this.findItem(deformerNamesUnion, xformNames[thisGeom_deformerXformIds[j]]);
+      if(index >= 0){
+        boneMapping[j] = index;
+      }
+      else{
+        throw("Deformer '"+xformNames[thisGeom_deformerXformIds[j]]+"' not found in Alembic file hierarchy:"+this.expandedPath.string());
       }
     }
 
@@ -646,7 +655,6 @@ function Skeleton AlembicSkinnedMeshGeometryGenerator.buildSkeleton(io AlembicAr
 
     String parentPath = this.getParentPath(skeletonBonePaths[i]);
     bone.parentIndex = this.findItem(skeletonBonePaths, parentPath);
-
     if(bone.parentIndex >= i){
       // Note: this should never happen as we always add parents before children
       setError("ERROR Bone hierarchy is not sorted");
