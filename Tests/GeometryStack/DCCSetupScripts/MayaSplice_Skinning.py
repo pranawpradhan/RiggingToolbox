@@ -83,7 +83,7 @@ operator tubeCharacter_Eval(
   Boolean displayGeometries,
   Scalar eval
 ) {
-  //stack.setDisplayGeometries(displayGeometries);
+  stack.setDisplayGeometries(displayGeometries);
 
   EvalContext context();
   stack.evaluate(context);
