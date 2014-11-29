@@ -1,5 +1,29 @@
-require Geometry;
+struct Goon {
+  /// \internal
+  UInt32 data[];
+  /// \internal
+  UInt32 size;
+};
+
+struct Baz {
+  Goon asdfasdf;
+};
+
+struct Bar {
+  Baz data;
+};
+
+
+object Fred {
+  UInt32 attributes;
+};
+
+object Foo : Fred {
+  Bar bar;
+};
+
+
 operator entry()
 {
-  PolygonMesh poly = PolygonMesh();
+  Foo foo = Foo();
 }
