@@ -46,11 +46,15 @@ object BlendShapesModifier : BaseModifier {
   Scalar threshold;
 
   Scalar weights[];
+  Scalar sparcity;
+  UInt32 targetCount;
 };
 
 
 function BlendShapesModifier(){
   this.threshold = 0.001;
+  this.sparcity = 0.0;
+  this.targetCount = 0.0;
 }
 
 
@@ -160,6 +164,11 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
   // The reference positions are only used to generate the sparse blend targets. 
   // We can safely remove them now to reduce memory usage. 
   this.referencePositions.resize(0);
+
+  // Compute the total sparcity of all the blend targets.
+  // This value helps us understand how much space is saved by storing only sparce blend shapes.
+  this.sparcity /= this.targetCount;
+  report("sparcity:" + this.sparcity);
 }
 
 //////////////////////////////////////
@@ -223,6 +232,9 @@ operator blendShapesModifier_collectMeshPointsProduce(
     result.index = index;
     result.delta = delta;
   }
+  else{
+    result.collected = false;
+  }
 }
 
 
@@ -266,6 +278,7 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
   this.weights.resize(numTargets);
 
   PolygonMesh targetMesh = targetGeometry;
+  UInt32 referencePointCount;
   if(!targetMesh){
 
     Ref<GeometryAttributes> attributes = targetGeometry.getAttributes();
@@ -285,6 +298,8 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
       blendShapesModifier_collectPointsReduce
     );
     this.targets[geomIndex][targetIndex] = reducer.produce();
+
+    referencePointCount = attributes.size();
   }
   else{
     BlendShapesModifier_collectMeshPointsSharedData sharedData;
@@ -301,8 +316,13 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
       blendShapesModifier_collectPointsReduce
     );
     this.targets[geomIndex][targetIndex] = reducer.produce();
+
+    referencePointCount = targetMesh.pointCount();
   }
-  report("addTargetGeometry:" + geomIndex +":" + this.targets[geomIndex].size);
+  UInt32 targetPointCount = this.targets[geomIndex][targetIndex].indices.size;
+  report("addTargetGeometry:" + geomIndex +":" + this.targets[geomIndex].size + ":" + Scalar(targetPointCount)/Scalar(referencePointCount));
+  this.sparcity += Scalar(targetPointCount)/Scalar(referencePointCount);
+  this.targetCount ++;
 }
 
 
@@ -340,6 +360,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   BlendShapesModifier_Target targets[][],
   Scalar weights[]
 ){
+  // AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
     setError("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
     return;
@@ -350,6 +371,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   
   PolygonMesh mesh = geom;
   for(UInt32 i=0; i<targets[index].size; i++){
+    // AutoProfilingEvent p_targ("Target:" + i);
     if(!mesh){
       blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()>>>(
         positionsAttribute.values,
@@ -393,6 +415,10 @@ function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persisten
 
 function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   this.parent#loadJSON(persistenceContext, json);
+
+
+  if(json.has('threshold'))
+    this.threshold = json.getScalar('threshold');
 
   if(json.has('filePath')){
     this.filePath = json.getString('filePath');
