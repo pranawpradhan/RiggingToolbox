@@ -35,7 +35,7 @@ function UInt32 BlendShapesModifier_Target.pointCount(){
 //
 
 
-/// The Blend Shapes modifier stores a sparce data set of offsets. 
+/// The Blend Shapes modifier stores a sparse data set of offsets. 
 object BlendShapesModifier : BaseModifier {
   String filePath;
   String referenceGeometryName;
@@ -54,6 +54,11 @@ function BlendShapesModifier(){
 }
 
 
+function UInt32[String] BlendShapesModifier.getAttributeInteractions(){
+  UInt32 result[String];
+  result['positions'] = AttrMode_ReadWrite;
+  return result;
+}
 
 //////////////////////////////////////
 //
@@ -101,10 +106,22 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
     }
   }
 
+  if(this.targets.size() == 0){
+    // Generate a helpfull message because its unlikely that users want no geometries from a file.
+    report("Warning: No reference geometries found in file that match the name filters specified:" + this.referenceGeometryName);
+    for(Size i=0; i<polymeshPaths.size(); i++) {
+      String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
+      report("Name:" + name + " path:" + polymeshPaths[i]);
+    }
+    return;
+  }
+
   for(UInt32 i=0; i<polymeshPaths.size(); i++) {
     String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
 
     if(applyNameFilters(name, this.targetGeometryNames)){
+      String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
+      report("name:" + name);
       AlembicPolyMeshReader reader = archive.getPolyMesh(polymeshPaths[i]);
       PolygonMesh mesh = PolygonMesh();
       reader.readSample(0.0, mesh);
@@ -121,6 +138,25 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
       }
     }
   }
+  UInt32 targetCount;
+  for(UInt32 i=0; i<this.targets.size; i++){
+    if(i==0)
+      targetCount = this.targets[i].size();
+    if(this.targets[i].size() == 0){
+      // Generate a helpfull message because its unlikely that users want no geometries from a file.
+      report("Warning: No target geometries found in file that match the name filters specified:" + this.targetGeometryNames);
+      for(Size i=0; i<polymeshPaths.size(); i++) {
+        String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
+        report("Name:" + name + " path:" + polymeshPaths[i]);
+      }
+      return;
+    }
+    else if(targetCount != this.targets[i].size()){
+      report("Warning multiple blend shape goemetires in reference mesh, but matching number of targets not found:"+this.targets[i].size());
+    }
+  }
+
+
   // The reference positions are only used to generate the sparse blend targets. 
   // We can safely remove them now to reduce memory usage. 
   this.referencePositions.resize(0);
@@ -204,10 +240,11 @@ operator blendShapesModifier_collectPointsReduce(
   }
 }
 
-// First add a reference geometry, followed by a collection of targets. 
-// As the targets are added we generate our sparce blend targets based on the reference.
-// This step must happen before evaluation. 
+// First add a reference geometry, followed by a collection of targets.
+// As the targets are added we generate our sparse blend targets based on the reference.
+// This step must happen before evaluation.
 function BlendShapesModifier.addReferenceGeometry!(Geometry refGeometry){
+  report("addReferenceGeometry:");
   AutoProfilingEvent p(FUNC);
 
   UInt32 numGeoms = this.targets.size()+1;
@@ -265,6 +302,7 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
     );
     this.targets[geomIndex][targetIndex] = reducer.produce();
   }
+  report("addTargetGeometry:" + geomIndex +":" + this.targets[geomIndex].size);
 }
 
 
@@ -302,6 +340,10 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   BlendShapesModifier_Target targets[][],
   Scalar weights[]
 ){
+  if(targets[index].size != weights.size()){
+    setError("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
+    return;
+  }
   Geometry geom = geomSet.get(index);
   Ref<GeometryAttributes> attributes = geom.getAttributes();
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
@@ -328,6 +370,10 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 
 function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  if(this.targets.size != geomSet.size()){
+    setError("BlendShapesModifier cannot evaluate because the number of geoms:" + geomSet.size() + " does not match the number of targets:" + this.targets.size);
+    return;
+  }
   blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets, this.weights);
 }
 

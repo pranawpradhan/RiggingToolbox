@@ -35,7 +35,7 @@ operator entry(){
   EvalContext context();
   stack.evaluate(context);
 
-  // Modify the pose and then reevaluate. 
+  // Modify the blend params and then reevaluate. 
   Scalar weights[];
   weights.resize(2);
   weights[0] = 0.65;

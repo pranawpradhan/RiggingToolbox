@@ -52,7 +52,7 @@ operator blendShapesSphereCharacter_BlendParams(
 ) {
   BlendShapesModifier blendShapesModifier = stack.getGeometryOperator(1);
 
-  // Modify the pose and then reevaluate. 
+  // Modify the blend params and then reevaluate. 
   Scalar weights[];
   weights.resize(2);
   weights[0] = shape0;
