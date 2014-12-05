@@ -156,22 +156,20 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
     this.dirtyPoint = this.geomOperators.size;
   }
 
-  if(this.displayGeometries && (this.handle==null || this.geomSetVersion != this.geomSet.getVersion()))
+  if(this.displayGeometries && (this.handle==null || this.geomSetVersion != this.geomSet.getVersion())){
     this.setupRendering();
+  }
   else if(!this.displayGeometries && this.handle!=null)
     this.handle = null;
 
-  if(this.geomSetVersion != this.geomSet.getVersion()){
-    this.setupRendering();
+  if(this.geomSetVersion != this.geomSet.getVersion())
     this.geomSetVersion = this.geomSet.getVersion();
-  }
 
 
   return this.geomSet;
 }
 
 function GeometryStack.setupRendering!(){
-
   // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
   this.handle = DrawingHandle(this.name+"Handle");
 
