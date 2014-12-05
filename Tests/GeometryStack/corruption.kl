@@ -1,0 +1,6 @@
+require Geometry;
+operator entry()
+{
+  PolygonMesh pm = PolygonMesh();
+  pm.attributes.clear();
+}
