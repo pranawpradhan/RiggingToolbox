@@ -360,7 +360,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   BlendShapesModifier_Target targets[][],
   Scalar weights[]
 ){
-  // AutoProfilingEvent p(FUNC);
+  AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
     setError("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
     return;
@@ -371,20 +371,22 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   
   PolygonMesh mesh = geom;
   for(UInt32 i=0; i<targets[index].size; i++){
-    // AutoProfilingEvent p_targ("Target:" + i);
-    if(!mesh){
-      blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()>>>(
-        positionsAttribute.values,
-        targets[index][i],
-        weights[i]
-      );
-    }
-    else{
-      blendShapesModifier_applyMeshDeltas<<<targets[index][i].pointCount()>>>(
-        mesh,
-        targets[index][i],
-        weights[i]
-      );
+    if(weights[i] > 0.0){
+      //AutoProfilingEvent p_targ("Target:" + i);
+      if(!mesh){
+        blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()>>>(
+          positionsAttribute.values,
+          targets[index][i],
+          weights[i]
+        );
+      }
+      else{
+        blendShapesModifier_applyMeshDeltas<<<targets[index][i].pointCount()>>>(
+          mesh,
+          targets[index][i],
+          weights[i]
+        );
+      }
     }
   }
   positionsAttribute.incrementVersion();
