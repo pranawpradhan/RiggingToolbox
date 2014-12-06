@@ -27,8 +27,13 @@ struct BlendShapesModifier_Target {
   Vec3 deltas[];
 };
 
-function UInt32 BlendShapesModifier_Target.pointCount(){
+function UInt32 BlendShapesModifier_Target.size(){
   return this.indices.size;
+}
+
+function BlendShapesModifier_Target.resize!(UInt32 size){
+  this.indices.resize(size);
+  this.deltas.resize(size);
 }
 
 //////////////////////////////////////
@@ -75,22 +80,9 @@ inline String BlendShapesModifier_getNameFromPath(String pathStr) {
 
 /// Loads the data from the alembic file
 /// \internal
-function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String filePath){
-
+function BlendShapesModifier.loadTargetsFromAlembic!(FilePath expandedPath){
+  report("loadTargetsFromAlembic:" + expandedPath.string());
   AutoProfilingEvent p(FUNC);
-  // Check for an absolute file path, then a relative path.
-  FilePath expandedPath = FilePath(filePath);
-  expandedPath = expandedPath.expandEnvVars();
-
-  if(expandedPath.isRelative()){
-    expandedPath = FilePath(basePath) / expandedPath;
-  }
-
-  if(!expandedPath.exists()){
-    report("File not found:" + expandedPath.string());
-    return;
-  }
-
   AlembicArchiveReader archive(expandedPath.string());
   String polymeshPaths[] = archive.getPathsOfType('PolyMesh');
 
@@ -124,8 +116,6 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
     String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
 
     if(applyNameFilters(name, this.targetGeometryNames)){
-      String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
-      report("name:" + name);
       AlembicPolyMeshReader reader = archive.getPolyMesh(polymeshPaths[i]);
       PolygonMesh mesh = PolygonMesh();
       reader.readSample(0.0, mesh);
@@ -149,9 +139,9 @@ function BlendShapesModifier.loadTargetsFromAlembic!(String basePath, String fil
     if(this.targets[i].size() == 0){
       // Generate a helpfull message because its unlikely that users want no geometries from a file.
       report("Warning: No target geometries found in file that match the name filters specified:" + this.targetGeometryNames);
-      for(Size i=0; i<polymeshPaths.size(); i++) {
-        String name = BlendShapesModifier_getNameFromPath(polymeshPaths[i]);
-        report("Name:" + name + " path:" + polymeshPaths[i]);
+      for(Size j=0; j<polymeshPaths.size(); j++) {
+        String name = BlendShapesModifier_getNameFromPath(polymeshPaths[j]);
+        report("Name:" + name + " path:" + polymeshPaths[j]);
       }
       return;
     }
@@ -362,7 +352,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 ){
   AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
-    setError("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
+    report("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
     return;
   }
   Geometry geom = geomSet.get(index);
@@ -374,14 +364,14 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
     if(weights[i] > 0.0){
       //AutoProfilingEvent p_targ("Target:" + i);
       if(!mesh){
-        blendShapesModifier_applyGeomDeltas<<<targets[index][i].pointCount()>>>(
+        blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()>>>(
           positionsAttribute.values,
           targets[index][i],
           weights[i]
         );
       }
       else{
-        blendShapesModifier_applyMeshDeltas<<<targets[index][i].pointCount()>>>(
+        blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()>>>(
           mesh,
           targets[index][i],
           weights[i]
@@ -425,21 +415,79 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
   if(json.has('filePath')){
     this.filePath = json.getString('filePath');
 
+    // Check for an absolute file path, then a relative path.
+    FilePath expandedPath(this.filePath);
+    expandedPath = expandedPath.expandEnvVars();
 
-    // The Alembic file should contain a collection of geometries that are grouped by naming convention.
-    // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
-    // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
+    if(expandedPath.isRelative()){
+      expandedPath = FilePath(persistenceContext.filePath) / expandedPath;
+    }
+    if(!expandedPath.exists()){
+      report("File not found:" + expandedPath.string());
+      return;
+    }
 
-    this.referenceGeometryName = json.getString('referenceGeometryName');
+    // Now check if a bincache file already exists that we can load 
+    // instead of the alembic file.
+    FilePath binCachefile(expandedPath.string());
+    binCachefile.replaceExtension('blendShapes');
+    if(binCachefile.exists()){
+      this.loadTargetsFromBinCache(binCachefile);
+    }
+    else{
+      // The Alembic file should contain a collection of geometries that are grouped by naming convention.
+      // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
+      // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
 
-    JSONArrayValue targetGeometryNamesData = json.get('targetGeometryNames');
-    if(targetGeometryNamesData)
-      this.targetGeometryNames = targetGeometryNamesData.toStringArray();
-    
-    this.loadTargetsFromAlembic(persistenceContext.filePath, this.filePath);
+      this.referenceGeometryName = json.getString('referenceGeometryName');
+
+      JSONArrayValue targetGeometryNamesData = json.get('targetGeometryNames');
+      if(targetGeometryNamesData)
+        this.targetGeometryNames = targetGeometryNamesData.toStringArray();
+      
+      this.loadTargetsFromAlembic(expandedPath);
+
+      this.saveTargetsToBinCache(binCachefile);
+    }
   }
 }
 
+function BlendShapesModifier.saveTargetsToBinCache(FilePath binCachefile) {
+  report("saveTargetsToBinCache:" + binCachefile.string());
+  BinaryBlockWriter blockWriter(binCachefile.string());
+  blockWriter.setNumBlocks(this.targets.size);
+
+  for(UInt32 i=0; i<this.targets.size; i++){
+    BinaryBlockWriter targetSetWriter = blockWriter.beginWriteBlock('targetSet'+i, this.targets[i].size);
+    for(UInt32 j=0; j<this.targets[i].size; j++){
+      BinaryBlockWriter targetWriter = targetSetWriter.beginWriteBlock('target'+j);
+      UInt32 count = this.targets[i][j].size();
+      targetWriter.write(count.data, count.dataSize);
+      targetWriter.write(this.targets[i][j].indices.data, this.targets[i][j].indices.dataSize);
+      targetWriter.write(this.targets[i][j].deltas.data, this.targets[i][j].deltas.dataSize);
+    }
+  }
+}
+
+function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
+  report("loadTargetsFromBinCache:" + binCachefile.string());
+  BinaryBlockReader blockReader(binCachefile.string());
+  UInt64 numBlocks = blockReader.getNumBlocks();
+  this.targets.resize(UInt32(numBlocks));
+  for(UInt32 i=0; i<this.targets.size; i++){
+    BinaryBlockReader targetSetReader = blockReader.beginReadBlock('targetSet'+i);
+    UInt64 numTargets = targetSetReader.getNumBlocks();
+    this.targets[i].resize(UInt32(numTargets));
+    for(UInt32 j=0; j<this.targets[i].size; j++){
+      BinaryBlockReader targetReader = targetSetReader.beginReadBlock('target'+j);
+      UInt32 count = 0;
+      targetReader.read(count.data, count.dataSize);
+      this.targets[i][j].resize(count);
+      targetReader.read(this.targets[i][j].indices.data, this.targets[i][j].indices.dataSize);
+      targetReader.read(this.targets[i][j].deltas.data, this.targets[i][j].deltas.dataSize);
+    }
+  }
+}
 
 /// Generates a Description string of this pose.
 /// \param indent The indentation to use when generating the string. 
