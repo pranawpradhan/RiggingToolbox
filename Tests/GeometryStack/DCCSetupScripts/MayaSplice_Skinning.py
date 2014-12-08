@@ -3,7 +3,7 @@ import json
 from maya import cmds
 
 cmds.file(new=True,f=True)
-cmds.file("C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
+cmds.file("D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
 
 
 ##############################################
@@ -14,7 +14,7 @@ initnode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Init")
 cmds.fabricSplice('addInputPort', initnode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(initnode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json", type="string");
+cmds.setAttr(initnode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', initnode, '{"opName":"tubeCharacter_Init"}', """
@@ -34,9 +34,10 @@ operator tubeCharacter_Init(
 ##############################################
 ## Set up the skinning pose node.
 
-poseNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_SetPose")
+poseNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Skinning")
 
 cmds.fabricSplice('addIOPort', poseNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
+cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', poseNode, json.dumps({'portName':'deformers', 'dataType':'Mat44[]', 'addMayaAttr': True, 'arrayType':"Array (Multi)"}))
 
 cmds.connectAttr('SkinnedTube_hierarchy_joint1.worldMatrix[0]', poseNode + '.deformers[0]')
@@ -44,17 +45,19 @@ cmds.connectAttr('SkinnedTube_hierarchy_joint2.worldMatrix[0]', poseNode + '.def
 cmds.connectAttr('SkinnedTube_hierarchy_joint3.worldMatrix[0]', poseNode + '.deformers[2]')
 cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', poseNode + '.deformers[3]')
 
-cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"tubeCharacter_SetPose"}', """
+cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"tubeCharacter_Skinning"}', """
 
 require RiggingToolbox;
 
-operator tubeCharacter_SetPose(
+operator tubeCharacter_Skinning(
   io GeometryStack stack,
-  Mat44 deformers[]
+  Mat44 deformers[],
+  Boolean displayDebugging
 ) {
   if(stack.numGeometryOperators() >= 2){
     SkinningModifier skinningModifier = stack.getGeometryOperator(1);
     skinningModifier.setPose(deformers);
+    skinningModifier.setDisplayDebugging(displayDebugging);
   }
 }
 """)
@@ -70,6 +73,7 @@ evalStackNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Eval")
 cmds.fabricSplice('addInputPort', evalStackNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addOutputPort', evalStackNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', evalStackNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
+cmds.setAttr(evalStackNode + '.displayGeometries', 1)
 
 
 cmds.connectAttr(poseNode + '.stack', evalStackNode + '.stack')
@@ -89,7 +93,6 @@ operator tubeCharacter_Eval(
   stack.evaluate(context);
 }
 """)
-
 
 ##############################################
 ## Set up the eval locator.

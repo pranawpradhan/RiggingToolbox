@@ -14,7 +14,7 @@ influenceInitNode = cmds.createNode("spliceMayaNode", name = "captainAtom_Init")
 cmds.fabricSplice('addInputPort', influenceInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', influenceInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(influenceInitNode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/CaptainAtom_Skinning.json", type="string");
+cmds.setAttr(influenceInitNode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/CaptainAtom_Skinning.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', influenceInitNode, '{"opName":"captainAtom_Init"}', """
@@ -135,7 +135,7 @@ wrappedGeomsInitNode = cmds.createNode("spliceMayaNode", name = "wrappedGeoms_In
 cmds.fabricSplice('addInputPort', wrappedGeomsInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', wrappedGeomsInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(wrappedGeomsInitNode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/CaptainAtom_Wrapped.json", type="string");
+cmds.setAttr(wrappedGeomsInitNode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/CaptainAtom_Wrapped.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', wrappedGeomsInitNode, '{"opName":"wrappedGeoms_Init"}', """

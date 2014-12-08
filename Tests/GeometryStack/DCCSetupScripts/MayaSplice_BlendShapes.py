@@ -2,6 +2,12 @@
 import json
 from maya import cmds
 
+import os
+if 'FABRIC_RIGGINGTOOLBOX_PATH' not in os.environ:
+  raise Exception("Please set the rigging ")
+toolboxPath = os.environ['FABRIC_RIGGINGTOOLBOX_PATH']
+
+
 cmds.file(new=True,f=True)
 
 
@@ -14,7 +20,7 @@ initnode = cmds.createNode("spliceMayaNode", name = "BlendShapesSphereCharacter_
 cmds.fabricSplice('addInputPort', initnode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(initnode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/blendShapesSphereCharacter.json", type="string");
+cmds.setAttr(initnode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/blendShapesSphereCharacter.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', initnode, '{"opName":"blendShapesSphereCharacter"}', """
@@ -34,30 +40,34 @@ operator blendShapesSphereCharacter(
 ##############################################
 ## Set up the BlendShapesParams node.
 
-blendShapesNode = cmds.createNode("spliceMayaNode", name = "BlendShapesSphereCharacter_BlendParams")
+blendShapesNode = cmds.createNode("spliceMayaNode", name = "BlendShapesSphereCharacter_BlendShapes")
 
 cmds.fabricSplice('addIOPort', blendShapesNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', blendShapesNode, json.dumps({'portName':'shape0', 'dataType':'Scalar', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', blendShapesNode, json.dumps({'portName':'shape1', 'dataType':'Scalar', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', blendShapesNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 
-
-cmds.fabricSplice('addKLOperator', blendShapesNode, '{"opName":"blendShapesSphereCharacter_BlendParams"}', """
+cmds.fabricSplice('addKLOperator', blendShapesNode, '{"opName":"blendShapesSphereCharacter_BlendShapes"}', """
 
 require RiggingToolbox;
 
-operator blendShapesSphereCharacter_BlendParams(
+operator blendShapesSphereCharacter_BlendShapes(
   io GeometryStack stack,
   Scalar shape0,
-  Scalar shape1
+  Scalar shape1,
+  Boolean displayDebugging
 ) {
-  BlendShapesModifier blendShapesModifier = stack.getGeometryOperator(1);
+  if(stack.numGeometryOperators() > 1){
+    BlendShapesModifier blendShapesModifier = stack.getGeometryOperator(1);
 
-  // Modify the blend params and then reevaluate. 
-  Scalar weights[];
-  weights.resize(2);
-  weights[0] = shape0;
-  weights[1] = shape1;
-  blendShapesModifier.setBlendWeights(weights);
+    // Modify the blend params and then reevaluate. 
+    Scalar weights[];
+    weights.resize(2);
+    weights[0] = shape0;
+    weights[1] = shape1;
+    blendShapesModifier.setBlendWeights(weights);
+    blendShapesModifier.setDisplayDebugging(displayDebugging);
+  }
 }
 """)
 

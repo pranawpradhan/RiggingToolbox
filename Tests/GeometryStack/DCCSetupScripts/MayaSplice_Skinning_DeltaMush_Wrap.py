@@ -3,7 +3,7 @@ import json
 from maya import cmds
 
 cmds.file(new=True,f=True)
-cmds.file("C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
+cmds.file("D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
 
 
 ##############################################
@@ -14,7 +14,7 @@ influenceInitNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Init
 cmds.fabricSplice('addInputPort', influenceInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', influenceInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(influenceInitNode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
+cmds.setAttr(influenceInitNode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', influenceInitNode, '{"opName":"tubeCharacter_Init"}', """
@@ -36,43 +36,36 @@ operator tubeCharacter_Init(
 ##############################################
 ## Set up the skinning pose node.
 
-influencePoseNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_SetPose")
+influencePoseNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Skinning")
 
 cmds.fabricSplice('addIOPort', influencePoseNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
-cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'joint1', 'dataType':'Mat44', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'joint2', 'dataType':'Mat44', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'joint3', 'dataType':'Mat44', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'joint4', 'dataType':'Mat44', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influencePoseNode, json.dumps({'portName':'deformers', 'dataType':'Mat44[]', 'addMayaAttr': True, 'arrayType':"Array (Multi)"}))
 
-cmds.connectAttr('SkinnedTube_hierarchy_joint1.worldMatrix[0]', influencePoseNode + '.joint1')
-cmds.connectAttr('SkinnedTube_hierarchy_joint2.worldMatrix[0]', influencePoseNode + '.joint2')
-cmds.connectAttr('SkinnedTube_hierarchy_joint3.worldMatrix[0]', influencePoseNode + '.joint3')
-cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', influencePoseNode + '.joint4')
+cmds.connectAttr('SkinnedTube_hierarchy_joint1.worldMatrix[0]', influencePoseNode + '.deformers[0]')
+cmds.connectAttr('SkinnedTube_hierarchy_joint2.worldMatrix[0]', influencePoseNode + '.deformers[1]')
+cmds.connectAttr('SkinnedTube_hierarchy_joint3.worldMatrix[0]', influencePoseNode + '.deformers[2]')
+cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', influencePoseNode + '.deformers[3]')
 
-cmds.fabricSplice('addKLOperator', influencePoseNode, '{"opName":"tubeCharacter_SetPose"}', """
+
+cmds.fabricSplice('addKLOperator', influencePoseNode, '{"opName":"tubeCharacter_Skinning"}', """
 
 require RiggingToolbox;
 
-operator tubeCharacter_SetPose(
+operator tubeCharacter_Skinning(
   io GeometryStack stack,
-  Mat44 joint1,
-  Mat44 joint2,
-  Mat44 joint3,
-  Mat44 joint4
+  Mat44 deformers[],
+  Boolean displayDebugging
 ) {
   if(stack.numGeometryOperators() >= 2){
     SkinningModifier skinningModifier = stack.getGeometryOperator(1);
-    Mat44 pose[];
-    pose.push(joint1);
-    pose.push(joint2);
-    pose.push(joint3);
-    pose.push(joint4);
-    skinningModifier.setPose(pose);
+    skinningModifier.setPose(deformers);
+    skinningModifier.setDisplayDebugging(displayDebugging);
   }
 }
 """)
 
-cmds.connectAttr(influenceInitNode + '.stack', influencePoseNode + '.stack')
+cmds.connectAttr(initnode + '.stack', influencePoseNode + '.stack')
 
 
 ##############################################
@@ -82,6 +75,7 @@ influenceMushNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Delt
 
 cmds.fabricSplice('addIOPort', influenceMushNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', influenceMushNode, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influenceMushNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 
 cmds.setAttr(influenceMushNode + '.iterations', 30);
 
@@ -91,16 +85,19 @@ require RiggingToolbox;
 
 operator tubeCharacter_DeltaMush(
   io GeometryStack stack,
-  Integer iterations
+  Integer iterations,
+  Boolean displayDebugging
 ) {
   if(stack.numGeometryOperators() >= 3){
     DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
     deltaMushModifier.setNumIterations(iterations);
+    deltaMushModifier.setDisplayDebugging(displayDebugging);
   }
 }
 """)
 
-cmds.connectAttr(influencePoseNode + '.stack', influenceMushNode + '.stack')
+cmds.connectAttr(poseNode + '.stack', influenceMushNode + '.stack')
+
 
 
 ##############################################
@@ -111,7 +108,11 @@ influenceEvalNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Eval
 cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addOutputPort', influenceEvalNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
 
-cmds.connectAttr(influenceMushNode + '.stack', influenceEvalNode + '.stack')
+
+cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
+cmds.setAttr(influenceEvalNode + '.displayGeometries', 1);
+
+cmds.connectAttr(mushNode + '.stack', influenceEvalNode + '.stack')
 
 cmds.fabricSplice('addKLOperator', influenceEvalNode, '{"opName":"tubeCharacter_Eval"}', """
 
@@ -119,8 +120,11 @@ require RiggingToolbox;
 
 operator tubeCharacter_Eval(
   io GeometryStack stack,
+  Boolean displayGeometries,
   Scalar eval
 ) {
+  stack.setDisplayGeometries(displayGeometries);
+
   EvalContext context();
   stack.evaluate(context);
 
@@ -131,6 +135,7 @@ operator tubeCharacter_Eval(
 """)
 
 
+
 ##############################################
 ## Set up the loader node for the wraped geoms
 
@@ -139,7 +144,7 @@ wrappedGeomsInitNode = cmds.createNode("spliceMayaNode", name = "wrappedGeoms_In
 cmds.fabricSplice('addInputPort', wrappedGeomsInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', wrappedGeomsInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(wrappedGeomsInitNode + '.filePath', "C:/Users/Phil/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Wrap.json", type="string");
+cmds.setAttr(wrappedGeomsInitNode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Wrap.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', wrappedGeomsInitNode, '{"opName":"wrappedGeoms_Init"}', """
@@ -165,6 +170,7 @@ wrappedGeomsEvalNode = cmds.createNode("spliceMayaNode", name = "wrappedGeoms_Ev
 cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'srcstack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False}))
 cmds.fabricSplice('addOutputPort', wrappedGeomsEvalNode, json.dumps({'portName':'eval', 'dataType':'Scalar', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', wrappedGeomsEvalNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 
 cmds.connectAttr(wrappedGeomsInitNode + '.stack', wrappedGeomsEvalNode + '.stack')
 cmds.connectAttr(influenceEvalNode + '.stack', wrappedGeomsEvalNode + '.srcstack')
@@ -176,11 +182,13 @@ require RiggingToolbox;
 operator wrappedGeoms_Eval(
   io GeometryStack stack,
   io GeometryStack srcstack,
+  Boolean displayDebugging,
   Scalar eval
 ) {
   if(stack.numGeometryOperators() >= 2){
     WrapModifier wrapModifier = stack.getGeometryOperator(1);
     wrapModifier.setSourceGeomStack(srcstack);
+    wrapModifier.setDisplayDebugging(displayDebugging);
   }
 
   EvalContext context();
