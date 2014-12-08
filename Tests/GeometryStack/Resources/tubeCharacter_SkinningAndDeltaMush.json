@@ -10,7 +10,9 @@
     },
     {
      "type": "DeltaMushModifier",
-     "iterations": 30,
+     "iterations": 30,,
+     "filePath": "skinnedTube.abc",
+     "referenceGeometryNames": ["pCylinderShape1"],
      "displayDebugging": true
     },
     {
