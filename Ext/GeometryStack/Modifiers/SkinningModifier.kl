@@ -64,7 +64,7 @@ function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
   this.deformerColors.resize(referencePose.size);
   for (Integer i = 0; i < referencePose.size; i++){
     this.invReferencePose[i] = referencePose[i].inverse();
-    this.deformerColors[i] = randomColor(3525, i, 0.25);
+    this.deformerColors[i] = randomColor(87655, i, 0.15);
   }
   this.skinningMatrices.resize(referencePose.size);
   this.pose = referencePose;
@@ -94,28 +94,6 @@ function SkinningModifier.setDisplayDebugging!(Boolean displayDebugging){
     String data;
     this.notify('changed', data);
   }
-}
-
-/// The per-point operator that computes the linear blend skinning. 
-/// \internal
-operator skinningModifier_computeVertexColor<<<index>>>(
-  io PolygonMesh mesh,
-  Ref<SkinningAttribute> skinningAttr,
-  io Ref<ColorAttribute> vertexColorsAttr,
-  Color deformerColors[]
-){
-  LocalL16UInt32Array indices;
-  LocalL16ScalarArray weights;
-  skinningAttr.getPairs(index, indices, weights);
-  Color color(0.0, 0.0, 0.0, 0.0);
-  for( UInt32 i = 0; i < indices.size(); ++i ) {
-    Scalar boneWeight = weights.get(i);
-    if( boneWeight == 0.0 )
-      break;
-    UInt32 boneId = indices.get(i);
-    color += deformerColors[boneId] * boneWeight;
-  }
-  mesh.setPointAttribute(index, vertexColorsAttr, color);
 }
 
 /// The per-point operator that computes the linear blend skinning. 
@@ -291,15 +269,7 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
       // Update the vertex colors if the data version has changed
       PolygonMesh mesh = geometry;
       if(this.displayDebugging && mesh != null){
-        Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
-        Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
-        skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
-          mesh,
-          skinningAttr,
-          vertexColorsAttr,
-          this.deformerColors
-          );
-        vertexColorsAttr.incrementVersion();
+        this.generateVertexColors(mesh);
       }
     }
     this.dataVersion = geomSet.getVersion();
@@ -353,6 +323,42 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
   }
 }
 
+
+/// The per-point operator that computes the linear blend skinning. 
+/// \internal
+operator skinningModifier_computeVertexColor<<<index>>>(
+  io PolygonMesh mesh,
+  Ref<SkinningAttribute> skinningAttr,
+  io Ref<ColorAttribute> vertexColorsAttr,
+  Color deformerColors[]
+){
+  LocalL16UInt32Array indices;
+  LocalL16ScalarArray weights;
+  skinningAttr.getPairs(index, indices, weights);
+  Color color(0.0, 0.0, 0.0, 0.0);
+  for( UInt32 i = 0; i < indices.size(); ++i ) {
+    Scalar boneWeight = weights.get(i);
+    if( boneWeight == 0.0 )
+      break;
+    UInt32 boneId = indices.get(i);
+    color += deformerColors[boneId] * boneWeight;
+  }
+  mesh.setPointAttribute(index, vertexColorsAttr, color);
+}
+
+
+function SkinningModifier.generateVertexColors(io PolygonMesh mesh){
+  Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
+  Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
+  skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
+    mesh,
+    skinningAttr,
+    vertexColorsAttr,
+    this.deformerColors
+    );
+  vertexColorsAttr.incrementVersion();
+}
+
 function SkinningModifier.setupRendering!(io GeometrySet geomSet){
 
   // Construct a handle for this character instance. 
@@ -367,15 +373,7 @@ function SkinningModifier.setupRendering!(io GeometrySet geomSet){
     PolygonMesh mesh = geomSet.get(geomId);
     if(mesh){
       if(!mesh.has("vertexColors")){
-        Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
-        Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
-        skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
-          mesh,
-          skinningAttr,
-          vertexColorsAttr,
-          this.deformerColors
-          );
-        vertexColorsAttr.incrementVersion();
+        this.generateVertexColors(mesh);
       }
 
       String name = "SkinningModifier_" + String(geomId);
