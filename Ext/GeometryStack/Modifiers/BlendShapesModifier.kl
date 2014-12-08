@@ -397,7 +397,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   PolygonMesh mesh = geom;
   Ref<ColorAttribute> vertexColorsAttr = null;
   if(displayDebugging){
-    vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
+    vertexColorsAttr = mesh.getOrCreateAttribute("blendShapes_vertexColors", ColorAttribute);
     vertexColorsAttr.incrementVersion();
     // Re-initilialize the vertex colors each evaluation because the colors are accumulated into this buffer.
     Color newColors[];
@@ -479,7 +479,7 @@ function BlendShapesModifier.setupRendering!(io GeometrySet geomSet){
   this.handle = DrawingHandle("BlendShapesModifier");
 
   // Now setup the rendering
-  InlineShader shader = this.handle.getDrawing().registerShader(OGLVertexColorOverlayShader());
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLVertexColorOverlayShader2('BlendShapesModifierShader', 'blendShapes_vertexColors'));
   InlineMaterial material = shader.getOrCreateMaterial("BlendShapesModifierMaterial");
   for(Integer geomId=0; geomId<geomSet.size; geomId++){
     PolygonMesh mesh = geomSet.get(geomId);

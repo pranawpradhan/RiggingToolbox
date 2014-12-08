@@ -366,7 +366,7 @@ function SkinningModifier.setupRendering!(io GeometrySet geomSet){
   this.handle = DrawingHandle("SkinningModifier");
 
   // Now setup the rendering
-  InlineShader shader = this.handle.getDrawing().registerShader(OGLVertexColorOverlayShader());
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLVertexColorOverlayShader2('SkinningModifierShader', 'skinning_vertexColors'));
   InlineMaterial material = shader.getOrCreateMaterial("SkinningModifierMaterial");
 
   for(Integer geomId=0; geomId<geomSet.size; geomId++){
