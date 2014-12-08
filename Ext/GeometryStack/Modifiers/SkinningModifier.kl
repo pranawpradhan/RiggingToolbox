@@ -349,7 +349,7 @@ operator skinningModifier_computeVertexColor<<<index>>>(
 
 function SkinningModifier.generateVertexColors(io PolygonMesh mesh){
   Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
-  Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
+  Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("skinning_vertexColors", ColorAttribute);
   skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
     mesh,
     skinningAttr,
