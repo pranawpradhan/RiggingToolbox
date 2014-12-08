@@ -54,7 +54,7 @@ function OGLVertexColorOverlayShader2() {
 
 /// constructor taking a name
 function OGLVertexColorOverlayShader2(String name) {
-  this.init(name, vertexColorsAttrName);
+  this.init(name, 'vertexColors');
 }
 
 /// constructor taking a name and vertexColorsAttrName
