@@ -2,8 +2,13 @@
 import json
 from maya import cmds
 
+import os
+if 'FABRIC_RIGGINGTOOLBOX_PATH' not in os.environ:
+  raise Exception("Please set the rigging ")
+toolboxPath = os.environ['FABRIC_RIGGINGTOOLBOX_PATH']
+
 cmds.file(new=True,f=True)
-cmds.file("D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
+cmds.file(toolboxPath+"/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
 
 
 ##############################################
@@ -14,7 +19,7 @@ influenceInitNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Init
 cmds.fabricSplice('addInputPort', influenceInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', influenceInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(influenceInitNode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
+cmds.setAttr(influenceInitNode + '.filePath', toolboxPath+"/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', influenceInitNode, '{"opName":"tubeCharacter_Init"}', """
@@ -25,8 +30,6 @@ operator tubeCharacter_Init(
   String filePath,
   io GeometryStack stack
 ) {
-  //StartFabricProfiling();
-
   report("Loading Character Definition:" + filePath);
   stack.loadJSONFile(filePath);
 }
@@ -127,10 +130,6 @@ operator tubeCharacter_Eval(
 
   EvalContext context();
   stack.evaluate(context);
-
-  //StopFabricProfiling();
-  //report( GetEvalPathReport() );
-  //report(stack.getDesc());
 }
 """)
 
@@ -144,7 +143,7 @@ wrappedGeomsInitNode = cmds.createNode("spliceMayaNode", name = "wrappedGeoms_In
 cmds.fabricSplice('addInputPort', wrappedGeomsInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', wrappedGeomsInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(wrappedGeomsInitNode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Wrap.json", type="string");
+cmds.setAttr(wrappedGeomsInitNode + '.filePath', toolboxPath+"/Tests/GeometryStack/Resources/tubeCharacter_Wrap.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', wrappedGeomsInitNode, '{"opName":"wrappedGeoms_Init"}', """
@@ -191,9 +190,12 @@ operator wrappedGeoms_Eval(
     wrapModifier.setDisplayDebugging(displayDebugging);
   }
 
+  //StartFabricProfiling();
+
   EvalContext context();
   stack.evaluate(context);
 
+  // Uncomment these lines to get a profiling report. 
   //StopFabricProfiling();
   //report( GetEvalPathReport() );
   //report(stack.getDesc());

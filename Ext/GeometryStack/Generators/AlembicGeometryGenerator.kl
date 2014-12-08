@@ -60,8 +60,12 @@ object AlembicGeometryGenerator : BaseGenerator {
 /// Sets the file path of the alembic file. 
 inline  AlembicGeometryGenerator.setFilePath!(String filePath){
   this.filePath = filePath;
-  this.expandedPath = FilePath(this.filePath);
-  this.expandedPath = this.expandedPath.expandEnvVars();
+  this.expandedPath = FilePath(this.filePath).expandEnvVars();
+
+  if(!this.expandedPath.exists()){
+    throw("File not found:" + this.expandedPath.string());
+  }
+
   String data;
   this.notify('changed', data);
 }
@@ -201,19 +205,9 @@ function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContex
 
   JSONArrayValue geometryNamesData = json.get('geometryNames');
   if(geometryNamesData)
-    this.geometryNames = geometryNamesData.toStringArray();
+    this.setGeometryNames(geometryNamesData.toStringArray());
 
-  this.filePath = json.getString('filePath');
-
-  this.expandedPath = FilePath(this.filePath).expandEnvVars();
-
-  if(this.expandedPath.isRelative()){
-    this.expandedPath = FilePath(persistenceContext.filePath) / this.expandedPath;
-  }
-
-  if(!this.expandedPath.exists()){
-    throw("File not found:" + this.expandedPath.string());
-  }
+  this.setFilePath(json.getString('filePath'));
 }
 
 

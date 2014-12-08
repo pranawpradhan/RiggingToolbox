@@ -20,7 +20,7 @@ initnode = cmds.createNode("spliceMayaNode", name = "BlendShapesSphereCharacter_
 cmds.fabricSplice('addInputPort', initnode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(initnode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/blendShapesSphereCharacter.json", type="string");
+cmds.setAttr(initnode + '.filePath', toolboxPath+"/Tests/GeometryStack/Resources/blendShapesSphereCharacter.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', initnode, '{"opName":"blendShapesSphereCharacter"}', """

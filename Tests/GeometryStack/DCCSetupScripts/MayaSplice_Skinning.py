@@ -2,8 +2,13 @@
 import json
 from maya import cmds
 
+import os
+if 'FABRIC_RIGGINGTOOLBOX_PATH' not in os.environ:
+  raise Exception("Please set the rigging ")
+toolboxPath = os.environ['FABRIC_RIGGINGTOOLBOX_PATH']
+
 cmds.file(new=True,f=True)
-cmds.file("D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
+cmds.file(toolboxPath+"/Tests/GeometryStack/Resources/SkinnedTube_hierarchy.ma", r=True);
 
 
 ##############################################
@@ -14,7 +19,7 @@ initnode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Init")
 cmds.fabricSplice('addInputPort', initnode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', initnode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(initnode + '.filePath', "D:/Projects/RiggingToolbox/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json", type="string");
+cmds.setAttr(initnode + '.filePath', toolboxPath+"/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', initnode, '{"opName":"tubeCharacter_Init"}', """
@@ -89,8 +94,16 @@ operator tubeCharacter_Eval(
 ) {
   stack.setDisplayGeometries(displayGeometries);
 
+  //StartFabricProfiling();
+
   EvalContext context();
   stack.evaluate(context);
+
+  // Uncomment these lines to get a profiling report. 
+  //StopFabricProfiling();
+  //report( GetEvalPathReport() );
+  //report(stack.getDesc());
+
 }
 """)
 
