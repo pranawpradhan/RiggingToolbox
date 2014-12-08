@@ -205,9 +205,7 @@ function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContex
 
   this.filePath = json.getString('filePath');
 
-    // Check for an absolute file path, then a relative path.
-  this.expandedPath = FilePath(this.filePath);
-  this.expandedPath = this.expandedPath.expandEnvVars();
+  this.expandedPath = FilePath(this.filePath).expandEnvVars();
 
   if(this.expandedPath.isRelative()){
     this.expandedPath = FilePath(persistenceContext.filePath) / this.expandedPath;

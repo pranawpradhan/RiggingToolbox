@@ -527,8 +527,7 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
     this.filePath = json.getString('filePath');
 
     // Check for an absolute file path, then a relative path.
-    FilePath expandedPath(this.filePath);
-    expandedPath = expandedPath.expandEnvVars();
+    FilePath expandedPath = FilePath(this.filePath).expandEnvVars();
 
     if(expandedPath.isRelative()){
       expandedPath = FilePath(persistenceContext.filePath) / expandedPath;
