@@ -53,6 +53,13 @@ object BlendShapesModifier : BaseModifier {
   Scalar weights[];
   Scalar sparcity;
   UInt32 targetCount;
+  Scalar shapeThreshold;
+
+  Boolean displayDebugging;
+  UInt32 dataVersion;
+  DrawingHandle handle;
+  InlineInstance instances[];
+  Color targetColors[];
 };
 
 
@@ -60,6 +67,7 @@ function BlendShapesModifier(){
   this.threshold = 0.001;
   this.sparcity = 0.0;
   this.targetCount = 0.0;
+  this.shapeThreshold = 0.001;
 }
 
 
@@ -324,31 +332,58 @@ function BlendShapesModifier.setBlendWeights!(Scalar weights[]){
 }
 
 
+function BlendShapesModifier.setDisplayDebugging!(Boolean displayDebugging){
+  if(this.displayDebugging != displayDebugging){
+    this.displayDebugging = displayDebugging;
+    String data;
+    this.notify('changed', data);
+  }
+}
+
 //////////////////////////////////////
 //
 
 operator blendShapesModifier_applyGeomDeltas<<<index>>>(
   io Vec3 positions[],
   BlendShapesModifier_Target target,
-  Scalar weight
+  Scalar weight,
+  Boolean displayDebugging,
+  io Color vertexColors[],
+  Color targetColor
 ){
-  positions[target.indices[index]] += target.deltas[index] * weight;
+  UInt32 targetOffsetIndex = target.indices[index];
+  positions[targetOffsetIndex] += target.deltas[index] * weight;
+  if(displayDebugging){
+    vertexColors[targetOffsetIndex] += targetColor * weight;
+  }
 }
 
 operator blendShapesModifier_applyMeshDeltas<<<index>>>(
   io PolygonMesh mesh,
   BlendShapesModifier_Target target,
-  Scalar weight
+  Scalar weight,
+  Boolean displayDebugging,
+  io Ref<ColorAttribute> vertexColorsAttr,
+  Color targetColor
 ){
-  Vec3 pos = mesh.getPointPosition(target.indices[index]);
-  mesh.setPointPosition(target.indices[index], pos + (target.deltas[index] * weight));
+  UInt32 targetOffsetIndex = target.indices[index];
+  Vec3 pos = mesh.getPointPosition(targetOffsetIndex);
+  mesh.setPointPosition(targetOffsetIndex, pos + (target.deltas[index] * weight));
+  if(displayDebugging){
+    Color color = vertexColorsAttr.values[targetOffsetIndex];
+    mesh.setPointAttribute(targetOffsetIndex, vertexColorsAttr, color + (targetColor * weight));
+  }
 }
 
 
 operator blendShapesModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   BlendShapesModifier_Target targets[][],
-  Scalar weights[]
+  Scalar weights[],
+  Scalar shapeThreshold,
+  Boolean displayDebugging,
+  Color targetColors[],
+  io UInt32 numActiveShapes
 ){
   AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
@@ -360,22 +395,42 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
   
   PolygonMesh mesh = geom;
+  Ref<ColorAttribute> vertexColorsAttr = null;
+  if(displayDebugging){
+    vertexColorsAttr = mesh.getOrCreateAttribute("vertexColors", ColorAttribute);
+    vertexColorsAttr.incrementVersion();
+    // Re-initilialize the vertex colors each evaluation because the colors are accumulated into this buffer.
+    Color newColors[];
+    newColors.resize(vertexColorsAttr.size());
+    vertexColorsAttr.values = newColors;
+  }
+
   for(UInt32 i=0; i<targets[index].size; i++){
-    if(weights[i] > 0.0){
+    if(weights[i] > shapeThreshold){
       //AutoProfilingEvent p_targ("Target:" + i);
       if(!mesh){
         blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()>>>(
           positionsAttribute.values,
           targets[index][i],
-          weights[i]
+          weights[i],
+          displayDebugging,
+          vertexColorsAttr.values,
+          targetColors[i]
         );
       }
       else{
         blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()>>>(
           mesh,
           targets[index][i],
-          weights[i]
+          weights[i],
+          displayDebugging,
+          vertexColorsAttr,
+          targetColors[i]
         );
+      }
+      if(displayDebugging){
+        // Atomic increment means that we don't have to lock to modify this shared value.
+        numActiveShapes.atomicInc();
       }
     }
   }
@@ -388,14 +443,65 @@ function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomS
     setError("BlendShapesModifier cannot evaluate because the number of geoms:" + geomSet.size() + " does not match the number of targets:" + this.targets.size);
     return;
   }
-  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.targets, this.weights);
+
+  if(this.displayDebugging){
+    if(!this.handle || this.dataVersion != geomSet.getVersion()){
+      this.setupRendering(geomSet);
+      this.dataVersion = geomSet.getVersion();
+    }
+  }
+  else{
+    this.handle = null;
+  }
+
+  UInt32 numActiveShapes = 0;
+  blendShapesModifier_deformGeometries<<<geomSet.size()>>>(
+      geomSet,
+      this.targets,
+      this.weights,
+      this.shapeThreshold,
+      this.displayDebugging,
+      this.targetColors,
+      numActiveShapes
+    );
+
+  if(this.displayDebugging){
+    // Logging the number of active shape targets helps understand the peformance.
+    report("numActiveShapes:" + numActiveShapes);
+  }
 }
+
+
+function BlendShapesModifier.setupRendering!(io GeometrySet geomSet){
+
+  // Construct a handle for this character instance. 
+  // The handle will clean up the InlineDrawing when it is destroyed. 
+  this.handle = DrawingHandle("BlendShapesModifier");
+
+  // Now setup the rendering
+  InlineShader shader = this.handle.getDrawing().registerShader(OGLVertexColorOverlayShader());
+  InlineMaterial material = shader.getOrCreateMaterial("BlendShapesModifierMaterial");
+  for(Integer geomId=0; geomId<geomSet.size; geomId++){
+    PolygonMesh mesh = geomSet.get(geomId);
+    if(mesh){
+      String name = "BlendShapesModifier_" + String(geomId);
+      InlineShape shape = InlineMeshShape(name, mesh);
+
+      // ThreadsafeMetaDataContainer metaData = getGeomMetaData(mesh);
+      // GenericMat44Value bindShapeTransform = metaData.get('globalTransform');
+      // StaticInlineTransform transform(name + "_Transform", this.handle.rootTransform, Xfo(bindShapeTransform.value));
+      InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
+    }
+  }
+}
+
 
 
 function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json = this.parent#saveJSON(persistenceContext);
   json.setString('filePath', this.filePath);
   json.setString('referenceGeometryName', this.referenceGeometryName);
+  json.setBoolean('displayDebugging', this.displayDebugging);
 
   JSONArrayValue targetGeometryNamesData();
   for(Integer i=0; i<this.targetGeometryNames.size; i++)
@@ -408,9 +514,14 @@ function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persisten
 function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   this.parent#loadJSON(persistenceContext, json);
 
-
   if(json.has('threshold'))
     this.threshold = json.getScalar('threshold');
+
+  if(json.has('shapeThreshold'))
+    this.shapeThreshold = json.getScalar('shapeThreshold');
+
+  if(json.has('displayDebugging'))
+    this.displayDebugging = json.getBoolean('displayDebugging');
 
   if(json.has('filePath')){
     this.filePath = json.getString('filePath');
@@ -448,6 +559,14 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
       this.loadTargetsFromAlembic(expandedPath);
 
       this.saveTargetsToBinCache(binCachefile);
+    }
+
+
+    if(this.targets.size > 0){
+      this.targetColors.resize(this.targets[0].size);
+      for (Integer i = 0; i < this.targets[0].size; i++){
+        this.targetColors[i] = randomColor(6754, i, 0.25);
+      }
     }
   }
 }
