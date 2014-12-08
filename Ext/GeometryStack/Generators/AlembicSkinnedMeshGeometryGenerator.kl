@@ -449,7 +449,7 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     skinnedGeometryIndices.push(i);
     skinnedGeometries.push(mesh);
 
-     // The Skeleton stores the union of all bones used to deform all geometries
+    // The Skeleton stores the union of all bones used to deform all geometries
     // that make up this character.
     // Merge the envelope deformers into the skeleton bone paths,
     // while also traversing up the hierarchy and collecting the entire
@@ -472,6 +472,7 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     // Gather the list of all deformers. this list will be the sub-set of the 
     // Skeleton that is used to generate the skining matricies. 
     this.mergeSet(deformerNamesUnion, deformerNames);
+
   }
 
   if(geomSet.size() == 0){
@@ -496,6 +497,24 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
   // Construct the skeleton
   Skeleton skeleton = this.buildSkeleton(archive, skeletonBonePaths, deformerNamesUnion);
   geomSet.setMetaData('skeleton', skeleton);
+
+
+  // The deformers are stored in the skeleton in a hierarchical way, which may be inconsistent
+  // with the order the deformers were stored in the skinnind data originally. 
+  // We now generate a new list of deformer names that is sorted according to how the skeleton
+  // is now generated. 
+  String sortedDeformerNames[];
+  for(Index i=0;i<skeletonBonePaths.size();i++){
+    Integer index = this.findItemInNameList(deformerNamesUnion, skeletonBonePaths[i]);
+    if(index != -1)
+      sortedDeformerNames.push(deformerNamesUnion[index]);
+  }
+
+  // report("==sortedDeformerNames==");
+  // for(Index i=0;i<sortedDeformerNames.size();i++){
+  //   report(sortedDeformerNames[i]);
+  // }
+  // report("======================");
 
   //-----------------------------------------
   // Load the envelope weights and remap the bone indices to the skeleton hierarchy.
@@ -577,7 +596,7 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     // Now, for each deformer listed on this geometry, find its index in the deformers union.
     // It will be the union of deformers that will be used as a single pose in the skinning modifier. 
     for(Integer j=0; j<thisGeom_deformerXformIds.size; j++) {
-      Integer index = this.findItem(deformerNamesUnion, xformNames[thisGeom_deformerXformIds[j]]);
+      Integer index = this.findItem(sortedDeformerNames, xformNames[thisGeom_deformerXformIds[j]]);
       if(index >= 0){
         boneMapping[j] = index;
       }
