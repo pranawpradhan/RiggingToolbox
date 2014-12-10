@@ -86,7 +86,7 @@ inline String BlendShapesModifier_getNameFromPath(String pathStr) {
   return path[path.size-1];
 }
 
-/// Loads the data from the alembic file
+/// Loads the targets from the alembic file
 /// \internal
 function BlendShapesModifier.loadTargetsFromAlembic!(FilePath expandedPath){
   report("loadTargetsFromAlembic:" + expandedPath.string());
@@ -172,7 +172,6 @@ function BlendShapesModifier.loadTargetsFromAlembic!(FilePath expandedPath){
 //////////////////////////////////////
 //
 
-/// A struct for collecting points during surface painting.
 /// \internal
 struct BlendShapesModifier_collectGeomPointsSharedData {
   Vec3 positions[];
@@ -180,8 +179,6 @@ struct BlendShapesModifier_collectGeomPointsSharedData {
   Scalar threshold;
 };
 
-
-/// A struct for collecting points during surface painting.
 /// \internal
 struct BlendShapesModifier_collectMeshPointsSharedData {
   PolygonMesh mesh;
@@ -189,7 +186,6 @@ struct BlendShapesModifier_collectMeshPointsSharedData {
   Scalar threshold;
 };
 
-/// A struct for collecting points during surface painting.
 /// \internal
 struct BlendShapesModifier_CollectPointsMapOutput {
   Boolean collected;
@@ -198,7 +194,6 @@ struct BlendShapesModifier_CollectPointsMapOutput {
 };
 
 
-/// An operator for collecting points during surface painting.
 /// \internal
 operator blendShapesModifier_collectGeomPointsProduce(
   io BlendShapesModifier_CollectPointsMapOutput result,
@@ -607,7 +602,7 @@ function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
   }
 }
 
-/// Generates a Description string of this pose.
+/// Generates a Description string of this modifier.
 /// \param indent The indentation to use when generating the string. 
 function String BlendShapesModifier.getDesc(String indent) {
   String desc;

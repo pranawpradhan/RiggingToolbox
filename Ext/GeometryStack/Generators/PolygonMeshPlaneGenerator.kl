@@ -29,11 +29,9 @@ object PolygonMeshPlaneGenerator : BaseGenerator {
   Boolean normals;
   Boolean uvs;
 
-  Boolean enableCaching;// Used to debug the caching system.
 };
 
 function PolygonMeshPlaneGenerator(){
-  this.enableCaching = true;
 }
 
 function UInt32[String] PolygonMeshPlaneGenerator.getAttributeInteractions(){
@@ -46,9 +44,6 @@ function UInt32[String] PolygonMeshPlaneGenerator.getAttributeInteractions(){
   return result;
 }
 
-function Boolean PolygonMeshPlaneGenerator.cacheResults(){
-  return this.enableCaching;
-}
 
 function PolygonMeshPlaneGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
   PolygonMesh mesh();

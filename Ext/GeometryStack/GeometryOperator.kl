@@ -18,17 +18,22 @@ const UInt32 AttrMode_ReadWrite = 2;
 */
 interface GeometryOperator {
   
-  // returns the list of attributes that the geomery operator is dependnt on in some way. 
+  // returns the list of attributes that the geomery operator is interacting with in some way. 
+  // Generators will usually write a collection of attributes, while Modifiers will read and write 
+  // attributes. This dictionary is used to determine where caching should occur in the geometry stack.
   UInt32[String] getAttributeInteractions();
-  
-  Boolean cacheResults();
 
+  // Evaluate the operator modifying the geomSet
   evaluate!(EvalContext context, io GeometrySet geomSet);
 
+  // Save data from the geometry operator to a JSON dictionary.
   JSONDictValue saveJSON(PersistenceContext persistenceContext);
 
+  // Load data into the geometry operator from a parsed JSON file.
   loadJSON!(PersistenceContext persistenceContext, JSONDictValue json);
 
+  /// Generates a Description string of this modifier. Used in debugging and unit testing.
+  /// \param indent The indentation to use when generating the string. 
   String getDesc(String indent);
 };
 

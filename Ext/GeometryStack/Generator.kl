@@ -12,7 +12,6 @@ require Geometry;
   \seealso GeometrySet, GeometryStack
 */
 interface Generator {
-  Boolean cacheResults();
 };
 
 object BaseGenerator : Notifier, Generator, GeometryOperator {
@@ -31,11 +30,6 @@ function UInt32[String] BaseGenerator.getAttributeInteractions(){
 }
 
 
-/// Return true if the generation of the geometries is expensive and the results should be cached.
-function Boolean BaseGenerator.cacheResults(){
-  return true;
-}
-
 function BaseGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
 
 }
@@ -53,7 +47,7 @@ function BaseGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDict
 }
 
 
-/// Generates a Description string of this pose.
+/// Generates a Description string of this generator.
 /// \param indent The indentation to use when generating the string. 
 function String BaseGenerator.getDesc(String indent) {
   String desc;

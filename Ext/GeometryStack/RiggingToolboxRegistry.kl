@@ -4,7 +4,9 @@
 require Singletons;
 
 
-
+/// The registry is a factory object used to construct the various types of geoetry operators.
+/// Each type of operator defines a factory object, and each of those factory objects is added here.
+/// \note: 
 object RiggingToolboxRegistry {
   GeometryOperatorFactory geomOpFactories[String];
 };

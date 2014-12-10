@@ -6,10 +6,8 @@ operator entry(){
   GeometryStack stack();
   PolygonMeshSphereGenerator sphereGenerator(2.0, 1, true, true);
   PushModifier pushModifier(3.0);
-  sphereGenerator.enableCaching = true;
   stack.addGeometryOperator(sphereGenerator);
   stack.addGeometryOperator(pushModifier);
-  stack.disableCachePoint(1);
 
   EvalContext context();
   {

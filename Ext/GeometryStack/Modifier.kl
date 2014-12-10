@@ -18,11 +18,6 @@ function UInt32[String] BaseModifier.getAttributeInteractions(){
   return result;
 }
 
-/// Return true if the generation of the geometries is expensive and the results should be cached.
-function Boolean BaseModifier.cacheResults(){
-  return false;
-}
-
 
 function BaseModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
@@ -37,12 +32,12 @@ function JSONDictValue BaseModifier.saveJSON(PersistenceContext persistenceConte
   return json;
 }
 
+
 function BaseModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   
 }
 
-
-/// Generates a Description string of this pose.
+/// Generates a Description string of this modifier. Used in debugging and unit testing.
 /// \param indent The indentation to use when generating the string. 
 function String BaseModifier.getDesc(String indent) {
   String desc;

@@ -6,10 +6,14 @@ require Math;
 require Geometry;
 require FabricStatistics;
 
-// pre-declaring the regsitry because it is loaded last in the fpm file. 
+// pre-declaring the registry because it is loaded last in the fpm file. 
 object RiggingToolboxRegistry;
 
-object GeometryStack : Notifier, Listener {
+interface IGeometryStack {
+  RiggingToolboxRegistry getRiggingToolboxRegistry();
+};
+
+object GeometryStack : Notifier, Listener, IGeometryStack, Persistable {
   String name;
   String filePath;
 
@@ -25,10 +29,12 @@ object GeometryStack : Notifier, Listener {
   Color geomColors[String];
 
   // e.g. If a deformer modifies positions, and the subsequent deformer
-  // ultilizes normals, and there is a dependeny from normals to positions
+  // ultilizes normals, and there is a dependency from normals to positions
   // then normals have to be automatically recomputed before the next deformer is run. 
+  // \note This feature not yet integrated. Normals and tangents must still be explicitly computed. 
   String implicitDependencies[String][];
 };
+
 
 function GeometryStack() {
   this.init();
@@ -43,6 +49,7 @@ function GeometryStack.init!() {
   this.displayGeometries = true;
 }
 
+
 function GeometryStack.addAttributeDependency!(String from, String to) {
   if(!this.implicitDependencies.has(from)){
     String emptyArray[];
@@ -51,35 +58,29 @@ function GeometryStack.addAttributeDependency!(String from, String to) {
   this.implicitDependencies[from].push(to);
 }
 
+
 function GeometryStack.addGeometryOperator!(GeometryOperator op) {
   this.geomOperators.push(op);
   this.cachePoints.resize(this.geomOperators.size);
 
-  // Note: the 'in' arg becomes 'io' here.
+  // Note: the cast causes the 'in' arg to become 'io' here.
   Notifier notifier = op;
   if(notifier)
     notifier.addListener(this);
 }
 
+
 function GeometryOperator GeometryStack.getGeometryOperator(UInt32 index) {
   return this.geomOperators[index];
 }
+
 
 function UInt32 GeometryStack.numGeometryOperators() {
   return this.geomOperators.size;
 }
 
-
-function GeometryStack.disableCachePoint!(UInt32 index) {
-  if(this.cachePoints[index] != null)
-    this.cachePoints[index].disable();
-}
-
-function GeometryStack.enableCachePoint!(UInt32 index) {
-  if(this.cachePoints[index] != null)
-    this.cachePoints[index].enable();
-}
-
+// Recieves a notification from one of the notifiers. 
+// Normally this will be a geometry operator in the stack whose data has changed.
 function GeometryStack.notify!(Notifier notifier, String type, String data) {
   AutoProfilingEvent p(FUNC+":" + notifier.type() + "." +type);
   switch(type){
@@ -107,11 +108,11 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 // e.g. 
 //  [ LoadAlembic, SkinningModifier ]
 //                                  |
-//             [ LoadAlembic, WrapModifier ] ->
+//               [ LoadAlembic, WrapModifier ] ->
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
   AutoProfilingEvent p(FUNC);
 
-  // this.dirtyPoint = 0;// force evlauation all the time.
+  // this.dirtyPoint = 0;// force evaluation all the time.(disable caching)
   if(this.dirtyPoint < this.geomOperators.size){
     for(Integer i=this.dirtyPoint; i<this.geomOperators.size; i++){
       GeometryOperator op = this.geomOperators[i];
@@ -135,7 +136,9 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
           }
         }
       }
-      
+      // Generate cache points for each operator.
+      // Note: currently we are creating cache points for every operator
+      // but this is excessive. Many operators may not need to be cached.
       CachePoint cachePoint = this.cachePoints[i];
       if(cachePoint == null){
         Generator generator = op;
@@ -145,12 +148,17 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
           cachePoint = GeometryAttributeCache();
         this.cachePoints[i] = cachePoint;
       }
-      if(this.dirtyPoint < i){
-        cachePoint.update(this.geomSet, op);
-      }
-      else{
+      if(this.dirtyPoint == i){
+        // This operator is the first to be evaluated since the stack was dirtied.
+        // The cache can restore the data back to its previous state ready for the operator to evaluate. 
         cachePoint.restore(this.geomSet);
       }
+      else{
+        // The data previous to this point has been re-computed. 
+        // The cache must be updated.
+        cachePoint.update(this.geomSet, op);
+      }
+      // Evaluate the operator now that the geomSet is in the state ready for this operator.
       op.evaluate(context, this.geomSet);
     }
     this.dirtyPoint = this.geomOperators.size;
@@ -213,6 +221,11 @@ function GeometryStack.setDisplayGeometries!(Boolean displayGeometries){
   }
 }
 
+/// Override this method to return a custom registry that can contain custom geometry operators.
+function RiggingToolboxRegistry GeometryStack.getRiggingToolboxRegistry(){
+  return getRiggingToolboxRegistry();
+}
+
 function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceContext){
   JSONDictValue json();
   JSONArrayValue geomOperatorsData();
@@ -225,10 +238,12 @@ function JSONDictValue GeometryStack.saveJSON(PersistenceContext persistenceCont
 }
 
 function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  RiggingToolboxRegistry registry = getRiggingToolboxRegistry();
+  // Call the virtual function to return the registry to be used. 
+  // A custom registry could be returned here enabling custom geometry operators to be constructed.
+  RiggingToolboxRegistry registry = IGeometryStack(this).getRiggingToolboxRegistry();
   JSONArrayValue geomOperatorsData = json.get("geomOperators");
   if(!geomOperatorsData)
-    throw("Invalid json :" + json);
+    throw("Error loading GeometryStack. JSON does not include a geomOperators array :" + json);
   for(UInt32 i=0; i<geomOperatorsData.size; i++){
     JSONDictValue geomOperatorData = geomOperatorsData.get(i);
     String type = geomOperatorData.getString("type");
@@ -239,7 +254,7 @@ function GeometryStack.loadJSON!(PersistenceContext persistenceContext, JSONDict
   if(json.has('displayGeometries'))
     this.displayGeometries = json.getBoolean('displayGeometries');
 
-
+  // Load the dictionary specifying the colors of the geometires being rendered.
   if(json.has('geometryColors')){
     JSONDictValue geomColorsJson = json.get('geometryColors');
     for(key, value in geomColorsJson.values)
@@ -273,9 +288,29 @@ function GeometryStack.loadJSONFile!(PersistenceContext persistenceContext, Stri
   this.loadJSONString(subpersistenceContext, reader.readAll());
 }
 
+
 function GeometryStack.loadJSONFile!(String filePath){
   PersistenceContext persistenceContext;
   this.loadJSONFile( persistenceContext, filePath);
+}
+
+
+// The scene file is being saved, and the KL object can save its own data to the scene file.
+function String GeometryStack.saveDataToString(PersistenceContext persistenceContext) {
+  JSONDoc doc();
+  doc.root = this.saveJSON(persistenceContext);
+  return doc.write();
+}
+
+// The scene file has been loaded and now the KL obect can load its custom data. 
+function GeometryStack.loadDataFromString!(PersistenceContext persistenceContext, String data) {
+  JSONDoc doc();
+  if(doc.parse(data)){
+    this.loadJSON(persistenceContext, doc.root);
+  }
+  else{
+    setError("ERROR Loading GeometryStack. Saved JSON data is not valid");
+  }
 }
 
 function String GeometryStack.getFilePath(){
@@ -284,7 +319,7 @@ function String GeometryStack.getFilePath(){
 
 
 
-/// Generates a Description string of this pose.
+/// Generates a Description string of this stack.
 /// \param indent The indentation to use when generating the string. 
 function String GeometryStack.getDesc(String indent, Boolean includeGeometryTolopology) {
   String desc;
@@ -308,7 +343,7 @@ function String GeometryStack.getDesc(String indent, Boolean includeGeometryTolo
   return desc;
 }
 
-/// Generates a Description string of this Pose.
+/// Generates a Description string of this stack.
 function String GeometryStack.getDesc() {
   return this.getDesc("", false);
 }
