@@ -21,6 +21,31 @@ function GeometryOperator WeightmapModifierFactory.constructGeometryOperator(){
 
 //////////////////////////////////////
 //
+object WeightmapModifier;
+
+object WeightmapPaintManipulator : SurfaceAttributePaintManipulator {
+  WeightmapModifier modifier;
+};
+
+function WeightmapPaintManipulator(WeightmapModifier modifier){
+  this.init();
+  this.attributeName = "WeightMap";
+  this.modifier = modifier;
+}
+
+/// Invoked by the SurfacePaintManipulator during painting for each mouse move event.
+/// the collectedPoints struct contains the points, distances and weights
+/// of the points in the geometry that are within the volume of the paint brush.
+function WeightmapPaintManipulator.onPaint!(io MouseEvent mouseEvent, SurfacePaintManipulator_PointCollection collectedPoints){
+  this.parent#onPaint( mouseEvent, collectedPoints);
+  // Notify the WeightmapModifier that its data has been modified by painting. 
+  // This will cause the modifier to emit a notification that will dirty the stack. 
+  this.modifier.onPainted();
+}
+
+
+//////////////////////////////////////
+//
 
 
 object WeightmapModifier : BaseModifier {
@@ -32,6 +57,8 @@ object WeightmapModifier : BaseModifier {
 
 function WeightmapModifier(){
   this.weightmap = Weightmap2();
+  this.weightmap.paintManipulator = WeightmapPaintManipulator(this);
+  report(this.weightmap.paintManipulator);
   this.activateManipulator = true;
   this.display = true;
 }
@@ -60,6 +87,12 @@ function WeightmapModifier.setDisplay!(Boolean display){
     this.notify('changed', data);
   }
 }
+
+function WeightmapModifier.onPainted!(){
+  String data;
+  this.notify('changed', data);
+}
+
 
 function WeightmapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);

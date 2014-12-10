@@ -115,6 +115,7 @@ object Weightmap2 : Persistable, Detachable {
 function Weightmap2(){
   this.name = 'weightMap';
   this.color = Color(1.0, 0.0, 0.0);
+  this.paintManipulator = SurfaceAttributePaintManipulator();
 }
 
 /// Sets the name of the weightmap, which is used as the name of the geometry attribute on the polygon mesh.
@@ -337,18 +338,16 @@ function Weightmap2.activateManipulator!(){
     setError("Cannnot activate the Weightmap2 without a geometry assigned");
   }
   Ref<EventDispatcher> eventDispatcher = EventDispatcher_GetInstance();
-  if(!this.paintManipulator){
-    this.paintManipulator = SurfaceAttributePaintManipulator();
-    this.paintManipulator.attributeName = this.name;
+  if(!eventDispatcher.hasManipulator(this.name+'PaintManipulator')){
     eventDispatcher.registerManipulator(this.name+'PaintManipulator', this.paintManipulator);
   }
   for(Integer i=0; i<this.instances.size; i++){
     if(!this.paintManipulator.hasTargetGeometry(this.instances[i]))
       this.paintManipulator.addTargetGeometry(this.instances[i]);
   }
-  if(eventDispatcher.activeManipulator() != this.name+'PaintManipulator')
-  {
+  if(eventDispatcher.activeManipulator() != this.name+'PaintManipulator'){
     // activate the manipulator
+    this.paintManipulator.attributeName = this.name;
     eventDispatcher.pushManipulator(this.name+'PaintManipulator');
   }
 }
