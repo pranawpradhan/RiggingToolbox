@@ -6,18 +6,9 @@ require Math;
 require Geometry;
 
 interface CachePoint  {
-  // Temp: Used in debugging and unit testing.
-  // disable!();
-  // enable!();
-
-  // invalidate!();
-  // Boolean isValid();
   update!(io GeometrySet geomSet, GeometryOperator op);
-  // restore(io GeometrySet geomSet);
 
   // Free all memory in the cache.
   free!();
 };
 
-
- 
