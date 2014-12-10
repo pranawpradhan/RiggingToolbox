@@ -60,7 +60,7 @@ operator tubeCharacter_Skinning(
   Mat44 deformers[],
   Boolean displayDebugging
 ) {
-  if(stack.numGeometryOperators() >= 2){
+  if(stack.numGeometryOperators() > 1){
     SkinningModifier skinningModifier = stack.getGeometryOperator(1);
     skinningModifier.setPose(deformers);
     skinningModifier.setDisplayDebugging(displayDebugging);
@@ -79,6 +79,7 @@ mushNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_DeltaMush")
 cmds.fabricSplice('addIOPort', mushNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', mushNode, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', mushNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', mushNode, json.dumps({'portName':'displayMask', 'dataType':'Boolean', 'addMayaAttr': True}))
 
 cmds.setAttr(mushNode + '.iterations', 30);
 
@@ -89,10 +90,14 @@ require RiggingToolbox;
 operator tubeCharacter_DeltaMush(
   io GeometryStack stack,
   Integer iterations,
+  Boolean displayMask,
   Boolean displayDebugging
 ) {
-  if(stack.numGeometryOperators() >= 3){
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
+  if(stack.numGeometryOperators() > 3){
+    WeightmapModifier weightmapModifier = stack.getGeometryOperator(2);
+    weightmapModifier.setDisplay(displayMask);
+
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
     deltaMushModifier.setNumIterations(iterations);
     deltaMushModifier.setDisplayDebugging(displayDebugging);
   }

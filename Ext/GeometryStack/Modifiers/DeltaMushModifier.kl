@@ -31,6 +31,9 @@ object DeltaMushModifier : BaseModifier {
   PolygonMesh referenceGeometries[];
   UInt32 boundVersion;
 
+  Boolean useMask;
+  String maskWeightmapName;
+
   Boolean displayDebugging;
   Lines debugLines[];
   DrawingHandle handle;
@@ -39,6 +42,8 @@ object DeltaMushModifier : BaseModifier {
 
 function DeltaMushModifier(){
   this.iterations = 20;
+  this.useMask = true;
+  this.maskWeightmapName = 'DeltaMushModifierWeightMap';
 }
 
 
@@ -180,9 +185,36 @@ operator deltaMushModifier_applyDeltas<<<index>>>(
   io Lines debugLines
 ){
   Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, mushedPositions);
-
   Vec3 newPos = mat44 * deltas[index];
   mesh.setPointPosition( index, newPos );
+
+  if(displayDebugging){
+    debugLines.indices[(index*2)] = (index*2);
+    debugLines.indices[(index*2)+1] = (index*2)+1;
+    debugLines.setPosition((index*2), mushedPositions[index]);
+    debugLines.setPosition((index*2)+1, newPos);
+  }
+}
+
+operator deltaMushModifier_applyDeltas_Masked<<<index>>>(
+  io PolygonMesh mesh,
+  Vec3 mushedPositions[],
+  Vec3 deltas[],
+  Scalar maskWeightmapValues[],
+  Boolean displayDebugging,
+  io Lines debugLines
+){
+  Vec3 newPos;
+  if(maskWeightmapValues[index] > 0.0){
+    Vec3 originalPos = mesh.getPointPosition( index );
+    Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, mushedPositions);
+
+    newPos = mat44 * deltas[index];
+    mesh.setPointPosition( index, originalPos.linearInterpolate(newPos, maskWeightmapValues[index]));
+  }
+  else{
+    newPos = mesh.getPointPosition( index );
+  }
 
   if(displayDebugging){
     debugLines.indices[(index*2)] = (index*2);
@@ -220,6 +252,8 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   Vec3 deltas[][],
   UInt32 iterations,
+  Boolean useMask,
+  String maskWeightmapName,
   Boolean displayDebugging,
   io Lines debugLines[]
 ){
@@ -242,21 +276,42 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     debugLines[index].incrementPositionsVersion();
   }
 
+  Vec3 mushedPositions[] = mesh.positionsAttribute.values.clone();
+
   for(UInt32 i=0; i<iterations; i++){
     // relax the mesh, causing it to lose volume.
-    deltaMushModifier_smoothPos<<<mesh.pointCount()>>>(mesh.positionsAttribute.values, mesh);
+    deltaMushModifier_smoothPos<<<mesh.pointCount()>>>(mushedPositions, mesh);
   }
 
   // Re-apply the deltas to re-inflate the mesh.
   // (Even when binding, the mesh is deflated, so it must be re-inflated)
-  Vec3 mushedPositions[] = mesh.positionsAttribute.values.clone();
-  deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
-    mesh,
-    mushedPositions,
-    deltas[index],
-    displayDebugging,
-    debugLines[index]
-  );
+  Ref<ScalarAttribute> weightMap = null;
+  if(useMask && maskWeightmapName.length() > 0){
+    weightMap = mesh.getAttribute(maskWeightmapName, ScalarAttribute);
+    if(!weightMap)
+      report("Warning in DeltaMushModifier: Geometry does not have the scalar attribute specified by the maskWeightmapName:"+maskWeightmapName);
+  }
+  if(weightMap){
+    // Use a special kernel to inflate the mesh that uses the mask. 
+    // this is cheaper than checking the mask in every point.
+    deltaMushModifier_applyDeltas_Masked<<<mesh.pointCount()>>>(
+      mesh,
+      mushedPositions,
+      deltas[index],
+      weightMap.values,
+      displayDebugging,
+      debugLines[index]
+    );
+  }
+  else{
+    deltaMushModifier_applyDeltas<<<mesh.pointCount()>>>(
+      mesh,
+      mushedPositions,
+      deltas[index],
+      displayDebugging,
+      debugLines[index]
+    );
+  }
   mesh.incrementPointPositionsVersion();
 
 }
@@ -271,8 +326,8 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
     this.debugLines.resize(geomSet.size());
 
     // Note: We could provide a way to query the original undeformed geometry from the geomSet. 
-    // As a geometry is deformed, its orriginal values are usually cached in an Attribute cache. 
-    // The orriginal values could be attached back the geometry as meta data. This would be much cleaner
+    // As a geometry is deformed, its original values are usually cached in an Attribute cache. 
+    // The original values could be attached back the geometry as meta data. This would be much cleaner
     // than loading the alembic file 2x as we do here.
 
     if(geomSet.size() != this.referenceGeometries.size())
@@ -295,6 +350,8 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
       geomSet,
       this.deltas,
       this.iterations,
+      this.useMask,
+      this.maskWeightmapName,
       this.displayDebugging,
       this.debugLines
       );
@@ -357,10 +414,18 @@ function JSONDictValue DeltaMushModifier.saveJSON(PersistenceContext persistence
 
 function DeltaMushModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
   this.parent#loadJSON(persistenceContext, json);
+
   if(json.has('iterations'))
     this.iterations = json.getInteger('iterations');
+
   if(json.has('displayDebugging'))
     this.displayDebugging = json.getBoolean('displayDebugging');
+
+  if(json.has('useMask'))
+    this.useMask = json.getBoolean('useMask');
+
+  if(json.has('maskWeightmapName'))
+    this.maskWeightmapName = json.getString('maskWeightmapName');
 
   if(!json.has('referenceGeometryNames'))
     throw("Error loading DeltaMushModifier JSON. Missing value: \"referenceGeometryNames\"");

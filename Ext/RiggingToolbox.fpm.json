@@ -8,6 +8,7 @@
     
     "GeometryStack/Shaders/OGLFlatOverlayShader.kl",
     "GeometryStack/Shaders/OGLVertexColorOverlayShader2.kl",
+    "GeometryStack/Manipulation/Weightmap2.kl",
     "GeometryStack/Alembic/AlembicIWStringArrayProperty.kl",
 
     "GeometryStack/GeometryHelperFunctions.kl",
