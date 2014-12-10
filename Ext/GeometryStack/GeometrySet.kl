@@ -7,6 +7,8 @@ require Geometry;
 object GeometrySet {
   Geometry geometries[];
 
+  UInt32 attributeGenerations[String];
+
   ///Container for holding various user data, such as the Skeleton.
   Object metaData[String];
   UInt32 version;
@@ -40,6 +42,21 @@ inline GeometrySet.add!(Geometry value) {
   this.version++;
 }
 
+
+inline UInt32 GeometrySet.getAttributeGeneration(String attributeName) {
+  return this.attributeGenerations.get(attributeName, 0);
+}
+
+inline GeometrySet.setAttributeGeneration!(String attributeName, UInt32 gen) {
+  this.attributeGenerations[attributeName] = gen;
+}
+
+inline GeometrySet.incrementAttributeGeneration!(String attributeName) {
+  UInt32 gen = this.attributeGenerations.get(attributeName, 0);
+  this.attributeGenerations[attributeName] = gen+1;
+}
+
+
 /// returns true if the geometry set owns a meta data under the given key
 function Boolean GeometrySet.hasMetaData( String name ) {
   return this.metaData.has( name );
@@ -58,4 +75,34 @@ function GeometrySet.setMetaData!( String name, Object value ) {
 /// sets a single object in the metadata
 function UInt32 GeometrySet.getVersion() {
   return this.version;
+}
+
+/// Generates a Description string of this geom set.
+/// \param indent The indentation to use when generating the string. 
+function String GeometrySet.getDesc(String indent, Boolean includeGeometryTolopology) {
+  String desc;
+  desc += indent + "{ \n";
+  desc += indent + "  geometries:[ \n";
+  for(Integer i=0; i<this.size; i++){
+    desc += indent + "    " + getGeomDebugName(this.get(i)) + ":{\n";
+    
+    if(includeGeometryTolopology){
+      desc += indent + "      " + this.get(i).getDesc(false, false);
+    }
+    desc += indent + "    },\n";
+  }
+  desc += indent + "  ]\n";
+
+  desc += indent + "  attributeGenerations:{ \n";
+  for(key, value in this.attributeGenerations){
+    desc += indent+'    ' + key + ":" + value + ",\n";
+  }
+  desc += indent + "  },\n";
+  desc += indent + "}";
+  return desc;
+}
+
+/// Generates a Description string of this stack.
+function String GeometrySet.getDesc() {
+  return this.getDesc("", false);
 }

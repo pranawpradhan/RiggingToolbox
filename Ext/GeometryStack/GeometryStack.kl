@@ -145,21 +145,28 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
         if(generator)
           cachePoint = GeometryCache();
         else
-          cachePoint = GeometryAttributeCache();
+          cachePoint = GeometryAttributeCache(op);
         this.cachePoints[i] = cachePoint;
       }
-      if(this.dirtyPoint == i){
-        // This operator is the first to be evaluated since the stack was dirtied.
-        // The cache can restore the data back to its previous state ready for the operator to evaluate. 
-        cachePoint.restore(this.geomSet);
-      }
-      else{
-        // The data previous to this point has been re-computed. 
-        // The cache must be updated.
-        cachePoint.update(this.geomSet, op);
-      }
+
+      // The data previous to this point has been re-computed. 
+      // The cache must be updated.
+      cachePoint.update(this.geomSet, op);
+      
       // Evaluate the operator now that the geomSet is in the state ready for this operator.
       op.evaluate(context, this.geomSet);
+
+      {
+        // Increment the modified attribute generations so that the caching system 
+        // knows which ones to restore in subsequent evaluations.
+        UInt32 deps[String] = op.getAttributeInteractions();
+        for(key, value in deps){
+          if(value == AttrMode_Write || value == AttrMode_ReadWrite){
+            this.geomSet.incrementAttributeGeneration(key);
+            // TODO: we could increment the attribute versions here too.
+          }
+        }
+      }
     }
     this.dirtyPoint = this.geomOperators.size;
   }
@@ -329,16 +336,7 @@ function String GeometryStack.getDesc(String indent, Boolean includeGeometryTolo
     desc += this.geomOperators[i].getDesc(indent+'    ') + "\n";
   }
   desc += indent + "  ],\n";
-  desc += indent + "  geometries:[ \n";
-  for(Integer i=0; i<this.geomSet.size; i++){
-    desc += indent + "      " + getGeomDebugName(this.geomSet.get(i)) + ":{\n";
-    
-    if(includeGeometryTolopology){
-      desc += indent + "        " + this.geomSet.get(i).getDesc(false, false);
-    }
-    desc += indent + "    },\n";
-  }
-  desc += indent + "  ]\n";
+  desc += indent + "  geomSet: " + this.geomSet.getDesc(indent + '  ',  includeGeometryTolopology) + '\n';
   desc += indent + "}";
   return desc;
 }

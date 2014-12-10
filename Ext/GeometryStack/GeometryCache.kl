@@ -18,47 +18,54 @@ object GeometryCache : CachePoint {
 function GeometryCache() {
 }
 
-function GeometryCache.disable!() {
-  this.disabled = true;
-}
+// function GeometryCache.disable!() {
+//   this.disabled = true;
+// }
 
-function GeometryCache.enable!() {
-  this.disabled = false;
-}
+// function GeometryCache.enable!() {
+//   this.disabled = false;
+// }
 
 
-function GeometryCache.invalidate!() {
-  this.valid = false;
-}
+// function GeometryCache.invalidate!() {
+//   this.valid = false;
+// }
 
-function Boolean GeometryCache.isValid() {
-  return this.valid;
-}
+// function Boolean GeometryCache.isValid() {
+//   return this.valid;
+// }
 
-function GeometryCache.update!(GeometrySet geomSet, GeometryOperator op) {
+// function GeometryCache.update!(GeometrySet geomSet, GeometryOperator op) {
+//   if(this.disabled)
+//     return;
+//   AutoProfilingEvent p(FUNC);
+//   this.cachedGeometries.resize(geomSet.size);
+//   this.topologyVersions.resize(geomSet.size);
+//   for(Integer i=0; i<geomSet.size; i++){
+//     this.cachedGeometries[i] = cloneGeom(geomSet.get(i));
+//     this.topologyVersions[i] = getGeomVersion(geomSet.get(i));
+//   }
+//   this.valid = true;
+// }
+
+// /// Restores the entire geometry to the state found in the cache.
+// function GeometryCache.restore(io GeometrySet geomSet){
+//   if(this.disabled)
+//     return;
+//   AutoProfilingEvent p(FUNC);
+//   geomSet.resize(this.cachedGeometries.size);
+//   for(Integer i=0; i<geomSet.size; i++){
+//     copyFrom(geomSet.get(i), this.cachedGeometries[i]);
+//   }
+// }
+
+function GeometryCache.update!(io GeometrySet geomSet, GeometryOperator op) {
   if(this.disabled)
     return;
   AutoProfilingEvent p(FUNC);
-  this.cachedGeometries.resize(geomSet.size);
-  this.topologyVersions.resize(geomSet.size);
-  for(Integer i=0; i<geomSet.size; i++){
-    this.cachedGeometries[i] = cloneGeom(geomSet.get(i));
-    this.topologyVersions[i] = getGeomVersion(geomSet.get(i));
-  }
+  geomSet.resize(0);
   this.valid = true;
 }
-
-/// Restores the entire geometry to the state found in the cache.
-function GeometryCache.restore(io GeometrySet geomSet){
-  if(this.disabled)
-    return;
-  AutoProfilingEvent p(FUNC);
-  geomSet.resize(this.cachedGeometries.size);
-  for(Integer i=0; i<geomSet.size; i++){
-    copyFrom(geomSet.get(i), this.cachedGeometries[i]);
-  }
-}
-
 
 function GeometryCache.free!(){
   AutoProfilingEvent p(FUNC);
