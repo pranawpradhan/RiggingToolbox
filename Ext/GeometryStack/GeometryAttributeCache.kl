@@ -19,11 +19,17 @@ function GeometryAttributeCache(BaseModifier modifier) {
   this.modifier = modifier;
   Listener listener = this; // No implicit casting in KL from objects to interfaces.
   this.modifier.addListener(listener);
+  this.updateCachedAttributeNames();
 }
 
 // Recieves a notification from one of the notifiers. 
 // This will always be the geometry operator.
 function GeometryAttributeCache.notify!(Notifier notifier, String type, String data) {
+  this.updateCachedAttributeNames();
+}
+
+  
+function GeometryAttributeCache.updateCachedAttributeNames!() {
   UInt32 deps[String] = this.modifier.getAttributeInteractions();
   this.attributesNames.resize(0);
   for(key, value in deps){
@@ -35,6 +41,7 @@ function GeometryAttributeCache.notify!(Notifier notifier, String type, String d
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.update!(io GeometrySet geomSet, GeometryOperator op) {
   AutoProfilingEvent p(FUNC+":"+this.attributesNames);
+
 
   UInt32 numGeoms = geomSet.size;
   UInt32 numcachedAttrs = this.attributesNames.size;
@@ -50,7 +57,6 @@ function GeometryAttributeCache.update!(io GeometrySet geomSet, GeometryOperator
       Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
       UInt32 gen = geomSet.getAttributeGeneration(attrName);
       UInt32 cachedGen = this.attributeGenerations[i][j];
-
       if(this.cachedAttributes[i][j].type() != attr.type() || cachedGen >= gen){
         // Update the cached attribute to the new value.
         AutoProfilingEvent pUpdate("Update:"+attrName);
