@@ -42,7 +42,7 @@ vertexColors    Color        Color per vertex
   InlineMaterial mat = shader.getOrCreateMaterial('vertexColors');
 \endexample
 */
-object OGLVertexColorOverlayShader2: OGLSurfaceOverlayShader {};
+object OGLVertexColorOverlayShader2 : OGLSurfaceOverlayShader {};
 
 /// default constructor
 function OGLVertexColorOverlayShader2() {

@@ -185,7 +185,7 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
 }
 
 function GeometryStack.setupRendering!(){
-  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
+  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed.
   this.handle = DrawingHandle(this.name+"Handle");
 
   // Now setup the rendering

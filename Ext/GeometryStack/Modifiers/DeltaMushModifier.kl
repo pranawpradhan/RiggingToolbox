@@ -65,6 +65,14 @@ function DeltaMushModifier.setNumIterations!(UInt32 iterations){
 }
 
 
+function DeltaMushModifier.setUseMask!(Boolean useMask){
+  if(this.useMask != useMask){
+    this.useMask = useMask;
+    String data;
+    this.notify('changed', data);
+  }
+}
+
 function DeltaMushModifier.setDisplayDebugging!(Boolean displayDebugging){
   if(this.displayDebugging != displayDebugging){
     this.displayDebugging = displayDebugging;
@@ -205,12 +213,12 @@ operator deltaMushModifier_applyDeltas_Masked<<<index>>>(
   io Lines debugLines
 ){
   Vec3 newPos;
-  if(maskWeightmapValues[index] > 0.0){
+  if(maskWeightmapValues[index] < 1.0){
     Vec3 originalPos = mesh.getPointPosition( index );
     Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, mushedPositions);
 
     newPos = mat44 * deltas[index];
-    mesh.setPointPosition( index, originalPos.linearInterpolate(newPos, maskWeightmapValues[index]));
+    mesh.setPointPosition( index, newPos.linearInterpolate(originalPos, maskWeightmapValues[index]));
   }
   else{
     newPos = mesh.getPointPosition( index );

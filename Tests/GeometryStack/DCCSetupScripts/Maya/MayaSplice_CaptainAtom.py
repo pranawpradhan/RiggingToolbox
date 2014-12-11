@@ -40,7 +40,11 @@ influenceGeoms_Eval = cmds.createNode("spliceMayaNode", name = "captainAtom_Infl
 cmds.fabricSplice('addIOPort', influenceGeoms_Eval, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displaySkinningDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'useDeltaMushMask', 'dataType':'Boolean', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayDeltaMushMask', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayDeltaMushDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
+
+
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'deformers', 'dataType':'Mat44[]', 'addMayaAttr': True, 'arrayType':"Array (Multi)"}))
 cmds.setAttr(influenceGeoms_Eval + '.iterations', 30);
@@ -58,17 +62,24 @@ operator captainAtom_InfluenceGeoms_Eval(
   Mat44 deformers[],
   Boolean displaySkinningDebugging,
   Integer iterations,
+  Boolean useDeltaMushMask,
+  Boolean displayDeltaMushMask,
   Boolean displayDeltaMushDebugging,
   Boolean displayGeometries
 ) {
-  if(stack.numGeometryOperators() >= 2){
+  if(stack.numGeometryOperators() > 1){
     SkinningModifier skinningModifier = stack.getGeometryOperator(1);
     skinningModifier.setPose(deformers);
     skinningModifier.setDisplayDebugging(displaySkinningDebugging);
   }
-  if(stack.numGeometryOperators() >= 3){
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
+  if(stack.numGeometryOperators() > 3){
+    WeightmapModifier weightmapModifier = stack.getGeometryOperator(2);
+    weightmapModifier.setDisplay(displayDeltaMushMask);
+
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
     deltaMushModifier.setNumIterations(iterations);
+    deltaMushModifier.setUseMask(useDeltaMushMask);
+    deltaMushModifier.setDisplayDebugging(displayDeltaMushMask);
     deltaMushModifier.setDisplayDebugging(displayDeltaMushDebugging);
   }
   stack.setDisplayGeometries(displayGeometries);
@@ -135,14 +146,14 @@ operator captainAtom_RenderGeoms_Eval(
   Boolean displayGeometries,
   Scalar eval
 ) {
-  if(stack.numGeometryOperators() >= 2){
+  if(stack.numGeometryOperators() > 1){
     WrapModifier wrapModifier = stack.getGeometryOperator(1);
     wrapModifier.setSourceGeomStack(srcstack);
     wrapModifier.setDisplayDebugging(displayDebugging);
   }
   stack.setDisplayGeometries(displayGeometries);
 
-  UInt64 start = getCurrentTicks();
+  //UInt64 start = getCurrentTicks();
 
   //StartFabricProfiling();
 
@@ -152,8 +163,8 @@ operator captainAtom_RenderGeoms_Eval(
   //StopFabricProfiling();
   //report( GetProfilingReport() );
 
-  UInt64 end = getCurrentTicks();
-  report("Eval Fps: " + String(1.0 / getSecondsBetweenTicks(start, end)));
+  // UInt64 end = getCurrentTicks();
+  // report("Eval Fps: " + String(1.0 / getSecondsBetweenTicks(start, end)));
 
   //report(stack.getDesc());
 }
