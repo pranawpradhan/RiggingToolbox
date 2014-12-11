@@ -40,9 +40,9 @@ influenceGeoms_Eval = cmds.createNode("spliceMayaNode", name = "captainAtom_Infl
 cmds.fabricSplice('addIOPort', influenceGeoms_Eval, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displaySkinningDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
+cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayDeltaMushDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'useDeltaMushMask', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayDeltaMushMask', 'dataType':'Boolean', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayDeltaMushDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
 
 
 cmds.fabricSplice('addInputPort', influenceGeoms_Eval, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
@@ -144,6 +144,7 @@ operator captainAtom_RenderGeoms_Eval(
   io GeometryStack srcstack,
   Boolean displayDebugging,
   Boolean displayGeometries,
+  EvalContext context,
   Scalar eval
 ) {
   if(stack.numGeometryOperators() > 1){
@@ -157,7 +158,6 @@ operator captainAtom_RenderGeoms_Eval(
 
   //StartFabricProfiling();
 
-  EvalContext context();
   stack.evaluate(context);
 
   //StopFabricProfiling();
