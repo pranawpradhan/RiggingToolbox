@@ -47,6 +47,13 @@ function GeometryStack.init!() {
   this.addAttributeDependency('tangents', 'positions');
   this.addAttributeDependency('tangents', 'normals');
   this.displayGeometries = true;
+
+  // This is a workaround to the fact that we can't control the order
+  // that the shaders are drawn. We want the OGLSurfaceShader to be drawn before
+  // any of the overlay shaders, so we construct it first and register it with
+  // the InlineDrawing system. 
+  InlineDrawing drawing = OGLInlineDrawing_GetInstance();
+  drawing.registerShader(OGLSurfaceShader());
 }
 
 
