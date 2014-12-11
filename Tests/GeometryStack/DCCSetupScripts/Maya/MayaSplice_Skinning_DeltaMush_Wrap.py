@@ -124,11 +124,10 @@ require RiggingToolbox;
 operator tubeCharacter_Eval(
   io GeometryStack stack,
   Boolean displayGeometries,
+  EvalContext context,
   Scalar eval
 ) {
   stack.setDisplayGeometries(displayGeometries);
-
-  EvalContext context();
   stack.evaluate(context);
 }
 """)

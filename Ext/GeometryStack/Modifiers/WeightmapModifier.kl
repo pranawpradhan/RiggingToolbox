@@ -25,6 +25,8 @@ object WeightmapModifier;
 
 object WeightmapPaintManipulator : SurfaceAttributePaintManipulator {
   WeightmapModifier modifier;
+  UInt32 offset;
+  String graphName;
 };
 
 function WeightmapPaintManipulator(WeightmapModifier modifier){
@@ -41,6 +43,25 @@ function WeightmapPaintManipulator.onPaint!(io MouseEvent mouseEvent, SurfacePai
   // Notify the WeightmapModifier that its data has been modified by painting. 
   // This will cause the modifier to emit a notification that will dirty the stack. 
   this.modifier.onPainted();
+
+  // Call a method in Maya to force te re-evaluation of the scene. 
+  // We have an 'eval' port on the stack node that we can randomly change here.
+  String value = mathRandomFloat32(6845514, ++this.offset);
+  if(value.startsWith('+'))
+    value = value.leftStrip(1);
+  if(mouseEvent.getHost().getHostName() == 'Maya'){
+    // Generate a command that will change the attribute value back in Maya.
+    String args[];
+    args.push('"' + this.graphName + '.eval"');
+    args.push(value);
+    mouseEvent.getHost().callCustomCommand('setAttr', args);
+  }
+  else if(mouseEvent.getHost().getHostName() == 'Softimage'){
+    String args[];
+    args.push(this.graphName + '.eval');
+    args.push(value);
+    mouseEvent.getHost().callCustomCommand('setValue', args);
+  }
 }
 
 
@@ -58,7 +79,6 @@ object WeightmapModifier : BaseModifier {
 function WeightmapModifier(){
   this.weightmap = Weightmap2();
   this.weightmap.paintManipulator = WeightmapPaintManipulator(this);
-  report(this.weightmap.paintManipulator);
   this.activateManipulator = true;
   this.display = true;
 }
@@ -105,6 +125,9 @@ function WeightmapModifier.evaluate!(EvalContext context, io GeometrySet geomSet
       else
         this.weightmap.connect(mesh, Xfo(), i);
     }
+
+    WeightmapPaintManipulator manipulator = this.weightmap.paintManipulator;
+    manipulator.graphName = context.graph;
     this.boundVersion = geomSet.getVersion();
   }
 
