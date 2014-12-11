@@ -46,22 +46,22 @@ function WeightmapPaintManipulator.onPaint!(io MouseEvent mouseEvent, SurfacePai
 
   // Call a method in Maya to force te re-evaluation of the scene. 
   // We have an 'eval' port on the stack node that we can randomly change here.
-  String value = mathRandomFloat32(6845514, ++this.offset);
-  if(value.startsWith('+'))
-    value = value.leftStrip(1);
-  if(mouseEvent.getHost().getHostName() == 'Maya'){
-    // Generate a command that will change the attribute value back in Maya.
-    String args[];
-    args.push('"' + this.graphName + '.eval"');
-    args.push(value);
-    mouseEvent.getHost().callCustomCommand('setAttr', args);
-  }
-  else if(mouseEvent.getHost().getHostName() == 'Softimage'){
-    String args[];
-    args.push(this.graphName + '.eval');
-    args.push(value);
-    mouseEvent.getHost().callCustomCommand('setValue', args);
-  }
+  // String value = mathRandomFloat32(6845514, ++this.offset);
+  // if(value.startsWith('+'))
+  //   value = value.leftStrip(1);
+  // if(mouseEvent.getHost().getHostName() == 'Maya'){
+  //   // Generate a command that will change the attribute value back in Maya.
+  //   String args[];
+  //   args.push('"' + this.graphName + '.eval"');
+  //   args.push(value);
+  //   mouseEvent.getHost().callCustomCommand('setAttr', args);
+  // }
+  // else if(mouseEvent.getHost().getHostName() == 'Softimage'){
+  //   String args[];
+  //   args.push(this.graphName + '.eval');
+  //   args.push(value);
+  //   mouseEvent.getHost().callCustomCommand('setValue', args);
+  // }
 }
 
 
