@@ -296,13 +296,11 @@ function Weightmap2.connect!( PolygonMesh mesh, Xfo meshTransform){
 function Weightmap2.display!(Boolean on){
   if(on){
     if(!this.handle){
+      InlineDrawing drawing = OGLInlineDrawing_GetInstance();
       this.handle = DrawingHandle();
-      if(!this.overlayMaterial){
-        InlineDrawing drawing = OGLInlineDrawing_GetInstance();
-        InlineShader overlayShader = drawing.registerShader(OGLSurfaceOverlayShader(this.name+'Shader', this.name));
-        this.overlayMaterial = overlayShader.getOrCreateMaterial("weightMap"+this.uid());
-        this.overlayMaterial.setUniform('u_color', this.color);
-      }
+      InlineShader overlayShader = drawing.registerShader(OGLSurfaceOverlayShader(this.name+'Shader', this.name));
+      this.overlayMaterial = overlayShader.getOrCreateMaterial("weightMap");
+      this.overlayMaterial.setUniform('u_color', this.color);
 
       this.instances.resize(this.meshes.size);
       for(Integer i=0; i<this.instances.size; i++){
@@ -314,11 +312,21 @@ function Weightmap2.display!(Boolean on){
         this.instances[i].addMaterial(this.overlayMaterial);
       }
     }
-    this.overlayMaterial.setUniform('u_color', this.color);
+    else {
+      for(Integer i=0; i<this.instances.size; i++){
+        if(this.instances[i] != null && !this.instances[i].hasMaterial(this.overlayMaterial)){
+          this.instances[i].addMaterial(this.overlayMaterial); 
+        }
+      }
+      this.overlayMaterial.setUniform('u_color', this.color);
+    }
   }
   else {
-    this.handle = null;
-    this.instances.resize(0);
+    for(Integer i=0; i<this.instances.size; i++){
+      if(this.instances[i] != null && this.instances[i].hasMaterial(this.overlayMaterial)){
+        this.instances[i].removeMaterial(this.overlayMaterial); 
+      }
+    }
   }
 }
 
