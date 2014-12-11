@@ -3,10 +3,10 @@
 #
 
 Import(
-	'parentEnv',
-	'ExtKLTests',
-	'riggingToolboxExt'
-	)
+  'parentEnv',
+  'ExtKLTests',
+  'riggingToolboxExt'
+)
 
 env = parentEnv.CloneSubStage('RiggingToolboxTest')
 

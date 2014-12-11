@@ -4,15 +4,15 @@ The Rigging Toolbox provides a collection of production relevant tools that can 
 
 Currently the Rigging Toolbox provides a small collection of Math and Kinematics helpers, but this list will be expanded over the coming months. 
 
-We will provide new math types, kinematics and deformers based on production uses cases given to us by our user base. 
+We will provide new math types, kinematics and geometry operators based on production uses cases given to us by our user base. 
 
 Interfaces
 --------------
-One of the goals of the rigging toolbox is to define clear interfaces that solvers and deformers can support, enabling custom tools to be integrated into a common framework. 
+One of the goals of the rigging toolbox is to define clear interfaces that solvers and geometry operators can support, enabling custom tools to be integrated into a common framework. 
 
 Performance
 -----------------
-Another primary goal of the Rigging Toolbox is to provide examples that effectively leverage the KL language. The Deformers will provide good examples of how GPU compute can be used on production problems to improve character rig performance.
+Another primary goal of the Rigging Toolbox is to provide examples that effectively leverage the KL language. The Modifiers will provide good examples of how GPU compute can be used on production problems to improve character rig performance.
 
 
 Usage
