@@ -6,19 +6,37 @@ require Math;
 require Geometry;
 
 
+function ThreadsafeMetaDataContainer cloneMetadata(ThreadsafeMetaDataContainer metaData) {
+  // Note: we need clone to be part of the Geometry interface. 
+  ThreadsafeMetaDataContainer newmetaData();
+  for(key, obj in metaData.dict)
+    newmetaData.dict[key] = obj.clone();
+  return newmetaData;
+}
+
 function Geometry cloneGeom(Geometry geometry) {
   // Note: we need clone to be part of the Geometry interface. 
+  // Meta data should be cloned with the geometry.
   PolygonMesh mesh = geometry;
-  if(mesh)
-    return mesh.clone();
+  if(mesh){
+    PolygonMesh newmesh = mesh.clone();
+    newmesh.metaData = cloneMetadata(mesh.metaData);
+    return newmesh;
+  }
   else{
     Lines lines = geometry;
-    if(lines)
-      return lines.clone();
+    if(lines){
+      Lines newlines = lines.clone();
+      newlines.metaData = cloneMetadata(lines.metaData);
+      return newlines;
+    }
     else{
       Points points = geometry;
-      if(points)
-        return points.clone();
+      if(points){
+        Points newpoints = points.clone();
+        newpoints.metaData = cloneMetadata(points.metaData);
+        return newpoints;
+      }
     }
   }
   setError("Invalid Geometry type:" + geometry.type());
@@ -78,7 +96,7 @@ function UInt32 getGeomVersion(Geometry geometry) {
 
 
 function ThreadsafeMetaDataContainer getGeomMetaData(Geometry geometry) {
-  // Note: we need 'getVersion' to be part of the Geometry interface. 
+  // Note: we need 'getMetaData' to be part of the Geometry interface. 
   PolygonMesh mesh = geometry;
   if(mesh)
     return mesh.metaData;

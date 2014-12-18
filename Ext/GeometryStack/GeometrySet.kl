@@ -136,7 +136,6 @@ function GeometrySet.updateCache!(UInt32 stackPoint, GeometryOperator op) {
 
 function GeometrySet.rewind!(UInt32 stackPoint) {
   AutoProfilingEvent p(FUNC+":"+stackPoint);
-  report(FUNC+":"+stackPoint + ": " + this.cachePoints.size);
 
   if(stackPoint >= this.cachePoints.size)
     return;
@@ -148,14 +147,13 @@ function GeometrySet.rewind!(UInt32 stackPoint) {
 
 /// Returns a new set of cloned geometires at the specifies point in the stack.
 function Geometry[] GeometrySet.getGeometryClonesAtVersion(UInt32 stackPoint) {
-
   // clone the geometries at the state they are now, and then rewind them back to the state requested.
   Geometry geoms[];
   geoms.resize(this.geometries.size);
   for(UInt32 i=0; i<this.geometries.size; i++)
     geoms[i] = cloneGeom(this.geometries[i]);
 
-  for(UInt32 i=this.stackPoint; i>=stackPoint; i--)
+  for(UInt32 i=this.stackPoint-1; i>=stackPoint; i--)
     this.cachePoints[i].restore(geoms);
   return geoms;
 }

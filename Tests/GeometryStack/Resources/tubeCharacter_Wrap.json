@@ -14,4 +14,7 @@
      "hardAngle": 3.1
     }
   ]
+  "geometryColors": {
+    "planeShape": { "r": 0.6, "g": 0.3, "b": 0.3 }
+  },
 }
