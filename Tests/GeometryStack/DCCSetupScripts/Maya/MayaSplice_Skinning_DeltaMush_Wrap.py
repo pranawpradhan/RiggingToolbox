@@ -68,7 +68,7 @@ operator tubeCharacter_Skinning(
 }
 """)
 
-cmds.connectAttr(initnode + '.stack', influencePoseNode + '.stack')
+cmds.connectAttr(influenceInitNode + '.stack', influencePoseNode + '.stack')
 
 
 ##############################################
@@ -92,14 +92,14 @@ operator tubeCharacter_DeltaMush(
   Boolean displayDebugging
 ) {
   if(stack.numGeometryOperators() >= 3){
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
     deltaMushModifier.setNumIterations(iterations);
     deltaMushModifier.setDisplayDebugging(displayDebugging);
   }
 }
 """)
 
-cmds.connectAttr(poseNode + '.stack', influenceMushNode + '.stack')
+cmds.connectAttr(influencePoseNode + '.stack', influenceMushNode + '.stack')
 
 
 
@@ -115,7 +115,7 @@ cmds.fabricSplice('addOutputPort', influenceEvalNode, json.dumps({'portName':'ev
 cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.setAttr(influenceEvalNode + '.displayGeometries', 1);
 
-cmds.connectAttr(mushNode + '.stack', influenceEvalNode + '.stack')
+cmds.connectAttr(influenceMushNode + '.stack', influenceEvalNode + '.stack')
 
 cmds.fabricSplice('addKLOperator', influenceEvalNode, '{"opName":"tubeCharacter_Eval"}', """
 
