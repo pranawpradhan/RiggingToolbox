@@ -40,7 +40,6 @@ object WrapModifier : BaseModifier, Listener {
   Boolean displayDebugging;
   Lines debugLines[];
   DrawingHandle handle;
-  DrawingHandle handle2;
 };
 
 
@@ -325,7 +324,6 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
     this.geometryMapping.resize(geomSet.size());
     // Get the source goemetires right after the generator has evaluated.
-    // Geometry refGeometries[] = geomSet.getGeometryClonesAtVersion(1);
     Geometry srcRefGeometries[] = srcGeomSet.getGeometryClonesAtVersion(1);
 
     wrapModifier_bindGeometries<<<geomSet.size()>>>(
@@ -343,7 +341,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   {
     AutoProfilingEvent p2("wrapModifier_deformGeometries");
     wrapModifier_deformGeometries<<<geomSet.size()>>>(
-      geomSet, 
+      geomSet,
       srcGeomSet,
       this.locations,
       this.positionDeltas,
@@ -375,39 +373,6 @@ function WrapModifier.setupRendering!(){
     InlineShape shape = InlineLinesShape(name, this.debugLines[geomId]);
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
     instance.setInstanceUniform(InlineUniform('u_color', Color(1.0,1.0,0.0)));
-  }
-}
-
-function WrapModifier.displayBindGeoms!(Geometry refGeometries[], Geometry srcRefGeometries[]){
-
-  // Construct a handle for this character instance. The handle will clean up the InlineDrawing when it is destroyed. 
-  this.handle2 = DrawingHandle("WrapModifierHandle");
-
-  // Now setup the rendering
-  InlineShader shader = this.handle2.getDrawing().registerShader(OGLSurfaceShader());
-  InlineMaterial material = shader.getOrCreateMaterial("WrapModifierMaterial");
-
-  for(Integer geomId=0; geomId<refGeometries.size(); geomId++){
-    String name = "WrapModifier_Ref" + String(geomId);
-    InlineShape shape = InlineMeshShape(name, refGeometries[geomId]);
-
-    ThreadsafeMetaDataContainer metaData = getGeomMetaData(refGeometries[geomId]);
-    GenericMat44Value globalTransform = metaData.get('globalTransform');
-    InlineTransform transform = StaticInlineTransform(name + '_Transform', this.handle2.getRootTransform(), globalTransform.value);
-
-    InlineInstance instance = SimpleInlineInstance(name + "_Instance", transform, shape, material);
-    instance.setInstanceUniform(InlineUniform('u_color', Color(1.0,1.0,0.0)));
-  }
-  for(Integer geomId=0; geomId<srcRefGeometries.size(); geomId++){
-    String name = "WrapModifier_SrcRef" + String(geomId);
-    InlineShape shape = InlineMeshShape(name, srcRefGeometries[geomId]);
-
-    ThreadsafeMetaDataContainer metaData = getGeomMetaData(srcRefGeometries[geomId]);
-    GenericMat44Value globalTransform = metaData.get('globalTransform');
-    InlineTransform transform = StaticInlineTransform(name + '_Transform', this.handle2.getRootTransform(), globalTransform.value);
-
-    InlineInstance instance = SimpleInlineInstance(name + "_Instance", transform, shape, material);
-    instance.setInstanceUniform(InlineUniform('u_color', Color(0.0,1.0,1.0)));
   }
 }
 
