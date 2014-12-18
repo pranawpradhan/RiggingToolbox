@@ -90,7 +90,7 @@ function String GeometrySet.getDesc(String indent, Boolean includeGeometryTolopo
     desc += indent + "    " + getGeomDebugName(this.get(i)) + ":{\n";
     
     if(includeGeometryTolopology){
-      desc += indent + "      " + this.get(i).getDesc(false, false);
+      desc += indent + "      " + this.get(i).getDesc(true, true);
     }
     desc += indent + "    },\n";
   }
@@ -110,36 +110,38 @@ function String GeometrySet.getDesc() {
   return this.getDesc("", false);
 }
 
-/// Updates the cach to the point specified.
-function GeometrySet.updateCache!(UInt32 stackPoint, GeometryOperator op) {
-  AutoProfilingEvent p(FUNC+":"+stackPoint);
+/// Adds a new cache point using the provided operator.
+function GeometrySet.addCachePoint!(GeometryOperator op) {
   // Generate cache points for each operator.
   // Note: currently we are creating cache points for every operator
   // but this is excessive. Many operators may not need to be cached.
-  if(this.cachePoints.size <= stackPoint)
-    this.cachePoints.resize(stackPoint+1);
-  CachePoint cachePoint = this.cachePoints[stackPoint];
-  if(cachePoint == null){
-    Generator generator = op;
-    if(generator)
-      cachePoint = GeometryCache();
-    else
-      cachePoint = GeometryAttributeCache(op);
-    this.cachePoints[stackPoint] = cachePoint;
-  }
+  Generator generator = op;
+  CachePoint cachePoint = null;
+  if(generator)
+    cachePoint = GeometryCache();
+  else
+    cachePoint = GeometryAttributeCache(op);
+  this.cachePoints.push(cachePoint);
+}
+
+/// Updates the cache to the point specified.
+function GeometrySet.updateCache!(UInt32 stackPoint, GeometryOperator op) {
+  AutoProfilingEvent p(FUNC+":"+stackPoint);
 
   // The data previous to this point has been re-computed. 
   // The cache must be updated.
-  cachePoint.update(this.geometries);
+  this.cachePoints[stackPoint].update(this.geometries);
   this.stackPoint = stackPoint;
 }
 
 function GeometrySet.rewind!(UInt32 stackPoint) {
   AutoProfilingEvent p(FUNC+":"+stackPoint);
+  report(FUNC+":"+stackPoint + ": " + this.cachePoints.size);
+
   if(stackPoint >= this.cachePoints.size)
     return;
 
-  for(UInt32 i=this.stackPoint; i>=stackPoint; i--)
+  for(UInt32 i=this.stackPoint-1; i>=stackPoint; i--)
     this.cachePoints[i].restore(this.geometries);
   this.stackPoint = stackPoint;
 }

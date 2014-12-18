@@ -82,6 +82,7 @@ function SkinningModifier.setSkeleton!(Skeleton skeleton){
 }
 
 function SkinningModifier.setPose!(Mat44 pose[]){
+  AutoProfilingEvent p(FUNC);
   this.pose = pose;
   this.poseDirty = true;
   String data;

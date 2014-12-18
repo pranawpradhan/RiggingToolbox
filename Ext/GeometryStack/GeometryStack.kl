@@ -67,6 +67,7 @@ function GeometryStack.addAttributeDependency!(String from, String to) {
 
 function GeometryStack.addGeometryOperator!(GeometryOperator op) {
   this.geomOperators.push(op);
+  this.geomSet.addCachePoint(op);
 
   // Note: the cast causes the 'in' arg to become 'io' here.
   Notifier notifier = op;
@@ -97,11 +98,6 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
           this.dirtyPoint = i;
           this.geomSet.rewind(i);
         }
-
-        // for(Integer j=i; j<this.geomOperators.size; j++){
-        //   if(this.cachePoints[j] != null)
-        //     this.cachePoints[j].invalidate();
-        // }
         break;
       }
     }
@@ -144,13 +140,15 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
           }
         }
       }
-      if(i < this.dirtyPoint)
+      // Update the cache if the data has been recomputed bya previous operator.
+      if(i > this.dirtyPoint)
         this.geomSet.updateCache(i, op);
       
       // Evaluate the operator now that the geomSet is in the state ready for this operator.
       op.evaluate(context, this.geomSet);
     }
     this.dirtyPoint = this.geomOperators.size;
+    this.geomSet.stackPoint = this.geomOperators.size;
   }
 
   if(this.displayGeometries && (this.handle==null || this.geomSetVersion != this.geomSet.getVersion())){
