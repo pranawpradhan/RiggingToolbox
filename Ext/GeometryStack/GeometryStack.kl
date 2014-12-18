@@ -19,7 +19,6 @@ object GeometryStack : Notifier, Listener, IGeometryStack, Persistable {
 
   GeometrySet geomSet;
   GeometryOperator geomOperators[];
-  CachePoint cachePoints[];
   UInt32 dirtyPoint;
 
   Boolean displayGeometries;
@@ -68,7 +67,6 @@ function GeometryStack.addAttributeDependency!(String from, String to) {
 
 function GeometryStack.addGeometryOperator!(GeometryOperator op) {
   this.geomOperators.push(op);
-  this.cachePoints.resize(this.geomOperators.size);
 
   // Note: the cast causes the 'in' arg to become 'io' here.
   Notifier notifier = op;
@@ -95,8 +93,11 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
     for(Integer i=0; i<this.geomOperators.size; i++){
       Notifier op = this.geomOperators[i];
       if(op === notifier){
-        if(i < this.dirtyPoint)
+        if(i < this.dirtyPoint){
           this.dirtyPoint = i;
+          this.geomSet.rewind(i);
+        }
+
         // for(Integer j=i; j<this.geomOperators.size; j++){
         //   if(this.cachePoints[j] != null)
         //     this.cachePoints[j].invalidate();
@@ -143,37 +144,11 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
           }
         }
       }
-      // Generate cache points for each operator.
-      // Note: currently we are creating cache points for every operator
-      // but this is excessive. Many operators may not need to be cached.
-      CachePoint cachePoint = this.cachePoints[i];
-      if(cachePoint == null){
-        Generator generator = op;
-        if(generator)
-          cachePoint = GeometryCache();
-        else
-          cachePoint = GeometryAttributeCache(op);
-        this.cachePoints[i] = cachePoint;
-      }
-
-      // The data previous to this point has been re-computed. 
-      // The cache must be updated.
-      cachePoint.update(this.geomSet, op);
+      if(i < this.dirtyPoint)
+        this.geomSet.updateCache(i, op);
       
       // Evaluate the operator now that the geomSet is in the state ready for this operator.
       op.evaluate(context, this.geomSet);
-
-      {
-        // Increment the modified attribute generations so that the caching system 
-        // knows which ones to restore in subsequent evaluations.
-        UInt32 deps[String] = op.getAttributeInteractions();
-        for(key, value in deps){
-          if(value == AttrMode_Write || value == AttrMode_ReadWrite){
-            this.geomSet.incrementAttributeGeneration(key);
-            // TODO: we could increment the attribute versions here too.
-          }
-        }
-      }
     }
     this.dirtyPoint = this.geomOperators.size;
   }

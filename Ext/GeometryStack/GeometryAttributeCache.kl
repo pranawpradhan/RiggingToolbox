@@ -5,13 +5,13 @@
 require Math;
 require Geometry;
 
+object BaseModifier;
 
 object GeometryAttributeCache : CachePoint, Listener  {
   BaseModifier modifier;
 
   String attributesNames[];
   GeometryAttribute cachedAttributes[][];
-  UInt32 attributeGenerations[][];
 };
 
 function GeometryAttributeCache(BaseModifier modifier) {
@@ -39,46 +39,43 @@ function GeometryAttributeCache.updateCachedAttributeNames!() {
 }
 
 /// Restores the geometry attributes to the state found in the cache.
-function GeometryAttributeCache.update!(io GeometrySet geomSet, GeometryOperator op) {
+function GeometryAttributeCache.update!(Geometry geometries[]) {
   AutoProfilingEvent p(FUNC+":"+this.attributesNames);
 
-
-  UInt32 numGeoms = geomSet.size;
+  UInt32 numGeoms = geometries.size;
   UInt32 numcachedAttrs = this.attributesNames.size;
   this.cachedAttributes.resize(numGeoms);
-  this.attributeGenerations.resize(numGeoms);
 
   for(Integer i=0; i<numGeoms; i++){
-    Ref<GeometryAttributes> attributes = geomSet.get(i).getAttributes();
+    Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
     this.cachedAttributes[i].resize(numcachedAttrs);
-    this.attributeGenerations[i].resize(numcachedAttrs);
     for(Integer j=0; j<numcachedAttrs; j++){
       String attrName = this.attributesNames[j];
       Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
-      UInt32 gen = geomSet.getAttributeGeneration(attrName);
-      UInt32 cachedGen = this.attributeGenerations[i][j];
-      if(this.cachedAttributes[i][j].type() != attr.type() || cachedGen >= gen){
-        // Update the cached attribute to the new value.
-        AutoProfilingEvent pUpdate("Update:"+attrName);
+      // Update the cached attribute to the new value.
+      AutoProfilingEvent pUpdate("Update:"+attrName);
 
-        this.cachedAttributes[i][j] = cloneAttribute(attr);
-        this.attributeGenerations[i][j] = gen;
-      }
-      else if(cachedGen < gen){
-        // Restore the attribute to its previous value.
-        AutoProfilingEvent pRestore("Restore:"+attrName);
-
-        Ref<Object> cachedAttr = this.cachedAttributes[i][j];
-        attr.copyFrom( cachedAttr );
-        geomSet.setAttributeGeneration(attrName, cachedGen);
-      }
+      this.cachedAttributes[i][j] = cloneAttribute(attr);
     }
   }
 }
 
 
-function GeometryAttributeCache.free!(){
-  AutoProfilingEvent p(FUNC);
-  this.cachedAttributes.resize(0);
-  this.attributeGenerations.resize(0);
+/// Restores the geometry attributes to the state found in the cache.
+function GeometryAttributeCache.restore(io Geometry geometries[]) {
+  AutoProfilingEvent p(FUNC+":"+this.attributesNames);
+
+  for(Integer i=0; i<geometries.size; i++){
+    Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
+    for(Integer j=0; j<this.attributesNames.size; j++){
+      String attrName = this.attributesNames[j];
+      Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
+
+      // Restore the attribute to its previous value.
+      AutoProfilingEvent pRestore("Restore:"+attrName);
+
+      Ref<Object> cachedAttr = this.cachedAttributes[i][j];
+      attr.copyFrom( cachedAttr );
+    }
+  }
 }

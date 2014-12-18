@@ -8,9 +8,6 @@ require FabricStatistics;
 
 
 object GeometryCache : CachePoint {
-  // Temp: Used in debugging and unit testing.
-  Boolean disabled;
-  Boolean valid;
   Geometry cachedGeometries[];
   UInt32 topologyVersions[];
 };
@@ -18,17 +15,11 @@ object GeometryCache : CachePoint {
 function GeometryCache() {
 }
 
-function GeometryCache.update!(io GeometrySet geomSet, GeometryOperator op) {
-  if(this.disabled)
-    return;
+function GeometryCache.update!(Geometry geometries[]) {
   AutoProfilingEvent p(FUNC);
-  geomSet.resize(0);
-  this.valid = true;
 }
 
-function GeometryCache.free!(){
-  AutoProfilingEvent p(FUNC);
-  this.cachedGeometries.resize(0);
-  this.topologyVersions.resize(0);
-  this.valid = true;
+
+function GeometryCache.restore(io Geometry geometries[]) {
+  geometries.resize(0);
 }
