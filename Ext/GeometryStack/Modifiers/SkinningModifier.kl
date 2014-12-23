@@ -97,14 +97,14 @@ function SkinningModifier.setDisplayDebugging!(Boolean displayDebugging){
   }
 }
 
-/// The per-point operator that computes the linear blend skinning. 
+/// Skinning of non-PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinPositions<<<index>>>(
-  io PolygonMesh mesh,
-  Ref<SkinningAttribute> skinningAttr,
+  io Vec3 positions<>,
+  SkinningAttributeDataUnion skinningAttr,
   Mat44 skinningMatrices[]
 ){
-  Vec3 srcPos = mesh.getPointPosition( index );
+  Vec3 srcPos = positions[index];
 
   LocalL16UInt32Array indices;
   LocalL16ScalarArray weights;
@@ -117,21 +117,45 @@ operator skinningModifier_skinPositions<<<index>>>(
       break;
     UInt32 boneId = indices.get(i);
     position += (skinningMatrices[boneId] * srcPos) * boneWeight;
-    // report("skinPositions:" + index+":"+ i+":" + boneWeight);
+    weighSum += boneWeight;
+  }
+  positions[index] = position;
+}
+
+/// Skinning of positions on PolygonMesh geometries
+/// \internal
+operator skinningModifier_skinMeshPositions<<<index>>>(
+  PolygonMeshDataUnion mesh,
+  io Vec3 positions<>,
+  SkinningAttributeDataUnion skinningAttr,
+  Mat44 skinningMatrices[]
+){
+  Vec3 srcPos = positions[index];
+
+  LocalL16UInt32Array indices;
+  LocalL16ScalarArray weights;
+  skinningAttr.getPairs(index, indices, weights);
+  Scalar weighSum = 0.0;
+  Vec3 position(0,0,0);
+  for( UInt32 i = 0; i < indices.size(); ++i ) {
+    Scalar boneWeight = weights.get(i);
+    if( boneWeight == 0.0 )
+      break;
+    UInt32 boneId = indices.get(i);
+    position += (skinningMatrices[boneId] * srcPos) * boneWeight;
     weighSum += boneWeight;
   }
 
-  // report("srcPos:" + srcPos + ":" + index+":"+ position+":"+ weighSum);
-  // positions[index] = position;
-  mesh.setPointPosition( index, position );
+  mesh.setPointAttribute( index, positions, position );
 }
 
-/// The per-point operator that computes the linear blend skinning. 
+/// Skinning of positions and normals on PolygonMesh geometries
 /// \internal
-operator skinningModifier_skinPositionsAndNormals<<<index>>>(
-  io Vec3 positions[],
-  io Vec3 normals[],
-  Ref<SkinningAttribute> skinningAttr,
+operator skinningModifier_skinMeshPositionsAndNormals<<<index>>>(
+  PolygonMeshDataUnion mesh,
+  io Vec3 positions<>,
+  io Vec3 normals<>,
+  SkinningAttributeDataUnion skinningAttr,
   Mat44 skinningPosAndNormMatrices[]
 ){
   Vec3 srcPos = positions[index];
@@ -155,91 +179,88 @@ operator skinningModifier_skinPositionsAndNormals<<<index>>>(
   if( length > 0.0001 )
     normal *= 1.0 / length;
 
-  positions[index] = position;
-  normals[index] = normal;
+  mesh.setPointAttribute( index, positions, position );
+  mesh.setPointAttribute( index, normals, normal );
+}
+
+inline Mat44[]  skinningModifier_buildPosNrmSkinningMatricies(Mat44 skinningMatrices[], Mat44 bindShapeTransform){
+  Mat44 skinningPosAndNormMatrices[];
+  skinningPosAndNormMatrices.resize( skinningMatrices.size()*2 );
+  for( UInt32 i = 0; i < skinningMatrices.size(); ++i ) {
+    skinningPosAndNormMatrices[i*2] = skinningMatrices[i] * bindShapeTransform;
+    skinningPosAndNormMatrices[i*2 + 1] = skinningPosAndNormMatrices[i*2];
+    skinningPosAndNormMatrices[i*2 + 1].zeroTranslation();
+  }
+  return skinningPosAndNormMatrices;
+}
+
+inline Mat44[]  skinningModifier_buildTransformedSkinningMatricies(Mat44 skinningMatrices[], Mat44 bindShapeTransform){
+  Mat44 skinninMatricesWithBindOffset[];
+  skinninMatricesWithBindOffset.resize( skinningMatrices.size() );
+  for( UInt32 i = 0; i < skinningMatrices.size(); ++i ) {
+    skinninMatricesWithBindOffset[i] = skinningMatrices[i] * bindShapeTransform;
+  }
+  return skinninMatricesWithBindOffset;
 }
 
 /// Computes the deformation of the character using linear blend skinning. 
 /// \internal
-operator skinningModifier_deformGeometries_skinPositions<<<index>>>(
+operator skinningModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   Mat44 skinningMatrices[],
   Mat44 bindShapeTransforms[],
+  Boolean transformNormals,
   Boolean displayDebugging,
   Color deformerColors[]
 ){
-  PolygonMesh mesh = geomSet.get(index);
-  if(!mesh){
-    setError("ERROR: Geometry is not a mesh");
-    return;
-  }
-
-  Ref<GeometryAttributes> attributes = mesh.getAttributes();
+  Geometry geom = geomSet.get(index);
+  Ref<GeometryAttributes> attributes = geom.getAttributes();
   if(!attributes.has("skinningData")){
     setError("ERROR: Geometry does not have skinningData");
     return;
-  }
-
-  Mat44 skinninMatricesWithBindOffset[];
-  skinninMatricesWithBindOffset.resize( skinningMatrices.size() );
-  for( UInt32 i = 0; i < skinningMatrices.size(); ++i ) {
-    skinninMatricesWithBindOffset[i] = skinningMatrices[i] * bindShapeTransforms[index];
   }
 
   Ref<Vec3Attribute> positionsAttribute = attributes.positionsAttribute;
   Ref<SkinningAttribute> skinningAttr = attributes.getAttribute("skinningData");
+  Vec3 positions<>(positionsAttribute.values);
 
-  skinningModifier_skinPositions<<<mesh.pointCount()>>>(
-    mesh,
-    skinningAttr,
-    skinninMatricesWithBindOffset
-  );
+  PolygonMesh mesh = geom;
+  if(mesh){
+    if(transformNormals){
+      Ref<Vec3Attribute> normalsAttribute = attributes.normalsAttribute;
+      Vec3 normals<>(normalsAttribute.values);
+      Mat44 transformed_skinningMatrices[] =  skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
+      skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()>>>(
+        mesh.gpuData(),
+        positions,
+        normals,
+        skinningAttr.dataUnion,
+        transformed_skinningMatrices
+      );
+      normalsAttribute.incrementVersion();
+    }
+    else{
+      Mat44 transformed_skinningMatrices[] =  skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
+      skinningModifier_skinMeshPositions<<<mesh.pointCount()>>>(
+        mesh.gpuData(),
+        positions,
+        skinningAttr.dataUnion,
+        transformed_skinningMatrices
+      );
+    }
+  }
+  else{
+    Mat44 transformed_skinningMatrices[] =  skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
+    skinningModifier_skinPositions<<<mesh.pointCount()>>>(
+      positions,
+      skinningAttr.dataUnion,
+      transformed_skinningMatrices
+    );
+  }
 
   positionsAttribute.incrementVersion();
 }
 
-/// Computes the deformation of the character using linear blend skinning. 
-/// \internal
-operator skinningModifier_deformGeometries_skinPositionsAndNormals<<<index>>>(
-  io GeometrySet geomSet,
-  Mat44 skinningMatrices[],
-  Mat44 bindShapeTransforms[],
-  Boolean displayDebugging,
-  Color deformerColors[]
-){
-  Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
-
-  if(!attributes.has("skinningData")){
-    setError("ERROR: Geometry does not have skinningData");
-    return;
-  }
-  if(!attributes.has("normals")){
-    setError("ERROR: Geometry does not have normals");
-    return;
-  }
-
-  Mat44 skinningPosAndNormMatrices[];
-  skinningPosAndNormMatrices.resize( skinningMatrices.size()*2 );
-  for( UInt32 i = 0; i < skinningMatrices.size(); ++i ) {
-    skinningPosAndNormMatrices[i*2] = skinningMatrices[i] * bindShapeTransforms[i];
-    skinningPosAndNormMatrices[i*2 + 1] = skinningPosAndNormMatrices[i*2];
-    skinningPosAndNormMatrices[i*2 + 1].zeroTranslation();
-  }
-  
-  Ref<Vec3Attribute> positionsAttribute = attributes.positionsAttribute;
-  Ref<Vec3Attribute> normalsAttribute = attributes.normalsAttribute;
-  SkinningAttribute skinningAttr = attributes.getAttribute("skinningData");
-
-  // skinningModifier_skinPositionsAndNormals<<<attributes.size()>>>(
-  //   positionsAttribute.values,
-  //   normalsAttribute.values,
-  //   skinningAttr,
-  //   skinningPosAndNormMatrices
-  // );
-
-  positionsAttribute.incrementVersion();
-  normalsAttribute.incrementVersion();
-}
 
 function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
@@ -287,21 +308,12 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
     this.poseDirty = false;
   }
 
-
-  // if(this.transformNormals){
-  //   skinningModifier_deformGeometries_skinPositionsAndNormals<<<geomSet.size()>>>(
-  //     geomSet,
-  //     this.skinningMatrices,
-  //     this.bindShapeTransforms,
-  //     this.displayDebugging,
-  //     this.deformerColors);
-  // }
-  // else
   {
-    skinningModifier_deformGeometries_skinPositions<<<geomSet.size()>>>(
+    skinningModifier_deformGeometries<<<geomSet.size()>>>(
       geomSet,
       this.skinningMatrices,
       this.bindShapeTransforms,
+      this.transformNormals,
       this.displayDebugging,
       this.deformerColors);
   }
