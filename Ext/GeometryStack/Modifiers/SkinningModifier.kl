@@ -59,6 +59,10 @@ function UInt32[String] SkinningModifier.getAttributeInteractions(){
   return result;
 }
 
+function Boolean SkinningModifier.useGPU(){
+  return true;
+}
+
 function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
   this.invReferencePose.resize(referencePose.size);
   this.deformerColors.resize(referencePose.size);
@@ -211,7 +215,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
   Mat44 bindShapeTransforms[],
   Boolean transformNormals,
   Boolean displayDebugging,
-  Color deformerColors[]
+  Boolean useGPU
 ){
   Geometry geom = geomSet.get(index);
   Ref<GeometryAttributes> attributes = geom.getAttributes();
@@ -230,7 +234,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
       Ref<Vec3Attribute> normalsAttribute = attributes.normalsAttribute;
       Vec3 normals<>(normalsAttribute.values);
       Mat44 transformed_skinningMatrices[] =  skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
-      skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()>>>(
+      skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()@useGPU>>>(
         mesh.gpuData(),
         positions,
         normals,
@@ -241,7 +245,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
     }
     else{
       Mat44 transformed_skinningMatrices[] =  skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
-      skinningModifier_skinMeshPositions<<<mesh.pointCount()>>>(
+      skinningModifier_skinMeshPositions<<<mesh.pointCount()@useGPU>>>(
         mesh.gpuData(),
         positions,
         skinningAttr.dataUnion,
@@ -251,7 +255,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
   }
   else{
     Mat44 transformed_skinningMatrices[] =  skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
-    skinningModifier_skinPositions<<<mesh.pointCount()>>>(
+    skinningModifier_skinPositions<<<mesh.pointCount()@useGPU>>>(
       positions,
       skinningAttr.dataUnion,
       transformed_skinningMatrices
@@ -315,7 +319,7 @@ function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet)
       this.bindShapeTransforms,
       this.transformNormals,
       this.displayDebugging,
-      this.deformerColors);
+      this.useGPU());
   }
 
   if(this.displayDebugging){
@@ -363,6 +367,8 @@ operator skinningModifier_computeVertexColor<<<index>>>(
 function SkinningModifier.generateVertexColors(io PolygonMesh mesh){
   Ref<SkinningAttribute> skinningAttr = mesh.getAttribute("skinningData");
   Ref<ColorAttribute> vertexColorsAttr = mesh.getOrCreateAttribute("skinning_vertexColors", ColorAttribute);
+  if(this.useGPU())
+    this.deformerColors.convertToGPU();
   skinningModifier_computeVertexColor<<<mesh.pointCount()>>>(
     mesh,
     skinningAttr,

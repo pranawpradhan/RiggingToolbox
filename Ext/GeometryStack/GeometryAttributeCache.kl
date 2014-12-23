@@ -9,7 +9,7 @@ object BaseModifier;
 
 object GeometryAttributeCache : CachePoint, Listener  {
   BaseModifier modifier;
-  Boolean moveAttributeDataToGPU;
+  Boolean moveDataToGPU;
   String attributesNames[];
   UInt32 attributesInteractions[];
   GeometryAttribute cachedAttributes[][];
@@ -38,18 +38,32 @@ function GeometryAttributeCache.updateCachedAttributeNames!() {
     this.attributesNames.push(key);
     this.attributesInteractions.push(value);
   }
-  this.moveAttributeDataToGPU = this.modifier.useGPU();
+  this.moveDataToGPU = this.modifier.useGPU();
 }
 
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.update!(Geometry geometries[]) {
   AutoProfilingEvent p(FUNC+":"+this.attributesNames);
+  report(FUNC+":"+this.attributesNames);
 
   UInt32 numGeoms = geometries.size;
   UInt32 numcachedAttrs = this.attributesNames.size;
   this.cachedAttributes.resize(numGeoms);
 
   for(Integer i=0; i<numGeoms; i++){
+    Geometry geo = geometries[i];
+    PolygonMesh mesh = geo;
+    if(mesh != null){
+      if(this.moveDataToGPU){
+        if(mesh.getMemType() == 0)
+          mesh.convertToGPU();
+      }
+      else{
+        if(mesh.getMemType() != 0)
+          mesh.convertToCPU();
+      }
+    }
+
     Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
     this.cachedAttributes[i].resize(numcachedAttrs);
     for(Integer j=0; j<numcachedAttrs; j++){
@@ -58,10 +72,18 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
       // Update the cached attribute to the new value.
       AutoProfilingEvent pUpdate("Update:"+attrName);
 
-      // If the operator requires the data to be on the GPU, and the data is currently ont he CPU,
-      // move it to the GPU and then generate the cached attribute.
-      if(this.moveAttributeDataToGPU && attr.getElementsMemType() == 0){
-        attr.convertToGPU();
+      // If the operator requires the data to be on the GPU, and the data is currently on the CPU,
+      // move it to the GPU. If the operator requires the data on the CPU, but it is on the GPU,
+      // move it back.
+      if(this.moveDataToGPU){
+        if(attr.getElementsMemType() == 0)
+          attr.convertToGPU();
+      }
+      else{
+        if(attr.getElementsMemType() != 0){
+          report("WARNING: Moving data back to the CPU is quite costly and should be avoided.");
+          attr.convertToCPU();
+        }
       }
       if(this.attributesInteractions[j] == AttrMode_ReadWrite){
         if(this.cachedAttributes[i][j] == null || this.cachedAttributes[i][j].type() != attr.type()){
