@@ -1,6 +1,9 @@
 
 require RiggingToolbox;
 
+inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
+inline __compile_pushModifier_pushPositionsAlongNormals() { Vec3 a[]; Vec3 b[]; Scalar c; pushModifier_pushPositionsAlongNormals<<<1@true>>>(a, b, c); }
+
 operator entry(){
 
   StartFabricProfiling();

@@ -62,7 +62,8 @@ operator pushModifier_pushPositionsAlongNormals<<<index>>>(
 /// \internal
 operator pushModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
-  Scalar push
+  Scalar push,
+  Boolean useGPU
 ){
   Ref<GeometryAttributes> attributes = geomSet.get(index).getAttributes();
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
@@ -70,7 +71,7 @@ operator pushModifier_deformGeometries<<<index>>>(
   if(!positionsAttribute || !normalsAttribute){
     setError("Error in pushModifier_deformGeometries. Missing attributes.");
   }
-  pushModifier_pushPositionsAlongNormals<<<attributes.size()>>>(
+  pushModifier_pushPositionsAlongNormals<<<attributes.size()@useGPU>>>(
     positionsAttribute.values,
     normalsAttribute.values,
     push
@@ -80,7 +81,7 @@ operator pushModifier_deformGeometries<<<index>>>(
 
 function PushModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  pushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.push);
+  pushModifier_deformGeometries<<<geomSet.size()>>>(geomSet, this.push, this.useGPU());
 }
 
 

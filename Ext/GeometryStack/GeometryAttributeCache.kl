@@ -9,8 +9,9 @@ object BaseModifier;
 
 object GeometryAttributeCache : CachePoint, Listener  {
   BaseModifier modifier;
-
+  Boolean moveAttributeDataToGPU;
   String attributesNames[];
+  UInt32 attributesInteractions[];
   GeometryAttribute cachedAttributes[][];
 };
 
@@ -32,10 +33,12 @@ function GeometryAttributeCache.notify!(Notifier notifier, String type, String d
 function GeometryAttributeCache.updateCachedAttributeNames!() {
   UInt32 deps[String] = this.modifier.getAttributeInteractions();
   this.attributesNames.resize(0);
+  this.attributesInteractions.resize(0);
   for(key, value in deps){
-    if(value == AttrMode_ReadWrite)
-      this.attributesNames.push(key);
+    this.attributesNames.push(key);
+    this.attributesInteractions.push(value);
   }
+  this.moveAttributeDataToGPU = this.modifier.useGPU();
 }
 
 /// Restores the geometry attributes to the state found in the cache.
@@ -55,7 +58,19 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
       // Update the cached attribute to the new value.
       AutoProfilingEvent pUpdate("Update:"+attrName);
 
-      this.cachedAttributes[i][j] = cloneAttribute(attr);
+      // If the operator requires the data to be on the GPU, and the data is currently ont he CPU,
+      // move it to the GPU and then generate the cached attribute.
+      if(this.moveAttributeDataToGPU && attr.getElementsMemType() == 0){
+        attr.convertToGPU();
+      }
+      if(this.attributesInteractions[j] == AttrMode_ReadWrite){
+        if(this.cachedAttributes[i][j] == null || this.cachedAttributes[i][j].type() != attr.type()){
+          this.cachedAttributes[i][j] = cloneAttribute(attr);
+        }
+        else{
+          this.cachedAttributes[i][j].copyFrom(attr);
+        }
+      }
     }
   }
 }
@@ -64,18 +79,21 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.restore(io Geometry geometries[]) {
   AutoProfilingEvent p(FUNC+":"+this.attributesNames);
+  report(FUNC+":"+this.attributesNames);
 
   for(Integer i=0; i<geometries.size; i++){
     Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
     for(Integer j=0; j<this.attributesNames.size; j++){
-      String attrName = this.attributesNames[j];
-      Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
+      if(this.attributesInteractions[j] == AttrMode_ReadWrite){
+        String attrName = this.attributesNames[j];
+        Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
 
-      // Restore the attribute to its previous value.
-      AutoProfilingEvent pRestore("Restore:"+attrName);
+        // Restore the attribute to its previous value.
+        AutoProfilingEvent pRestore("Restore:"+attrName);
 
-      Ref<Object> cachedAttr = this.cachedAttributes[i][j];
-      attr.copyFrom( cachedAttr );
+        Ref<Object> cachedAttr = this.cachedAttributes[i][j];
+        attr.copyFrom( cachedAttr );
+      }
     }
   }
 }

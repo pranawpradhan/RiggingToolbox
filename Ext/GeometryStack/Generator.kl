@@ -29,6 +29,11 @@ function UInt32[String] BaseGenerator.getAttributeInteractions(){
   return result;
 }
 
+function Boolean BaseGenerator.useGPU(){
+  return false;
+}
+
+
 
 function BaseGenerator.evaluate!(EvalContext context, io GeometrySet geomSet){
 

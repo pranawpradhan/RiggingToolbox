@@ -27,6 +27,8 @@ object GeometryStack : Notifier, Listener, IGeometryStack, Persistable {
   UInt32 geomSetVersion;
   Color geomColors[String];
 
+  Boolean useGPU;
+
   // e.g. If a deformer modifies positions, and the subsequent deformer
   // ultilizes normals, and there is a dependency from normals to positions
   // then normals have to be automatically recomputed before the next deformer is run. 

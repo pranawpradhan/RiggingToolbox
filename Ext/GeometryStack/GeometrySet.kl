@@ -157,3 +157,21 @@ function Geometry[] GeometrySet.getGeometryClonesAtVersion(UInt32 stackPoint) {
     this.cachePoints[i].restore(geoms);
   return geoms;
 }
+
+function GeometrySet.convertToCPU!() {
+  for(UInt32 i=0; i<this.geometries.size; i++){
+    Ref<PolygonMesh> mesh = this.geometries[i];
+    if(mesh != null && mesh.getMemType() != 0)
+      mesh.convertToCPU();
+
+    Ref<GeometryAttributes> attributes = this.geometries[i].getAttributes();
+    // Iterate over the attributes, moving them back ot the CPU if necessary.
+    GeometryAttributesIterator iter = attributes.getAttributesIterator();
+    Ref<GeometryAttribute> attribute = null;
+    while( attribute = iter.getNext() ){
+      if(attribute.getElementsMemType() != 0)
+        attribute.convertToCPU();
+    }
+  }
+}
+
