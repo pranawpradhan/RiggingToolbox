@@ -55,6 +55,7 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
     PolygonMesh mesh = geo;
     if(mesh != null){
       if(this.moveDataToGPU){
+        report("mesh.getMemType():" + mesh.getMemType());
         if(mesh.getMemType() == 0)
           mesh.convertToGPU();
       }
