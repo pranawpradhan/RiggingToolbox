@@ -129,7 +129,7 @@ operator skinningModifier_skinPositions<<<index>>>(
 /// Skinning of positions on PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinMeshPositions<<<index>>>(
-  io PolygonMeshDataUnion mesh,
+  PolygonMeshDataUnion mesh,
   io Vec3 positions<>,
   io SkinningAttributeDataUnion skinningAttr,
   Mat44 skinningMatrices[]
@@ -156,7 +156,7 @@ operator skinningModifier_skinMeshPositions<<<index>>>(
 /// Skinning of positions and normals on PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinMeshPositionsAndNormals<<<index>>>(
-  io PolygonMeshDataUnion mesh,
+  PolygonMeshDataUnion mesh,
   io Vec3 positions<>,
   io Vec3 normals<>,
   SkinningAttributeDataUnion skinningAttr,
