@@ -143,87 +143,104 @@ function GeometryAttribute cloneAttribute(GeometryAttribute attr) {
   switch(attr.type()){
     case ColorAttribute:{
       ColorAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case IntegerAttribute:{
       IntegerAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Mat33Attribute:{
       Mat33Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Mat44Attribute:{
       Mat44Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case QuatAttribute:{
       QuatAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case RGBAAttribute:{
       RGBAAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case RGBAttribute:{
       RGBAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case RGBAttribute:{
       RGBAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case ScalarAttribute:{
       ScalarAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case ScalarConstantArrayAttribute:{
       ScalarConstantArrayAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case SkinningAttribute:{
       SkinningAttribute colorAttr = attr;
       SkinningAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case UInt16ConstantArrayAttribute:{
       UInt16ConstantArrayAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case UInt32Attribute:{
       UInt32Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec2Attribute:{
       Vec2Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec3_dAttribute:{
       Vec3_dAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec3Attribute:{
       Vec3Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec4Attribute:{
       Vec4Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
