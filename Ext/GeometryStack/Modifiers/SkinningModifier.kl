@@ -59,9 +59,6 @@ function UInt32[String] SkinningModifier.getAttributeInteractions(){
   return result;
 }
 
-function Boolean SkinningModifier.useGPU(){
-  return true;
-}
 
 function SkinningModifier.setReferencePose!(Mat44 referencePose[]){
   this.invReferencePose.resize(referencePose.size);
