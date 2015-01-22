@@ -104,7 +104,7 @@ function SkinningModifier.setDisplayDebugging!(Boolean displayDebugging){
 /// Skinning of non-PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinPositions<<<index>>>(
-  io Vec3 positions<>,
+  io Vec3 positions[],
   SkinningAttributeDataUnion skinningAttr,
   Mat44 skinningMatrices[]
 ){
@@ -129,15 +129,14 @@ operator skinningModifier_skinPositions<<<index>>>(
 /// Skinning of positions on PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinMeshPositions<<<index>>>(
-  /*PolygonMeshDataUnion mesh,*/
-  io Vec3 positions<>/*,
+  PolygonMeshDataUnion mesh,
+  io Vec3 positions[],
   io SkinningAttributeDataUnion skinningAttr,
-  Mat44 skinningMatrices[]*/
+  Mat44 skinningMatrices[]
 ){
   Vec3 srcPos = positions[index];
-
   Vec3 position(0,0,0);
-  /*
+  
   LocalL16UInt32Array indices;
   LocalL16ScalarArray weights;
   skinningAttr.getPairs(index, indices, weights);
@@ -150,17 +149,15 @@ operator skinningModifier_skinMeshPositions<<<index>>>(
     position += (skinningMatrices[boneId] * srcPos) * boneWeight;
     weighSum += boneWeight;
   }
-  */
-  positions[index] = position;
-  //mesh.setPointAttribute( index, positions, position );
+  mesh.setPointAttribute( index, positions, position );
 }
 
 /// Skinning of positions and normals on PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinMeshPositionsAndNormals<<<index>>>(
   PolygonMeshDataUnion mesh,
-  io Vec3 positions<>,
-  io Vec3 normals<>,
+  io Vec3 positions[],
+  io Vec3 normals[],
   SkinningAttributeDataUnion skinningAttr,
   Mat44 skinningPosAndNormMatrices[]
 ){
@@ -229,20 +226,18 @@ operator skinningModifier_deformGeometries<<<index>>>(
   Ref<Vec3Attribute> positionsAttribute = attributes.positionsAttribute;
   Ref<SkinningAttribute> skinningAttr = attributes.getAttribute("skinningData");
   report("positions:" + positionsAttribute.values.getElementsMemType());
-  Vec3 positions<>(positionsAttribute.values);
 
   PolygonMesh mesh = geom;
   if(mesh){
     if(transformNormals){
       Ref<Vec3Attribute> normalsAttribute = attributes.normalsAttribute;
-      Vec3 normals<>(normalsAttribute.values);
       Mat44 transformed_skinningMatrices[] = skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
       skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()@useGPU>>>(
         mesh.dataUnion,
-        positions,
-        normals,
+        positionsAttribute.values,
+        normalsAttribute.values,
         skinningAttr.dataUnion,
         transformed_skinningMatrices
       );
@@ -253,17 +248,17 @@ operator skinningModifier_deformGeometries<<<index>>>(
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
       skinningModifier_skinMeshPositions<<<mesh.pointCount()@useGPU>>>(
-        /*mesh.dataUnion,*/
-        positions/*,
+        mesh.dataUnion,
+        positionsAttribute.values,
         skinningAttr.dataUnion,
-        transformed_skinningMatrices*/
+        transformed_skinningMatrices
       );
     }
   }
   else{
     Mat44 transformed_skinningMatrices[] =  skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
     skinningModifier_skinPositions<<<mesh.pointCount()@useGPU>>>(
-      positions,
+      positionsAttribute.values,
       skinningAttr.dataUnion,
       transformed_skinningMatrices
     );
