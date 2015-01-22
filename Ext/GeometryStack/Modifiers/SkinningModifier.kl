@@ -129,18 +129,19 @@ operator skinningModifier_skinPositions<<<index>>>(
 /// Skinning of positions on PolygonMesh geometries
 /// \internal
 operator skinningModifier_skinMeshPositions<<<index>>>(
-  PolygonMeshDataUnion mesh,
-  io Vec3 positions<>,
+  /*PolygonMeshDataUnion mesh,*/
+  io Vec3 positions<>/*,
   io SkinningAttributeDataUnion skinningAttr,
-  Mat44 skinningMatrices[]
+  Mat44 skinningMatrices[]*/
 ){
   Vec3 srcPos = positions[index];
 
+  Vec3 position(0,0,0);
+  /*
   LocalL16UInt32Array indices;
   LocalL16ScalarArray weights;
   skinningAttr.getPairs(index, indices, weights);
   Scalar weighSum = 0.0;
-  Vec3 position(0,0,0);
   for( UInt32 i = 0; i < indices.size(); ++i ) {
     Scalar boneWeight = weights.get(i);
     if( boneWeight == 0.0 )
@@ -149,8 +150,9 @@ operator skinningModifier_skinMeshPositions<<<index>>>(
     position += (skinningMatrices[boneId] * srcPos) * boneWeight;
     weighSum += boneWeight;
   }
-
-  mesh.setPointAttribute( index, positions, position );
+  */
+  positions[index] = position;
+  //mesh.setPointAttribute( index, positions, position );
 }
 
 /// Skinning of positions and normals on PolygonMesh geometries
@@ -226,6 +228,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
 
   Ref<Vec3Attribute> positionsAttribute = attributes.positionsAttribute;
   Ref<SkinningAttribute> skinningAttr = attributes.getAttribute("skinningData");
+  report("positions:" + positionsAttribute.values.getElementsMemType());
   Vec3 positions<>(positionsAttribute.values);
 
   PolygonMesh mesh = geom;
@@ -233,7 +236,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
     if(transformNormals){
       Ref<Vec3Attribute> normalsAttribute = attributes.normalsAttribute;
       Vec3 normals<>(normalsAttribute.values);
-      Mat44 transformed_skinningMatrices[] =  skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
+      Mat44 transformed_skinningMatrices[] = skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
       skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()@useGPU>>>(
@@ -250,10 +253,10 @@ operator skinningModifier_deformGeometries<<<index>>>(
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
       skinningModifier_skinMeshPositions<<<mesh.pointCount()@useGPU>>>(
-        mesh.dataUnion,
-        positions,
+        /*mesh.dataUnion,*/
+        positions/*,
         skinningAttr.dataUnion,
-        transformed_skinningMatrices
+        transformed_skinningMatrices*/
       );
     }
   }
@@ -272,6 +275,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
 
 function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
 
   if(this.dataVersion != geomSet.getVersion()){
     if(geomSet.hasMetaData('skeleton')){

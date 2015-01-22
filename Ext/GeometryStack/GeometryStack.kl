@@ -117,6 +117,7 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
 //               [ LoadAlembic, WrapModifier ] ->
 function GeometrySet GeometryStack.evaluate!(EvalContext context) {
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
 
   // this.dirtyPoint = 0;// force evaluation all the time.(disable caching)
   if(this.dirtyPoint < this.geomOperators.size){
@@ -163,6 +164,7 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
     this.geomSetVersion = this.geomSet.getVersion();
 
 
+  report(FUNC+"-done");
   return this.geomSet;
 }
 

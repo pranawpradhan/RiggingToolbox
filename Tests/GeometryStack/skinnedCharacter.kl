@@ -4,12 +4,13 @@ require RiggingToolbox;
 inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
 inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeDataUnion a; SkinningAttributeDataUnion b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
 inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshDataUnion a; Vec3 b<>; SkinningAttributeDataUnion d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a, b, d, e); 
+  PolygonMeshDataUnion a; Vec3 b<>; SkinningAttributeDataUnion d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(/*a,*/ b/*, d, e*/); 
 }
 inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
   PolygonMeshDataUnion a; Vec3 b<>; Vec3 c<>; SkinningAttributeDataUnion d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
 }
 
+require InlineDrawing;
 
 operator entry(){
 
@@ -31,17 +32,55 @@ operator entry(){
   EvalContext context();
   GeometrySet geomSet = stack.evaluate(context);
 
-  // Modify the pose and then reevaluate. 
-  Mat44 pose[];
-  pose.resize(2);
-  pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
-  pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
-  skiningModifier.setPose(pose);
+  {
+    // Modify the pose and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
+    pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
+    skiningModifier.setPose(pose);
+  }
+
+  stack.evaluate(context);
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(1, 2, 3)).toMat44();
+    pose[1] = Xfo(Vec3(4, 6, 7)).toMat44();
+    skiningModifier.setPose(pose);
+  }
 
   stack.evaluate(context);
 
   StopFabricProfiling();
 
   report( GetEvalPathReport() );
+
+  DrawContext drawContext = DrawContext();
+  // drawContext.viewport.resize(drawContext, width,  height);
+  // Float32 fovX = 60.0 * 3.14 / 180.0;
+  // drawContext.viewport.getCamera().setFov( atan( tan(fovX * 0.5) / aspect ) * 2.0);
+  // drawContext.viewport.getCamera().nearDistance = 0.1;
+  // drawContext.viewport.getCamera().farDistance = 1000.0;
+  // drawContext.viewport.getCamera().isOrthographic = false;
+  // drawContext.viewport.getCamera().mat44 = cameraXfo.toMat44();
+
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
+
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(4, 7, 13)).toMat44();
+    pose[1] = Xfo(Vec3(14, 16, 17)).toMat44();
+    skiningModifier.setPose(pose);
+  }
+  
+  stack.evaluate(context);
+  inlineDrawingScope.draw(drawContext);
 }
 
