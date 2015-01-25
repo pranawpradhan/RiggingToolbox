@@ -44,7 +44,6 @@ function GeometryAttributeCache.updateCachedAttributeNames!() {
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.update!(Geometry geometries[]) {
   AutoProfilingEvent p(FUNC+":"+this.attributesNames);
-  report(FUNC+":"+this.attributesNames);
 
   UInt32 numGeoms = geometries.size;
   UInt32 numcachedAttrs = this.attributesNames.size;
@@ -55,7 +54,6 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
     PolygonMesh mesh = geo;
     if(mesh != null){
       if(this.moveDataToGPU){
-        report("mesh.getMemType():" + mesh.getMemType());
         if(mesh.getMemType() == 0)
           mesh.convertToGPU();
       }
@@ -71,7 +69,6 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
       String attrName = this.attributesNames[j];
       Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
       // Update the cached attribute to the new value.
-      AutoProfilingEvent pUpdate("Update:"+attrName);
 
       // If the operator requires the data to be on the GPU, and the data is currently on the CPU,
       // move it to the GPU. If the operator requires the data on the CPU, but it is on the GPU,
@@ -102,7 +99,6 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.restore(io Geometry geometries[]) {
   AutoProfilingEvent p(FUNC+":"+this.attributesNames);
-  report(FUNC+":"+this.attributesNames);
 
   for(Integer i=0; i<geometries.size; i++){
     Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
@@ -112,8 +108,6 @@ function GeometryAttributeCache.restore(io Geometry geometries[]) {
         Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
 
         // Restore the attribute to its previous value.
-        AutoProfilingEvent pRestore("Restore:"+attrName);
-
         Ref<Object> cachedAttr = this.cachedAttributes[i][j];
         attr.copyFrom( cachedAttr );
       }

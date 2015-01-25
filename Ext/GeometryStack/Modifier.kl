@@ -20,7 +20,7 @@ function UInt32[String] BaseModifier.getAttributeInteractions(){
 
 
 function Boolean BaseModifier.useGPU(){
-  return false;
+  return true;
 }
 
 
