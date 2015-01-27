@@ -175,9 +175,10 @@ operator skinningModifier_skinMeshPositionsAndNormals<<<index>>>(
     position += (skinningPosAndNormMatrices[boneId*2] * srcPos) * boneWeight;
     normal += (skinningPosAndNormMatrices[boneId*2+1] * srcNorm) * boneWeight;
   }
-  Scalar length = normal.length();//Don't call setUnit to avoid runtime error reports..
+
+  Scalar length = normal.lengthSquared();//Don't call setUnit to avoid runtime error reports..
   if( length > 0.0001 )
-    normal *= 1.0 / length;
+    normal *= 1.0 / sqrt(length);
 
   mesh.setPointAttribute( index, positions, position );
   mesh.setPointAttribute( index, normals, normal );
@@ -213,7 +214,6 @@ operator skinningModifier_deformGeometries<<<index>>>(
   Boolean displayDebugging,
   Boolean useGPU
 ){
-  report("skinningModifier_deformGeometries:" + index);
   Geometry geom = geomSet.get(index);
   Ref<GeometryAttributes> attributes = geom.getAttributes();
   if(!attributes.has("skinningData")){
@@ -231,13 +231,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
       Mat44 transformed_skinningMatrices[] = skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
-      report("skinningModifier_skinMeshPositionsAndNormals");
-      report("mesh:" + mesh.getMemType());
-      report("positionsAttribute:" + positionsAttribute.getElementsMemType());
-      report("normalsAttribute:" + normalsAttribute.getElementsMemType());
-      report("skinningAttr:" + skinningAttr.getElementsMemType());
-      report("transformed_skinningMatrices:" + transformed_skinningMatrices.getElementsMemType());
-      skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()@useGPU>>>(
+      skinningModifier_skinMeshPositionsAndNormals<<<mesh.pointCount()@useGPU>>>(
         mesh.topology,
         positionsAttribute.values,
         normalsAttribute.values,
