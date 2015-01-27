@@ -69,7 +69,7 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
     this.cachedAttributes[i].resize(numcachedAttrs);
     for(Integer j=0; j<numcachedAttrs; j++){
       String attrName = this.attributesNames[j];
-    report("update:"+attrName);
+      report("update:"+attrName);
       Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
       if(!attr){
         // Check if the attribute will be read by the modifier. If so, then throw an exception.
@@ -108,7 +108,8 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
 
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.restore(io Geometry geometries[]) {
-  AutoProfilingEvent p(FUNC+":"+this.attributesNames);
+  AutoProfilingEvent p(FUNC+ ":" + this.modifier.type()+":"+this.attributesNames);
+  report(FUNC+ ":" + this.modifier.type()+":"+this.attributesNames);
 
   for(Integer i=0; i<geometries.size; i++){
     Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
@@ -121,6 +122,15 @@ function GeometryAttributeCache.restore(io Geometry geometries[]) {
         // Restore the attribute to its previous value.
         Ref<Object> cachedAttr = this.cachedAttributes[i][j];
         attr.copyFrom( cachedAttr );
+      }
+    }
+  }
+  if(this.moveDataToGPU){
+    for(Integer i=0; i<this.cachedAttributes.size; i++){
+      for(Integer j=0; j<this.cachedAttributes[i].size; j++){
+        GeometryAttribute attr = this.cachedAttributes[i][j];
+        if(attr != null && attr.getElementsMemType() == 0)
+          attr.convertToGPU();
       }
     }
   }

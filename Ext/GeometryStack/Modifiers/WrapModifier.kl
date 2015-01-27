@@ -177,13 +177,13 @@ operator wrapModifier_bindGeometries<<<index>>>(
   Ref<Vec3Attribute> srcNormalsAttribute = srcRefMesh.normalsAttribute;
   Ref<Vec4Attribute> srcTangentsAttribute = srcRefMesh.getAttribute("tangents");
 
-  if(!srcNormalsAttribute || !srcTangentsAttribute){
-    if(!srcNormalsAttribute)
-      report("Warning: Influence Mesh does not have Normals.");
-    if(!srcTangentsAttribute)
-      report("Warning: Influence Mesh does not have Tangents.");
-    return;
-  }
+  // if(!srcNormalsAttribute || !srcTangentsAttribute){
+  //   if(!srcNormalsAttribute)
+  //     report("Warning: Influence Mesh does not have Normals.");
+  //   if(!srcTangentsAttribute)
+  //     report("Warning: Influence Mesh does not have Tangents.");
+  //   return;
+  // }
 
   locations[index].resize(positionsAttribute.size());
   positionDeltas[index].resize(positionsAttribute.size());
@@ -339,6 +339,14 @@ operator wrapModifier_deformGeometries<<<index>>>(
   if(useGPU){
     if(debugLines.indices.getElementsMemType() == 0)
       debugLines.convertToGPU();
+    if(srcMesh.getMemType() == 0)
+      srcMesh.convertToGPU();
+    if(srcPositionsAttribute.getElementsMemType() == 0)
+      srcPositionsAttribute.convertToGPU();
+    if(srcNormalsAttribute.getElementsMemType() == 0)
+      srcNormalsAttribute.convertToGPU();
+    if(srcTangentsAttribute.getElementsMemType() == 0)
+      srcTangentsAttribute.convertToGPU();
   }
   else{
     if(debugLines.indices.getElementsMemType() != 0)
@@ -364,6 +372,7 @@ operator wrapModifier_deformGeometries<<<index>>>(
 
 function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
 
   if(this.influenceGeometryStack == null){
     report('Warning: no influence stack set on WrapModifier.');
@@ -380,6 +389,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   }
   if(srcGeomSet.getVersion() != this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
     AutoProfilingEvent p2("wrapModifier_bindGeometries");
+    report("wrapModifier_bindGeometries");
     this.locations.resize(geomSet.size());
     this.positionDeltas.resize(geomSet.size());
     this.normalDeltas.resize(geomSet.size());

@@ -244,6 +244,9 @@ operator skinningModifier_deformGeometries<<<index>>>(
       Mat44 transformed_skinningMatrices[] = skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
+      report("mesh:" + mesh.getMemType());
+      report("positionsAttribute.values:" + positionsAttribute.getElementsMemType());
+      report("skinningAttr.values:" + skinningAttr.getElementsMemType());
       skinningModifier_skinMeshPositions<<<mesh.pointCount()@useGPU>>>(
         mesh.topology,
         positionsAttribute.values,
