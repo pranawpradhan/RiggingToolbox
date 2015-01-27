@@ -19,21 +19,24 @@ function Geometry cloneGeom(Geometry geometry) {
   // Meta data should be cloned with the geometry.
   PolygonMesh mesh = geometry;
   if(mesh){
-    PolygonMesh newmesh = mesh.clone();
+    PolygonMesh newmesh();
+    newmesh.copy(mesh);
     newmesh.metaData = cloneMetadata(mesh.metaData);
     return newmesh;
   }
   else{
     Lines lines = geometry;
     if(lines){
-      Lines newlines = lines.clone();
+      Lines newlines();
+      newlines.copy(lines);
       newlines.metaData = cloneMetadata(lines.metaData);
       return newlines;
     }
     else{
       Points points = geometry;
       if(points){
-        Points newpoints = points.clone();
+        Points newpoints();
+        newpoints.copy(points);
         newpoints.metaData = cloneMetadata(points.metaData);
         return newpoints;
       }
