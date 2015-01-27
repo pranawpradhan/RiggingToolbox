@@ -124,24 +124,24 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
       GeometryOperator op = this.geomOperators[i];
 
       // Now check the geometries if they have the attributes required by the next operation.
-      Boolean debug = true;
-      if(debug){
-        UInt32 deps[String] = op.getAttributeInteractions();
-        for(Integer k=0; k<this.geomSet.size; k++){
-          String missingAttributes[];
-          for(key, value in deps){
-            if(value == AttrMode_Read || value == AttrMode_ReadWrite){
-              Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
-              if(!attributes.has(key))
-                missingAttributes.push(key);
-            }
-          }
-          if(missingAttributes.size > 0){
-            setError("Cannot evaluate '" + op.type() + "'. Geometry missing required attributes:" + missingAttributes);
-            return this.geomSet;
-          }
-        }
-      }
+      // Boolean debug = true;
+      // if(debug){
+      //   UInt32 deps[String] = op.getAttributeInteractions();
+      //   for(Integer k=0; k<this.geomSet.size; k++){
+      //     String missingAttributes[];
+      //     for(key, value in deps){
+      //       if(value == AttrMode_Read || value == AttrMode_ReadWrite){
+      //         Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
+      //         if(!attributes.has(key))
+      //           missingAttributes.push(key);
+      //       }
+      //     }
+      //     if(missingAttributes.size > 0){
+      //       setError("Cannot evaluate '" + op.type() + "'. Geometry missing required attributes:" + missingAttributes);
+      //       return this.geomSet;
+      //     }
+      //   }
+      // }
       // Update the cache if the data has been recomputed bya previous operator.
       if(i > this.dirtyPoint)
         this.geomSet.updateCache(i, op);

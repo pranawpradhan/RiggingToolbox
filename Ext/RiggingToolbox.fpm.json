@@ -11,6 +11,7 @@
     "GeometryStack/Manipulation/Weightmap2.kl",
     "GeometryStack/Alembic/AlembicIWStringArrayProperty.kl",
 
+    "GeometryStack/DebugLines.kl",
     "GeometryStack/GeometryHelperFunctions.kl",
     "GeometryStack/StatisticsHelperFunctions.kl",
     "GeometryStack/Listener.kl",

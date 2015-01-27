@@ -1,0 +1,22 @@
+
+/*
+ *  Copyright 2010-2014 Fabric Engine Inc. All rights reserved.
+ */
+
+require Math;
+require Geometry;
+
+
+// A helper struct that can be passed into GPU operator encapsulating just the indices and positions arrays.
+struct DebugLines {
+  UInt32 indices[];
+  Vec3 positions[];
+};
+
+function DebugLines(Lines lines){
+  if(lines){
+    this.indices = lines.indices;
+    Vec3Attribute positionsAttribute = lines.attributes.positionsAttribute;
+    this.positions = positionsAttribute.values;
+  }
+}

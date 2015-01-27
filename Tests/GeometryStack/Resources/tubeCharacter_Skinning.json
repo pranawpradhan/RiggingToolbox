@@ -6,7 +6,12 @@
      "geometryNames": ["pCylinderShape1"]
     },
     {
-     "type": "SkinningModifier"
+     "type": "SkinningModifier",
+     "transformNormals": false
+    },
+    {
+     "type": "ComputeNormalsModifier",
+     "displayDebugging": true
     }
   ]
 }
