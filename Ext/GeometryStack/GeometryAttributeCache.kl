@@ -115,6 +115,7 @@ function GeometryAttributeCache.restore(io Geometry geometries[]) {
     for(Integer j=0; j<this.attributesNames.size; j++){
       if(this.attributesInteractions[j] == AttrMode_ReadWrite){
         String attrName = this.attributesNames[j];
+        report("restore:"+attrName);
         Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
 
         // Restore the attribute to its previous value.

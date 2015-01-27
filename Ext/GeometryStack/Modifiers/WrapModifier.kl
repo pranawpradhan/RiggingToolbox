@@ -38,7 +38,7 @@ object WrapModifier : BaseModifier, Listener {
 
 
   Boolean displayDebugging;
-  Lines debugLines[];
+  Lines lines[];
   DrawingHandle handle;
 };
 
@@ -86,21 +86,36 @@ function WrapModifier.setDisplayDebugging!(Boolean displayDebugging){
   }
 }
 
+// Note: getLinearCombination is a method on the GeometryAttribute interface, which we can't use here because
+// The kernel is evaluating on the GPU.
+inline Vec3 Vec3Attribute_getLinearCombination( Vec3 values[], UInt32 attributeIndices[3], Scalar weights[3] ) {
+  Vec3 result;
+  for( Size i = 0; i < 3; ++i )
+    result += values[attributeIndices[i]]*weights[i];
+  return result;
+}
+
+inline Vec4 Vec4Attribute_getLinearCombination( Vec4 values[], UInt32 attributeIndices[3], Scalar weights[3] ) {
+  Vec4 result;
+  for( Size i = 0; i < 3; ++i )
+    result += values[attributeIndices[i]]*weights[i];
+  return result;
+}
+
 function Mat44 wrapModifier_buildRefFrame(
-  PolygonMesh srcMesh,
-  Vec3Attribute srcPositionsAttribute,
-  Vec3Attribute srcNormalsAttribute,
-  Vec4Attribute srcTangentsAttribute,
+  PolygonMeshTopology srcMesh,
+  Vec3 srcPositions[],
+  Vec3 srcNormals[],
+  Vec4 srcTangents[],
   GeometryLocation location
 ){
-
-  LocalL16UInt32Array attributeIndices;
-  LocalL16ScalarArray weights;
+  UInt32 attributeIndices[3];
+  Scalar weights[3];
   srcMesh.getLocationAttributeIndicesAndWeights( location, attributeIndices, weights );
 
-  Vec3 pos = srcPositionsAttribute.getLinearCombination( attributeIndices, weights );
-  Vec3 nrm = srcNormalsAttribute.getLinearCombination( attributeIndices, weights );
-  Vec4 tgt = srcTangentsAttribute.getLinearCombination( attributeIndices, weights );
+  Vec3 pos = Vec3Attribute_getLinearCombination(srcPositions, attributeIndices, weights );
+  Vec3 nrm = Vec3Attribute_getLinearCombination(srcNormals, attributeIndices, weights );
+  Vec4 tgt = Vec4Attribute_getLinearCombination(srcTangents, attributeIndices, weights );
 
   Quat q;
   q.setFromDirectionAndUpvector(nrm, Vec3(tgt.x, tgt.y, tgt.z));
@@ -113,9 +128,9 @@ function Mat44 wrapModifier_buildRefFrame(
 
 operator wrapModifier_computeBinding<<<index>>>(
   PolygonMesh srcMesh,
-  Vec3Attribute srcPositionsAttribute,
-  Vec3Attribute srcNormalsAttribute,
-  Vec4Attribute srcTangentsAttribute,
+  Vec3 srcPositions[],
+  Vec3 srcNormals[],
+  Vec4 srcTangents[],
   io GeometryLocation locations[],
   io Vec3 positionDeltas[],
   io Vec3 normalDeltas[],
@@ -131,7 +146,7 @@ operator wrapModifier_computeBinding<<<index>>>(
   GeometryLocation location = srcMesh.getClosest( position, Vec3(1.0, 1.0, 1.0), SCALAR_INFINITE );
 
   // Build a reference frame.  
-  Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh, srcPositionsAttribute, srcNormalsAttribute, srcTangentsAttribute, location);
+  Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh.topology, srcPositions, srcNormals, srcTangents, location);
 
   positionDeltas[index] = mat44.inverse() * position;
   normalDeltas[index] = mat44.upperLeft().inverse() * normal;
@@ -145,7 +160,8 @@ operator wrapModifier_bindGeometries<<<index>>>(
   UInt32 geometryMapping[],
   io GeometryLocation locations[][],
   io Vec3 positionDeltas[][],
-  io Vec3 normalDeltas[][]
+  io Vec3 normalDeltas[][],
+  Boolean useGPU
 ){
   PolygonMesh srcRefMesh = srcRefGeometries[geometryMapping[index]];
   if(!srcRefMesh)
@@ -169,15 +185,31 @@ operator wrapModifier_bindGeometries<<<index>>>(
     return;
   }
 
-  GenericValueContainer options = GenericValueContainer();
-  PrepareForSpatialQueries_setSparseGrid(options);
-
-  srcRefMesh.prepareForSpatialQueries(positionsAttribute.size(), options );
-  Ref<SpatialQuery> query = srcRefMesh.beginSpatialQuery();
-
   locations[index].resize(positionsAttribute.size());
   positionDeltas[index].resize(positionsAttribute.size());
   normalDeltas[index].resize(positionsAttribute.size());
+
+  if(srcRefMesh.getMemType() != 0)
+    srcRefMesh.convertToCPU();
+  
+  if(positionsAttribute.getElementsMemType() != 0)
+    positionsAttribute.convertToCPU();
+  if(normalsAttribute.getElementsMemType() != 0)
+    normalsAttribute.convertToCPU();
+
+  if(srcPositionsAttribute.getElementsMemType() != 0)
+    srcPositionsAttribute.convertToCPU();
+  if(srcNormalsAttribute.getElementsMemType() != 0)
+    srcNormalsAttribute.convertToCPU();
+  if(srcTangentsAttribute.getElementsMemType() != 0)
+    srcTangentsAttribute.convertToCPU();
+  
+  if(locations[index].getElementsMemType() != 0)
+    locations[index].convertToCPU();
+  if(positionDeltas[index].getElementsMemType() != 0)
+    positionDeltas[index].convertToCPU();
+  if(normalDeltas[index].getElementsMemType() != 0)
+    normalDeltas[index].convertToCPU();
 
   ThreadsafeMetaDataContainer srcRefMeshMetaData = getGeomMetaData(srcRefMesh);
   GenericMat44Value srcGlobalTransform = srcRefMeshMetaData.get('globalTransform');
@@ -187,11 +219,17 @@ operator wrapModifier_bindGeometries<<<index>>>(
 
   Mat44 transform = srcGlobalTransform.value.inverse() * globalTransform.value;
 
+  GenericValueContainer options = GenericValueContainer();
+  PrepareForSpatialQueries_setSparseGrid(options);
+
+  srcRefMesh.prepareForSpatialQueries(positionsAttribute.size(), options );
+  Ref<SpatialQuery> query = srcRefMesh.beginSpatialQuery();
+
   wrapModifier_computeBinding<<<positionsAttribute.size()>>>(
     srcRefMesh,
-    srcPositionsAttribute,
-    srcNormalsAttribute,
-    srcTangentsAttribute,
+    srcPositionsAttribute.values,
+    srcNormalsAttribute.values,
+    srcTangentsAttribute.values,
     locations[index],
     positionDeltas[index],
     normalDeltas[index],
@@ -200,14 +238,29 @@ operator wrapModifier_bindGeometries<<<index>>>(
     transform
   );
   srcRefMesh.endSpatialQuery(query);
+
+  if(useGPU){
+    // Move all the data back to the GPU after the bind is complete.
+    srcRefMesh.convertToGPU();
+
+    positionsAttribute.convertToGPU();
+    normalsAttribute.convertToGPU();
+    srcPositionsAttribute.convertToGPU();
+    srcNormalsAttribute.convertToGPU();
+    srcTangentsAttribute.convertToGPU();
+  
+    locations[index].convertToGPU();
+    positionDeltas[index].convertToGPU();
+    normalDeltas[index].convertToGPU();
+  }
 }
 
 
 operator wrapModifier_applyDeltas<<<index>>>(
-  PolygonMesh srcMesh,
-  Vec3Attribute srcPositionsAttribute,
-  Vec3Attribute srcNormalsAttribute,
-  Vec4Attribute srcTangentsAttribute,
+  PolygonMeshTopology srcMesh,
+  Vec3 srcPositions[],
+  Vec3 srcNormals[],
+  Vec4 srcTangents[],
   GeometryLocation locations[],
   Vec3 positionDeltas[],
   Vec3 normalDeltas[],
@@ -215,11 +268,9 @@ operator wrapModifier_applyDeltas<<<index>>>(
   io Vec3 normals[],
   
   Boolean displayDebugging,
-  io Lines debugLines
+  io DebugLines debugLines
 ){
-  GeometryLocation location = locations[index];
-
-  Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh, srcPositionsAttribute, srcNormalsAttribute, srcTangentsAttribute, location);
+  Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh, srcPositions, srcNormals, srcTangents, locations[index]);
   Vec3 newPos = mat44 * -positionDeltas[index];
   positions[index] = newPos;
   normals[index] = mat44.upperLeft() * normalDeltas[index];
@@ -227,8 +278,8 @@ operator wrapModifier_applyDeltas<<<index>>>(
   if(displayDebugging){
     debugLines.indices[(index*2)] = (index*2);
     debugLines.indices[(index*2)+1] = (index*2)+1;
-    debugLines.setPosition((index*2), mat44.translation());
-    debugLines.setPosition((index*2)+1, newPos);
+    debugLines.positions[(index*2)] = mat44.translation();
+    debugLines.positions[(index*2)+1] = newPos;
   }
 }
 
@@ -240,7 +291,8 @@ operator wrapModifier_deformGeometries<<<index>>>(
   Vec3 positionDeltas[][],
   Vec3 normalDeltas[][],
   Boolean displayDebugging,
-  io Lines debugLines[]
+  io Lines lines[],
+  Boolean useGPU
 ){
   PolygonMesh srcMesh = srcGeomSet.get(0);
   if(!srcMesh){
@@ -256,16 +308,18 @@ operator wrapModifier_deformGeometries<<<index>>>(
   Vec3Attribute normalsAttribute = attributes.normalsAttribute;
 
   if(displayDebugging){
-    if(debugLines[index] == null)
-      debugLines[index] = Lines();
-    if(debugLines[index].lineCount() != positionsAttribute.size()){
-      debugLines[index].attributes.resize( positionsAttribute.size() * 2 );
-      debugLines[index].indices.resize( positionsAttribute.size() * 2 );
-      debugLines[index].incrementVersion();
+    if(lines[index] == null)
+      lines[index] = Lines();
+    if(lines[index].lineCount() != positionsAttribute.size()){
+      lines[index].attributes.resize( positionsAttribute.size() * 2 );
+      lines[index].indices.resize( positionsAttribute.size() * 2 );
+      lines[index].incrementVersion();
     }
     // Always increment the positoins version as they will be re-geomuted in the following kernel.
-    debugLines[index].incrementPositionsVersion();
+    lines[index].incrementPositionsVersion();
   }
+
+  DebugLines debugLines(lines[index]);
 
 
   // Gather the attributes from the source mesh that will be used to 
@@ -282,11 +336,20 @@ operator wrapModifier_deformGeometries<<<index>>>(
     return;
   }
 
-  wrapModifier_applyDeltas<<<positionsAttribute.size()>>>(
-    srcMesh,
-    srcPositionsAttribute,
-    srcNormalsAttribute,
-    srcTangentsAttribute,
+  if(useGPU){
+    if(debugLines.indices.getElementsMemType() == 0)
+      debugLines.convertToGPU();
+  }
+  else{
+    if(debugLines.indices.getElementsMemType() != 0)
+      debugLines.convertToCPU();
+  }
+
+  wrapModifier_applyDeltas<<<positionsAttribute.size()@useGPU>>>(
+    srcMesh.topology,
+    srcPositionsAttribute.values,
+    srcNormalsAttribute.values,
+    srcTangentsAttribute.values,
     locations[index],
     positionDeltas[index],
     normalDeltas[index],
@@ -294,7 +357,7 @@ operator wrapModifier_deformGeometries<<<index>>>(
     normalsAttribute.values,
 
     displayDebugging,
-    debugLines[index]
+    debugLines
   );
   positionsAttribute.incrementVersion();
 }
@@ -320,7 +383,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
     this.locations.resize(geomSet.size());
     this.positionDeltas.resize(geomSet.size());
     this.normalDeltas.resize(geomSet.size());
-    this.debugLines.resize(geomSet.size());
+    this.lines.resize(geomSet.size());
 
     this.geometryMapping.resize(geomSet.size());
     // Get the source goemetires right after the generator has evaluated.
@@ -332,7 +395,8 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       this.geometryMapping,
       this.locations,
       this.positionDeltas,
-      this.normalDeltas
+      this.normalDeltas,
+      this.useGPU()
       );
     this.srcBoundVersion = srcGeomSet.getVersion();
     this.boundVersion = geomSet.getVersion();
@@ -347,7 +411,8 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       this.positionDeltas,
       this.normalDeltas,
       this.displayDebugging,
-      this.debugLines
+      this.lines,
+      this.useGPU()
       );
   }
 
@@ -368,9 +433,9 @@ function WrapModifier.setupRendering!(){
   InlineShader shader = this.handle.getDrawing().registerShader(OGLFlatOverlayShader());
   InlineMaterial material = shader.getOrCreateMaterial("WrapModifierMaterial");
 
-  for(Integer geomId=0; geomId<this.debugLines.size(); geomId++){
+  for(Integer geomId=0; geomId<this.lines.size(); geomId++){
     String name = "WrapModifier_" + String(geomId);
-    InlineShape shape = InlineLinesShape(name, this.debugLines[geomId]);
+    InlineShape shape = InlineLinesShape(name, this.lines[geomId]);
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
     instance.setInstanceUniform(InlineUniform('u_color', Color(1.0,1.0,0.0)));
   }

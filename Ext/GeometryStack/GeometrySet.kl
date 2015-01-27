@@ -147,31 +147,27 @@ function GeometrySet.rewind!(UInt32 stackPoint) {
 
 /// Returns a new set of cloned geometires at the specifies point in the stack.
 function Geometry[] GeometrySet.getGeometryClonesAtVersion(UInt32 stackPoint) {
+  AutoProfilingEvent p(FUNC+":"+stackPoint);
+  report(FUNC+":"+stackPoint);
   // clone the geometries at the state they are now, and then rewind them back to the state requested.
   Geometry geoms[];
   geoms.resize(this.geometries.size);
-  for(UInt32 i=0; i<this.geometries.size; i++)
-    geoms[i] = cloneGeom(this.geometries[i]);
+  for(UInt32 i=0; i<this.geometries.size; i++){
+    Geometry geom = this.geometries[i];
+
+    // Convert the geometry back to the CPU before cloning. 
+    if(geom.getMemType() != 0){
+      geom.convertToCPU();
+    }
+    Ref<GeometryAttributes> attributes = geom.getAttributes();
+    for(UInt32 j=0; j<attributes.attributes.size; j++){
+      if(attributes.attributes[j].getElementsMemType() != 0)
+        attributes.attributes[j].convertToCPU();
+    }
+    geoms[i] = cloneGeom(geom);
+  }
 
   for(UInt32 i=this.stackPoint-1; i>=stackPoint; i--)
     this.cachePoints[i].restore(geoms);
   return geoms;
 }
-
-function GeometrySet.convertToCPU!() {
-  for(UInt32 i=0; i<this.geometries.size; i++){
-    Ref<PolygonMesh> mesh = this.geometries[i];
-    if(mesh != null && mesh.getMemType() != 0)
-      mesh.convertToCPU();
-
-    Ref<GeometryAttributes> attributes = this.geometries[i].getAttributes();
-    // Iterate over the attributes, moving them back ot the CPU if necessary.
-    GeometryAttributesIterator iter = attributes.getAttributesIterator();
-    Ref<GeometryAttribute> attribute = null;
-    while( attribute = iter.getNext() ){
-      if(attribute.getElementsMemType() != 0)
-        attribute.convertToCPU();
-    }
-  }
-}
-
