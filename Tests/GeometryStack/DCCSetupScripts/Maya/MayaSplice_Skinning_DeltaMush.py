@@ -125,6 +125,15 @@ cmds.fabricSplice('addKLOperator', evalStackNode, '{"opName":"tubeCharacter_Eval
 
 require RiggingToolbox;
 
+inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
+inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
+inline __compile_skinningModifier_skinMeshPositions() { 
+  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a, b, d, e); 
+}
+inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
+  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
+}
+
 operator tubeCharacter_Eval(
   io GeometryStack stack,
   Boolean displayGeometries,
