@@ -213,6 +213,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
   Boolean displayDebugging,
   Boolean useGPU
 ){
+  report("skinningModifier_deformGeometries:" + index);
   Geometry geom = geomSet.get(index);
   Ref<GeometryAttributes> attributes = geom.getAttributes();
   if(!attributes.has("skinningData")){
@@ -230,6 +231,12 @@ operator skinningModifier_deformGeometries<<<index>>>(
       Mat44 transformed_skinningMatrices[] = skinningModifier_buildPosNrmSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
+      report("skinningModifier_skinMeshPositionsAndNormals");
+      report("mesh:" + mesh.getMemType());
+      report("positionsAttribute:" + positionsAttribute.getElementsMemType());
+      report("normalsAttribute:" + normalsAttribute.getElementsMemType());
+      report("skinningAttr:" + skinningAttr.getElementsMemType());
+      report("transformed_skinningMatrices:" + transformed_skinningMatrices.getElementsMemType());
       skinningModifier_skinMeshPositionsAndNormals<<<attributes.size()@useGPU>>>(
         mesh.topology,
         positionsAttribute.values,
@@ -240,7 +247,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
       normalsAttribute.incrementVersion();
     }
     else{
-      Mat44 transformed_skinningMatrices[] =  skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
+      Mat44 transformed_skinningMatrices[] = skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
       skinningModifier_skinMeshPositions<<<mesh.pointCount()@useGPU>>>(

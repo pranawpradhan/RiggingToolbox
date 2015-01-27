@@ -7,14 +7,7 @@
     },
     {
      "type": "SkinningModifier",
-     "transformNormals": false
-    },
-    {
-     "type": "ComputeNormalsModifier",
-     "displayDebugging": true
-    },
-    {
-     "type": "ComputeTangentsModifier"
+     "transformNormals": true
     }
   ]
 }

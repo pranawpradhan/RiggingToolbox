@@ -76,21 +76,21 @@ operator entry(){
 
   report( GetEvalPathReport() );
 
-  // DrawContext drawContext = DrawContext();
-  // InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
-  // inlineDrawingScope.draw(drawContext);
+  DrawContext drawContext = DrawContext();
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
 
 
-  // {
-  //   // Modify the pose again and then reevaluate. 
-  //   Mat44 pose[];
-  //   pose.resize(4);
-  //   pose[0] = Xfo(Vec3(4, 7, 13)).toMat44();
-  //   pose[1] = Xfo(Vec3(14, 16, 17)).toMat44();
-  //   skiningModifier.setPose(pose);
-  // }
+  {
+    // Modify the pose again and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(4, 7, 13)).toMat44();
+    pose[1] = Xfo(Vec3(14, 16, 17)).toMat44();
+    skiningModifier.setPose(pose);
+  }
   
-  // stack.evaluate(context);
-  // inlineDrawingScope.draw(drawContext);
+  stack.evaluate(context);
+  inlineDrawingScope.draw(drawContext);
 }
 
