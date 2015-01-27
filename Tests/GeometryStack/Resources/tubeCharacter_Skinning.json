@@ -8,6 +8,13 @@
     {
      "type": "SkinningModifier",
      "transformNormals": true
+    },
+    {
+     "type": "ComputeNormalsModifier",
+     "displayDebugging": false
+    },
+    {
+     "type": "ComputeTangentsModifier"
     }
   ]
 }
