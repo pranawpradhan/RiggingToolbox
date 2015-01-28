@@ -60,21 +60,25 @@ operator entry(){
   WrapModifier wrapModifier = stack.getGeometryOperator(1);
   wrapModifier.setSourceGeomStack(scrStack);
 
-  // SkinningModifier skiningModifier = scrStack.getGeometryOperator(1);
+  SkinningModifier skiningModifier = scrStack.getGeometryOperator(1);
 
   EvalContext context();
   stack.evaluate(context);
 
-  // // Modify the pose and then reevaluate. 
-  // Mat44 pose[];
-  // pose.resize(4);
-  // pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
-  // pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
-  // pose[2] = Xfo(Vec3(10, 20, 5)).toMat44();
-  // pose[3] = Xfo(Vec3(10, 20, 5)).toMat44();
-  // skiningModifier.setPose(pose);
+  DrawContext drawContext = DrawContext();
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
+  
+  // Modify the pose and then reevaluate. 
+  Mat44 pose[];
+  pose.resize(4);
+  pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
+  pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
+  pose[2] = Xfo(Vec3(10, 20, 5)).toMat44();
+  pose[3] = Xfo(Vec3(10, 20, 5)).toMat44();
+  skiningModifier.setPose(pose);
 
-  // stack.evaluate(context);
+  stack.evaluate(context);
 
   StopFabricProfiling();
 

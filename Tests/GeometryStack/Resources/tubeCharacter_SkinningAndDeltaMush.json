@@ -9,16 +9,11 @@
      "type": "SkinningModifier"
     },
     {
-     "type": "WeightmapModifier",
-     "weightmapName": "DeltaMushMask"
-    },
-    {
      "type": "DeltaMushModifier",
      "iterations": 30,
      "filePath": "skinnedTube.abc",
      "referenceGeometryNames": ["pCylinderShape1"],
-     "maskWeightmapName": "DeltaMushMask",
-     "displayDebugging": true
+     "displayDebugging": false
     },
     {
      "type": "ComputeNormalsModifier",
