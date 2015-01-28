@@ -10,8 +10,7 @@
      "displayDebugging": false
     },
     {
-     "type": "ComputeNormalsModifier",
-     "hardAngle": 3.1
+     "type": "ComputeNormalsModifier"
     }
   ]
   "geometryColors": {

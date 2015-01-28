@@ -22,7 +22,7 @@ function GeometryOperator ComputeTangentsModifierFactory.constructGeometryOperat
 
 
 object ComputeTangentsModifier : BaseModifier {
-  Scalar hardAngleRadians;
+  
 };
 
 

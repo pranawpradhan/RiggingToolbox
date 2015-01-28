@@ -23,10 +23,8 @@ function GeometryOperator ComputeNormalsModifierFactory.constructGeometryOperato
 
 
 object ComputeNormalsModifier : BaseModifier {
-  Scalar hardAngle;
 
   UInt32 boundVersion;
-
 
   Boolean displayDebugging;
   Lines lines[];
@@ -34,7 +32,6 @@ object ComputeNormalsModifier : BaseModifier {
 };
 
 function ComputeNormalsModifier(){
-  this.hardAngle = TWO_PI;
   this.displayDebugging = false;
 }
 
@@ -44,13 +41,6 @@ function UInt32[String] ComputeNormalsModifier.getAttributeInteractions(){
   result['positions'] = AttrMode_Read;
   result['normals'] = AttrMode_Write;
   return result;
-}
-
-/// Sets the file path of the alembic file. 
-inline  ComputeNormalsModifier.setHardAngle!(Scalar angle){
-  this.hardAngle = angle;
-  String data;
-  this.notify('changed', data);
 }
 
 inline Vec3 computeNormalsModifier_triNrm(Vec3 vec1, Vec3 vec2){

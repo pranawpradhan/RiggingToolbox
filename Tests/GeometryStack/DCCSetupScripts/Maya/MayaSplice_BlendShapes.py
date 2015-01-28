@@ -27,6 +27,18 @@ cmds.fabricSplice('addKLOperator', initnode, '{"opName":"blendShapesSphereCharac
 
 require RiggingToolbox;
 
+inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
+
+inline __compile_blendShapesModifier_applyGeomDeltas(){
+  Vec3 a[]; BlendShapesModifier_Target b; Scalar c; Boolean d; Color e[];  Color f;
+  blendShapesModifier_applyGeomDeltas<<<1@true>>>(a,b,c,d,e,f);
+}
+
+inline __compile_blendShapesModifier_applyMeshDeltas(){
+  PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+}
+
 operator blendShapesSphereCharacter(
   String filePath,
   io GeometryStack stack
@@ -50,6 +62,18 @@ cmds.fabricSplice('addInputPort', blendShapesNode, json.dumps({'portName':'displ
 cmds.fabricSplice('addKLOperator', blendShapesNode, '{"opName":"blendShapesSphereCharacter_BlendShapes"}', """
 
 require RiggingToolbox;
+
+inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
+
+inline __compile_blendShapesModifier_applyGeomDeltas(){
+  Vec3 a[]; BlendShapesModifier_Target b; Scalar c; Boolean d; Color e[];  Color f;
+  blendShapesModifier_applyGeomDeltas<<<1@true>>>(a,b,c,d,e,f);
+}
+
+inline __compile_blendShapesModifier_applyMeshDeltas(){
+  PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+}
 
 operator blendShapesSphereCharacter_BlendShapes(
   io GeometryStack stack,
@@ -87,6 +111,19 @@ cmds.connectAttr(blendShapesNode + '.stack', evalStackNode + '.stack')
 cmds.fabricSplice('addKLOperator', evalStackNode, '{"opName":"blendShapesSphereCharacter_Eval"}', """
 
 require RiggingToolbox;
+
+inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
+
+inline __compile_blendShapesModifier_applyGeomDeltas(){
+  Vec3 a[]; BlendShapesModifier_Target b; Scalar c; Boolean d; Color e[];  Color f;
+  blendShapesModifier_applyGeomDeltas<<<1@true>>>(a,b,c,d,e,f);
+}
+
+inline __compile_blendShapesModifier_applyMeshDeltas(){
+  PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+}
+
 
 operator blendShapesSphereCharacter_Eval(
   io GeometryStack stack,
