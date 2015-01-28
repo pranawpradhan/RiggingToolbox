@@ -408,6 +408,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       this.normalDeltas,
       this.useGPU()
       );
+
     this.srcBoundVersion = srcGeomSet.getVersion();
     this.boundVersion = geomSet.getVersion();
   }
@@ -424,6 +425,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       this.lines,
       this.useGPU()
       );
+
   }
 
   if(this.displayDebugging && this.handle==null)

@@ -132,6 +132,10 @@ operator computeNormalsModifier_modifyGeometries<<<index>>>(
     // Note: the builtin normal computation manages splitting attribtiues along hard edges,
     // and this causes corruption of the skinning attribute. The custom implementation above
     // is naive and assumes no hard edges, but can also run on the GPU.
+    report("computeNormalsModifier_computePointNormals");
+      report("mesh:" + mesh.getMemType());
+      report("mesh.positionsAttribute.values:" + mesh.positionsAttribute.getElementsMemType());
+      report("normals.values:" + normals.getElementsMemType());
     computeNormalsModifier_computePointNormals<<<mesh.pointCount()@useGPU>>>(
       mesh.topology,
       mesh.positionsAttribute.values,
@@ -145,6 +149,7 @@ operator computeNormalsModifier_modifyGeometries<<<index>>>(
 
 function ComputeNormalsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
 
   if(geomSet.getVersion() != this.boundVersion){
     this.lines.resize(geomSet.size());

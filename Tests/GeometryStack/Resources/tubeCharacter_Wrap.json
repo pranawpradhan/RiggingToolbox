@@ -7,7 +7,7 @@
     },
     {
      "type": "WrapModifier",
-     "displayDebugging": true
+     "displayDebugging": false
     },
     {
      "type": "ComputeNormalsModifier",
