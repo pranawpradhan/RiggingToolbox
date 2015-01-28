@@ -152,22 +152,41 @@ function Geometry[] GeometrySet.getGeometryClonesAtVersion(UInt32 stackPoint) {
   // clone the geometries at the state they are now, and then rewind them back to the state requested.
   Geometry geoms[];
   geoms.resize(this.geometries.size);
+  Boolean useGPU[];
+  useGPU.resize(this.geometries.size);
+  Boolean gpuAttribs[String];
   for(UInt32 i=0; i<this.geometries.size; i++){
     Geometry geom = this.geometries[i];
 
     // Convert the geometry back to the CPU before cloning. 
     if(geom.getMemType() != 0){
       geom.convertToCPU();
+      useGPU[i] = true;
     }
     Ref<GeometryAttributes> attributes = geom.getAttributes();
     for(UInt32 j=0; j<attributes.attributes.size; j++){
-      if(attributes.attributes[j].getElementsMemType() != 0)
+      if(attributes.attributes[j].getElementsMemType() != 0){
         attributes.attributes[j].convertToCPU();
+        gpuAttribs[attributes.attributes[j].getName()] = true;
+      }
     }
     geoms[i] = cloneGeom(geom);
   }
 
   for(UInt32 i=this.stackPoint-1; i>=stackPoint; i--)
     this.cachePoints[i].restore(geoms);
+
+  // Now put the data back on the GPU if it was there before.
+  for(UInt32 i=0; i<this.geometries.size; i++){
+    Geometry geom = this.geometries[i];
+    if(useGPU[i])
+      geom.convertToGPU();
+    Ref<GeometryAttributes> attributes = geom.getAttributes();
+    for(UInt32 j=0; j<attributes.attributes.size; j++){
+      if(gpuAttribs.has(attributes.attributes[j].getName()))
+        attributes.attributes[j].convertToGPU();
+    }
+  }
+  
   return geoms;
 }

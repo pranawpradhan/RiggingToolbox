@@ -270,6 +270,7 @@ operator skinningModifier_deformGeometries<<<index>>>(
 
 function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
 
   if(this.dataVersion != geomSet.getVersion()){
     if(geomSet.hasMetaData('skeleton')){
