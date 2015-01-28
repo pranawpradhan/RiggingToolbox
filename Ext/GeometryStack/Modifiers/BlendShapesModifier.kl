@@ -36,6 +36,21 @@ function BlendShapesModifier_Target.resize!(UInt32 size){
   this.deltas.resize(size);
 }
 
+
+inline UInt32 BlendShapesModifier_Target.getMemType( ) {
+  return this.indices.getElementsMemType();
+}
+
+inline BlendShapesModifier_Target.convertToGPU!( ) {
+  this.indices.convertToGPU();
+  this.deltas.convertToGPU();
+}
+
+inline BlendShapesModifier_Target.convertToCPU!( ) {
+  this.indices.convertToCPU();
+  this.deltas.convertToCPU();
+}
+
 //////////////////////////////////////
 //
 
@@ -315,7 +330,8 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
   UInt32 targetPointCount = this.targets[geomIndex][targetIndex].indices.size;
   report("addTargetGeometry:" + geomIndex +":" + this.targets[geomIndex].size + ":" + Scalar(targetPointCount)/Scalar(referencePointCount));
   this.sparcity += Scalar(targetPointCount)/Scalar(referencePointCount);
-  this.targetCount ++;
+  this.targetCount++;
+  this.weights.resize(this.targetCount);
 }
 
 
@@ -354,19 +370,20 @@ operator blendShapesModifier_applyGeomDeltas<<<index>>>(
 }
 
 operator blendShapesModifier_applyMeshDeltas<<<index>>>(
-  io PolygonMesh mesh,
+  PolygonMeshTopology mesh,
+  io Vec3 positions[],
   BlendShapesModifier_Target target,
   Scalar weight,
   Boolean displayDebugging,
-  io Ref<ColorAttribute> vertexColorsAttr,
+  io Color vertexColors[],
   Color targetColor
 ){
   UInt32 targetOffsetIndex = target.indices[index];
-  Vec3 pos = mesh.getPointPosition(targetOffsetIndex);
-  mesh.setPointPosition(targetOffsetIndex, pos + (target.deltas[index] * weight));
+  Vec3 pos = positions[targetOffsetIndex];
+  mesh.setPointAttribute(targetOffsetIndex, positions, pos + (target.deltas[index] * weight));
   if(displayDebugging){
-    Color color = vertexColorsAttr.values[targetOffsetIndex];
-    mesh.setPointAttribute(targetOffsetIndex, vertexColorsAttr, color + (targetColor * weight));
+    Color color = vertexColors[targetOffsetIndex];
+    mesh.setPointAttribute(targetOffsetIndex, vertexColors, color + (targetColor * weight));
   }
 }
 
@@ -378,7 +395,8 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   Scalar shapeThreshold,
   Boolean displayDebugging,
   Color targetColors[],
-  io UInt32 numActiveShapes
+  io UInt32 numActiveShapes,
+  Boolean useGPU
 ){
   AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
@@ -398,13 +416,25 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
     Color newColors[];
     newColors.resize(vertexColorsAttr.size());
     vertexColorsAttr.values = newColors;
+
+    if(useGPU)
+      vertexColorsAttr.convertToGPU();
   }
 
   for(UInt32 i=0; i<targets[index].size; i++){
+
+    if(useGPU){
+      if(targets[index][i].getMemType() == 0)
+        targets[index][i].convertToGPU();
+    }
+    else{
+      if(targets[index][i].getMemType() != 0)
+        targets[index][i].convertToCPU();
+    }
     if(weights[i] > shapeThreshold){
       //AutoProfilingEvent p_targ("Target:" + i);
       if(!mesh){
-        blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()>>>(
+        blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()@useGPU>>>(
           positionsAttribute.values,
           targets[index][i],
           weights[i],
@@ -414,12 +444,13 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
         );
       }
       else{
-        blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()>>>(
-          mesh,
+        blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()@useGPU>>>(
+          mesh.topology,
+          positionsAttribute.values,
           targets[index][i],
           weights[i],
           displayDebugging,
-          vertexColorsAttr,
+          vertexColorsAttr.values,
           targetColors[i]
         );
       }
@@ -457,7 +488,8 @@ function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomS
       this.shapeThreshold,
       this.displayDebugging,
       this.targetColors,
-      numActiveShapes
+      numActiveShapes,
+      this.useGPU()
     );
 
   if(this.displayDebugging){

@@ -1,6 +1,18 @@
 
 require RiggingToolbox;
 
+inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
+
+inline __compile_blendShapesModifier_applyGeomDeltas(){
+  Vec3 a[]; BlendShapesModifier_Target b; Scalar c; Boolean d; Color e[];  Color f;
+  blendShapesModifier_applyGeomDeltas<<<1@true>>>(a,b,c,d,e,f);
+}
+
+inline __compile_blendShapesModifier_applyMeshDeltas(){
+  PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+}
+
 operator entry(){
 
   StartFabricProfiling();
@@ -37,11 +49,13 @@ operator entry(){
   stack.evaluate(context);
 
   // Modify the blend params and then reevaluate. 
-  Scalar weights[];
-  weights.resize(2);
-  weights[0] = 0.65;
-  weights[1] = 1.0;
-  blendShapesModifier.setBlendWeights(weights);
+  {
+    Scalar weights[];
+    weights.resize(2);
+    weights[0] = 0.65;
+    weights[1] = 1.0;
+    blendShapesModifier.setBlendWeights(weights);
+  }
 
   GeometrySet geomSet = stack.evaluate(context);
 
@@ -50,6 +64,24 @@ operator entry(){
   report( GetEvalPathReport() );
 
   report("stack:" + stack.getDesc());
+
+
+  DrawContext drawContext = DrawContext();
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
+
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Scalar weights[];
+    weights.resize(2);
+    weights[0] = 0.56;
+    weights[1] = 0.12;
+    blendShapesModifier.setBlendWeights(weights);
+  }
+  
+  stack.evaluate(context);
+  inlineDrawingScope.draw(drawContext);
   
 }
 
