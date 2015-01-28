@@ -544,7 +544,6 @@ function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persisten
 }
 
 function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  report("=======================================BlendShapesModifier.loadJSON=================");
   this.parent#loadJSON(persistenceContext, json);
 
   if(json.has('threshold'))
@@ -572,12 +571,12 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
 
     // Now check if a bincache file already exists that we can load 
     // instead of the alembic file.
-    /*FilePath binCachefile(expandedPath.string());
+    FilePath binCachefile(expandedPath.string());
     binCachefile.replaceExtension('blendShapes');
     if(binCachefile.exists()){
       this.loadTargetsFromBinCache(binCachefile);
     }
-    else*/{
+    else{
       // The Alembic file should contain a collection of geometries that are grouped by naming convention.
       // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
       // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
@@ -590,7 +589,7 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
       
       this.loadTargetsFromAlembic(expandedPath);
 
-      //this.saveTargetsToBinCache(binCachefile);
+      this.saveTargetsToBinCache(binCachefile);
     }
 
 

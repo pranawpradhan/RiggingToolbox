@@ -10,7 +10,13 @@ inline __compile_blendShapesModifier_applyGeomDeltas(){
 
 inline __compile_blendShapesModifier_applyMeshDeltas(){
   PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
-  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d/*,e,f,g*/);
+}
+
+
+// Compute Normals GPU Kernels
+inline __compile_computeNormalsModifier_computePointNormals() { 
+  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
 }
 
 operator entry(){
