@@ -36,8 +36,9 @@ inline __compile_blendShapesModifier_applyGeomDeltas(){
 
 inline __compile_blendShapesModifier_applyMeshDeltas(){
   PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
-  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d/*,e,f,g*/);
 }
+
 
 operator blendShapesSphereCharacter(
   String filePath,
@@ -72,8 +73,9 @@ inline __compile_blendShapesModifier_applyGeomDeltas(){
 
 inline __compile_blendShapesModifier_applyMeshDeltas(){
   PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
-  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d/*,e,f,g*/);
 }
+
 
 operator blendShapesSphereCharacter_BlendShapes(
   io GeometryStack stack,
@@ -121,8 +123,9 @@ inline __compile_blendShapesModifier_applyGeomDeltas(){
 
 inline __compile_blendShapesModifier_applyMeshDeltas(){
   PolygonMeshTopology a; Vec3 b[]; BlendShapesModifier_Target c; Scalar d; Boolean e;  Color f[];  Color g;
-  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d,e,f,g);
+  blendShapesModifier_applyMeshDeltas<<<1@true>>>(a,b,c,d/*,e,f,g*/);
 }
+
 
 
 operator blendShapesSphereCharacter_Eval(

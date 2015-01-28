@@ -12,7 +12,8 @@
      "targetGeometryNames": ["SphereRefTarget*"]
     },
     {
-     "type": "ComputeNormalsModifier"
+     "type": "ComputeNormalsModifier",
+     "displayDebugging": false
     }
   ]
 }

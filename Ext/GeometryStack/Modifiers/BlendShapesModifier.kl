@@ -280,10 +280,9 @@ function BlendShapesModifier.addReferenceGeometry!(Geometry refGeometry){
 function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targetGeometry){
   AutoProfilingEvent p(FUNC);
 
-  UInt32 numTargets = this.targets[geomIndex].size()+1;
-  UInt32 targetIndex = numTargets-1;
+  UInt32 numTargets = this.targetCount+1;
+  UInt32 targetIndex = this.targetCount;
   this.targets[geomIndex].resize(numTargets);
-  this.weights.resize(numTargets);
 
   PolygonMesh targetMesh = targetGeometry;
   UInt32 referencePointCount;
@@ -373,18 +372,18 @@ operator blendShapesModifier_applyMeshDeltas<<<index>>>(
   PolygonMeshTopology mesh,
   io Vec3 positions[],
   BlendShapesModifier_Target target,
-  Scalar weight,
+  Scalar weight/*,
   Boolean displayDebugging,
   io Color vertexColors[],
-  Color targetColor
+  Color targetColor*/
 ){
   UInt32 targetOffsetIndex = target.indices[index];
   Vec3 pos = positions[targetOffsetIndex];
   mesh.setPointAttribute(targetOffsetIndex, positions, pos + (target.deltas[index] * weight));
-  if(displayDebugging){
-    Color color = vertexColors[targetOffsetIndex];
-    mesh.setPointAttribute(targetOffsetIndex, vertexColors, color + (targetColor * weight));
-  }
+  // if(displayDebugging){
+  //   Color color = vertexColors[targetOffsetIndex];
+  //   mesh.setPointAttribute(targetOffsetIndex, vertexColors, color + (targetColor * weight));
+  // }
 }
 
 
@@ -398,7 +397,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   io UInt32 numActiveShapes,
   Boolean useGPU
 ){
-  AutoProfilingEvent p(FUNC);
+  // AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
     report("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
     return;
@@ -417,9 +416,11 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
     newColors.resize(vertexColorsAttr.size());
     vertexColorsAttr.values = newColors;
 
-    if(useGPU)
+    if(useGPU){
       vertexColorsAttr.convertToGPU();
+    }
   }
+  report("useGPU:" + useGPU);
 
   for(UInt32 i=0; i<targets[index].size; i++){
 
@@ -433,6 +434,8 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
     }
     if(weights[i] > shapeThreshold){
       //AutoProfilingEvent p_targ("Target:" + i);
+      report("positionsAttribute.getElementsMemType():" + positionsAttribute.getElementsMemType());
+      report("targets[index][i].getMemType():" + targets[index][i].getMemType());
       if(!mesh){
         blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()@useGPU>>>(
           positionsAttribute.values,
@@ -444,14 +447,15 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
         );
       }
       else{
+        report("mesh.getMemType():" + mesh.getMemType());
         blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()@useGPU>>>(
           mesh.topology,
           positionsAttribute.values,
           targets[index][i],
-          weights[i],
+          weights[i]/*,
           displayDebugging,
           vertexColorsAttr.values,
-          targetColors[i]
+          targetColors[i]*/
         );
       }
       if(displayDebugging){
@@ -465,6 +469,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 
 function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
   if(this.targets.size != geomSet.size()){
     setError("BlendShapesModifier cannot evaluate because the number of geoms:" + geomSet.size() + " does not match the number of targets:" + this.targets.size);
     return;
@@ -539,6 +544,7 @@ function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persisten
 }
 
 function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
+  report("=======================================BlendShapesModifier.loadJSON=================");
   this.parent#loadJSON(persistenceContext, json);
 
   if(json.has('threshold'))
@@ -566,12 +572,12 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
 
     // Now check if a bincache file already exists that we can load 
     // instead of the alembic file.
-    FilePath binCachefile(expandedPath.string());
+    /*FilePath binCachefile(expandedPath.string());
     binCachefile.replaceExtension('blendShapes');
     if(binCachefile.exists()){
       this.loadTargetsFromBinCache(binCachefile);
     }
-    else{
+    else*/{
       // The Alembic file should contain a collection of geometries that are grouped by naming convention.
       // referenceGeometryName:'MyGeometry' <- The reference geometry used to compute the blend shapes. 
       // targetGeometryNames: [ 'MyGeometry_Shape1', 'MyGeometry_Shape2', 'MyGeometry_Shape3'] <- Shape targets
@@ -584,7 +590,7 @@ function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JS
       
       this.loadTargetsFromAlembic(expandedPath);
 
-      this.saveTargetsToBinCache(binCachefile);
+      //this.saveTargetsToBinCache(binCachefile);
     }
 
 
@@ -618,6 +624,7 @@ function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
   report("loadTargetsFromBinCache:" + binCachefile.string());
   BinaryBlockReader blockReader(binCachefile.string());
   UInt64 numBlocks = blockReader.getNumBlocks();
+  report("numBlocks:" +  numBlocks);
   this.targets.resize(UInt32(numBlocks));
   for(UInt32 i=0; i<this.targets.size; i++){
     BinaryBlockReader targetSetReader = blockReader.beginReadBlock('targetSet'+i);
@@ -632,6 +639,8 @@ function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
       targetReader.read(this.targets[i][j].deltas.data, this.targets[i][j].deltas.dataSize);
     }
   }
+
+  this.weights.resize(this.targets.size);
 }
 
 /// Generates a Description string of this modifier.
