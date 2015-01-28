@@ -42,8 +42,8 @@ object DeltaMushModifier : BaseModifier {
 
 function DeltaMushModifier(){
   this.iterations = 20;
-  this.useMask = true;
-  this.maskWeightmapName = 'DeltaMushModifierWeightMap';
+  this.useMask = false;
+  this.maskWeightmapName = '';
 }
 
 
@@ -467,8 +467,10 @@ function DeltaMushModifier.loadJSON!(PersistenceContext persistenceContext, JSON
   if(json.has('useMask'))
     this.useMask = json.getBoolean('useMask');
 
-  if(json.has('maskWeightmapName'))
+  if(json.has('maskWeightmapName')){
     this.maskWeightmapName = json.getString('maskWeightmapName');
+    this.useMask = true;
+  }
 
   if(!json.has('referenceGeometryNames'))
     throw("Error loading DeltaMushModifier JSON. Missing value: \"referenceGeometryNames\"");
