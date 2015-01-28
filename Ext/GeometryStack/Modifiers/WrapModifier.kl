@@ -177,13 +177,13 @@ operator wrapModifier_bindGeometries<<<index>>>(
   Ref<Vec3Attribute> srcNormalsAttribute = srcRefMesh.normalsAttribute;
   Ref<Vec4Attribute> srcTangentsAttribute = srcRefMesh.getAttribute("tangents");
 
-  // if(!srcNormalsAttribute || !srcTangentsAttribute){
-  //   if(!srcNormalsAttribute)
-  //     report("Warning: Influence Mesh does not have Normals.");
-  //   if(!srcTangentsAttribute)
-  //     report("Warning: Influence Mesh does not have Tangents.");
-  //   return;
-  // }
+  if(!srcNormalsAttribute || !srcTangentsAttribute){
+    if(!srcNormalsAttribute)
+      report("Warning: Influence Mesh does not have Normals.");
+    if(!srcTangentsAttribute)
+      report("Warning: Influence Mesh does not have Tangents.");
+    return;
+  }
 
   locations[index].resize(positionsAttribute.size());
   positionDeltas[index].resize(positionsAttribute.size());

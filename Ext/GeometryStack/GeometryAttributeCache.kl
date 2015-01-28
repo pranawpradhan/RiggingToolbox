@@ -125,13 +125,4 @@ function GeometryAttributeCache.restore(io Geometry geometries[]) {
       }
     }
   }
-  if(this.moveDataToGPU){
-    for(Integer i=0; i<this.cachedAttributes.size; i++){
-      for(Integer j=0; j<this.cachedAttributes[i].size; j++){
-        GeometryAttribute attr = this.cachedAttributes[i][j];
-        if(attr != null && attr.getElementsMemType() == 0)
-          attr.convertToGPU();
-      }
-    }
-  }
 }

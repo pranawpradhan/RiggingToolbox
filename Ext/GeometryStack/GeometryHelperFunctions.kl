@@ -9,8 +9,14 @@ require Geometry;
 function ThreadsafeMetaDataContainer cloneMetadata(ThreadsafeMetaDataContainer metaData) {
   // Note: we need clone to be part of the Geometry interface. 
   ThreadsafeMetaDataContainer newmetaData();
-  for(key, obj in metaData.dict)
+  for(key, obj in metaData.dict){
+    if(obj.type == PolygonMeshTopology_computeTangentsTopologyWorkingData_Object)
+      continue;
+    if(obj.type == PolygonMeshTopology_computeTangentsWorkingData_Object)
+      continue;
     newmetaData.dict[key] = obj.clone();
+  }
+  
   return newmetaData;
 }
 

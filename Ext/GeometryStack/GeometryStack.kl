@@ -314,7 +314,7 @@ function String GeometryStack.getDesc(String indent, Boolean includeGeometryTolo
   desc += indent + "GeometryStack { \n";
   desc += indent + "  geomOperators:[ \n";
   for(Integer i=0; i<this.geomOperators.size; i++){
-    desc += this.geomOperators[i].getDesc(indent+'    ') + "\n";
+    desc += this.geomOperators[i].getDesc(indent+'    ') + (i<(this.geomOperators.size-1) ? ',' : '') + "\n";
   }
   desc += indent + "  ],\n";
   desc += indent + "  geomSet: " + this.geomSet.getDesc(indent + '  ',  includeGeometryTolopology) + '\n';
