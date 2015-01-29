@@ -125,6 +125,29 @@ function Mat44 wrapModifier_buildRefFrame(
 }
 
 
+function Mat44 wrapModifier_buildRefFrame_CPU(
+  PolygonMeshTopology srcMesh,
+  Vec3 srcPositions[],
+  Vec3 srcNormals[],
+  Vec4 srcTangents[],
+  GeometryLocation location
+){
+  UInt32 attributeIndices[3];
+  Scalar weights[3];
+  srcMesh.getLocationAttributeIndicesAndWeights( location, attributeIndices, weights );
+
+  Vec3 pos = Vec3Attribute_getLinearCombination(srcPositions, attributeIndices, weights );
+  Vec3 nrm = Vec3Attribute_getLinearCombination(srcNormals, attributeIndices, weights );
+  Vec4 tgt = Vec4Attribute_getLinearCombination(srcTangents, attributeIndices, weights );
+
+  Quat q;
+  q.setFromDirectionAndUpvector(nrm, Vec3(tgt.x, tgt.y, tgt.z));
+  Mat44 m;
+  m.set(pos, q.toMat33(), Vec3(1,1,1));
+  return m;
+}
+
+
 
 operator wrapModifier_computeBinding<<<index>>>(
   PolygonMesh srcMesh,
@@ -145,8 +168,12 @@ operator wrapModifier_computeBinding<<<index>>>(
   // Find the closes point on the influence mesh to the transformed points position.
   GeometryLocation location = srcMesh.getClosest( position, Vec3(1.0, 1.0, 1.0), SCALAR_INFINITE );
 
+  // report("index:" + index + " srcPositions.getElementsMemType():" + srcPositions.getElementsMemType());
+  // report("index:" + index + " srcNormals.getElementsMemType():" + srcNormals.getElementsMemType());
+  // report("index:" + index + " srcTangents.getElementsMemType():" + srcTangents.getElementsMemType());
+
   // Build a reference frame.  
-  Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh.topology, srcPositions, srcNormals, srcTangents, location);
+  Mat44 mat44 = wrapModifier_buildRefFrame_CPU(srcMesh.topology, srcPositions, srcNormals, srcTangents, location);
 
   positionDeltas[index] = mat44.inverse() * position;
   normalDeltas[index] = mat44.upperLeft().inverse() * normal;
@@ -163,6 +190,7 @@ operator wrapModifier_bindGeometries<<<index>>>(
   io Vec3 normalDeltas[][],
   Boolean useGPU
 ){
+  report("wrapModifier_bindGeometries:" + index);
   PolygonMesh srcRefMesh = srcRefGeometries[geometryMapping[index]];
   if(!srcRefMesh)
     throw("Source geometry '"+geometryMapping[index]+"' is not a PolygonMesh:" + srcRefGeometries[geometryMapping[index]].type() );
@@ -189,8 +217,13 @@ operator wrapModifier_bindGeometries<<<index>>>(
   positionDeltas[index].resize(positionsAttribute.size());
   normalDeltas[index].resize(positionsAttribute.size());
 
-  if(srcRefMesh.getMemType() != 0)
+  if(srcRefMesh.getMemType() != 0){
+    report("srcRefMesh.convertToCPU()");
     srcRefMesh.convertToCPU();
+  }
+  report("index:" + index + " srcRefMesh.topology.polyData.data.data.getElementsMemType():" + srcRefMesh.topology.polyData.data.data.getElementsMemType());
+  UInt32 entryIdx = srcRefMesh.topology.polyData.data.data[ 0 ];
+  report("entryIdx:" +entryIdx);
   
   if(positionsAttribute.getElementsMemType() != 0)
     positionsAttribute.convertToCPU();

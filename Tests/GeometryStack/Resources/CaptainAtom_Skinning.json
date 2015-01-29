@@ -7,11 +7,12 @@
     },
     {
      "type": "SkinningModifier",
-     "displayDebugging": true
+     "displayDebugging": false
     },
     {
      "type": "WeightmapModifier",
-     "weightmapName": "DeltaMushMask"
+     "weightmapName": "DeltaMushMask",
+     "displayDebugging": false
     },
     {
      "type": "DeltaMushModifier",
@@ -19,7 +20,7 @@
      "filePath": "D:/Resources/captainatom_project/cache/CaptainAtom.abc",
      "referenceGeometryNames": ["captainatom_skinnedMesh_geoShape"],
      "maskWeightmapName": "DeltaMushMask",
-     "displayDebugging": true
+     "displayDebugging": false
     },
     {
      "type": "ComputeNormalsModifier",
