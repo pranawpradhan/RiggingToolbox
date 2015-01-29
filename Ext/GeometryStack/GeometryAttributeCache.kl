@@ -15,7 +15,7 @@ object GeometryAttributeCache : CachePoint, Listener  {
   GeometryAttribute cachedAttributes[][];
 };
 
-function GeometryAttributeCache(BaseModifier modifier) {
+function GeometryAttributeCache(BaseModifier modifier, UInt32 extraArg) {
   // Add a listener to know when we should update the cached attribute interaction types. 
   this.modifier = modifier;
   Listener listener = this; // No implicit casting in KL from objects to interfaces.

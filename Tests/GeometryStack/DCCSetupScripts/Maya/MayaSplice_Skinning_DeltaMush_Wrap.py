@@ -26,54 +26,6 @@ cmds.fabricSplice('addKLOperator', influenceInitNode, '{"opName":"tubeCharacter_
 
 require RiggingToolbox;
 
-
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
-
-
 operator tubeCharacter_Init(
   String filePath,
   io GeometryStack stack
@@ -102,52 +54,6 @@ cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', influencePoseNod
 cmds.fabricSplice('addKLOperator', influencePoseNode, '{"opName":"tubeCharacter_Skinning"}', """
 
 require RiggingToolbox;
-
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
 
 operator tubeCharacter_Skinning(
   io GeometryStack stack,
@@ -180,59 +86,13 @@ cmds.fabricSplice('addKLOperator', influenceMushNode, '{"opName":"tubeCharacter_
 
 require RiggingToolbox;
 
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
-
 operator tubeCharacter_DeltaMush(
   io GeometryStack stack,
   Integer iterations,
   Boolean displayDebugging
 ) {
-  if(stack.numGeometryOperators() >= 3){
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
+  if(stack.numGeometryOperators() >= 2){
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
     deltaMushModifier.setNumIterations(iterations);
     deltaMushModifier.setDisplayDebugging(displayDebugging);
   }
@@ -260,52 +120,6 @@ cmds.connectAttr(influenceMushNode + '.stack', influenceEvalNode + '.stack')
 cmds.fabricSplice('addKLOperator', influenceEvalNode, '{"opName":"tubeCharacter_Eval"}', """
 
 require RiggingToolbox;
-
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
 
 operator tubeCharacter_Eval(
   io GeometryStack stack,
@@ -335,52 +149,6 @@ cmds.fabricSplice('addKLOperator', wrappedGeomsInitNode, '{"opName":"wrappedGeom
 
 require RiggingToolbox;
 
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
-
 operator wrappedGeoms_Init(
   String filePath,
   io GeometryStack stack
@@ -408,52 +176,6 @@ cmds.connectAttr(influenceEvalNode + '.stack', wrappedGeomsEvalNode + '.srcstack
 cmds.fabricSplice('addKLOperator', wrappedGeomsEvalNode, '{"opName":"wrappedGeoms_Eval"}', """
 
 require RiggingToolbox;
-
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
 
 operator wrappedGeoms_Eval(
   io GeometryStack stack,

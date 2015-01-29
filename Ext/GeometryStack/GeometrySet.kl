@@ -120,7 +120,7 @@ function GeometrySet.addCachePoint!(GeometryOperator op) {
   if(generator)
     cachePoint = GeometryCache();
   else
-    cachePoint = GeometryAttributeCache(op);
+    cachePoint = GeometryAttributeCache(op, 0);
   this.cachePoints.push(cachePoint);
 }
 
