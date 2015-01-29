@@ -56,7 +56,8 @@ operator computeNormalsModifier_computePointNormals<<<index>>>(
   Vec3 positions[],
   io Vec3 normals[],
   Boolean displayDebugging,
-  io DebugLines debugLines
+  io UInt32 debugLinesindices[],
+  io Vec3 debugLinespositions[]
 ){
   Vec3 point = positions[index];
 
@@ -79,10 +80,10 @@ operator computeNormalsModifier_computePointNormals<<<index>>>(
       mesh.setPointAttribute( index, normals, normal );
 
       if(displayDebugging){
-        debugLines.indices[(index*2)] = (index*2);
-        debugLines.indices[(index*2)+1] = (index*2)+1;
-        debugLines.positions[(index*2)] = point;
-        debugLines.positions[(index*2)+1] = point + normal;
+        debugLinesindices[(index*2)] = (index*2);
+        debugLinesindices[(index*2)+1] = (index*2)+1;
+        debugLinespositions[(index*2)] = point;
+        debugLinespositions[(index*2)+1] = point + normal;
       }
     }
   }
@@ -100,6 +101,7 @@ operator computeNormalsModifier_modifyGeometries<<<index>>>(
   PolygonMesh mesh = geomSet.get(index);
   if(mesh){
 
+    DebugLines debugLines;
     if(displayDebugging){
       if(lines[index] == null)
         lines[index] = Lines();
@@ -108,33 +110,42 @@ operator computeNormalsModifier_modifyGeometries<<<index>>>(
         lines[index].indices.resize( mesh.pointCount() * 2 );
         lines[index].incrementVersion();
       }
-      // Always increment the positoins version as they will be re-geomuted in the following kernel.
-      lines[index].incrementPositionsVersion();
-    }
-    DebugLines debugLines(lines[index]);
-    if(useGPU){
-      if(debugLines.indices.getElementsMemType() == 0)
+      debugLines.init(lines[index]);
+      if(useGPU)
         debugLines.convertToGPU();
+      else
+        debugLines.convertToCPU();
+
+      // Always increment the positoins version as they will be re-geomuted in the following kernel.
+      lines[index].attributes.positionsAttribute.incrementVersion();
     }
 
+    // DebugLines debugLines(lines[index]);
 
-    Ref<Vec3Attribute> normals = mesh.getOrCreateNormals();
+    Ref<Vec3Attribute> normalsAttribute = mesh.getOrCreateNormals();
+    if(useGPU){
+      if(normalsAttribute.getElementsMemType() == 0)
+        normalsAttribute.convertToGPU();
+    }
+
     // Note: the builtin normal computation manages splitting attribtiues along hard edges,
     // and this causes corruption of the skinning attribute. The custom implementation above
     // is naive and assumes no hard edges, but can also run on the GPU.
     computeNormalsModifier_computePointNormals<<<mesh.pointCount()@useGPU>>>(
       mesh.topology,
       mesh.positionsAttribute.values,
-      normals.values,
+      normalsAttribute.values,
       displayDebugging,
-      debugLines
+      debugLines.indices,
+      debugLines.positions
       );
-    normals.incrementVersion();
+    normalsAttribute.incrementVersion();
   }
 }
 
 function ComputeNormalsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
+  report(FUNC);
 
   if(geomSet.getVersion() != this.boundVersion){
     this.lines.resize(geomSet.size());
@@ -156,10 +167,10 @@ function ComputeNormalsModifier.setupRendering!(){
 
   // Now setup the rendering
   InlineShader shader = this.handle.getDrawing().registerShader(OGLFlatOverlayShader());
-  InlineMaterial material = shader.getOrCreateMaterial("WrapModifierMaterial");
+  InlineMaterial material = shader.getOrCreateMaterial("ComputeNormalsModifierMaterial");
 
   for(Integer geomId=0; geomId<this.lines.size(); geomId++){
-    String name = "WrapModifier_" + String(geomId);
+    String name = "ComputeNormalsModifier_" + String(geomId);
     InlineShape shape = InlineLinesShape(name, this.lines[geomId]);
     InlineInstance instance = SimpleInlineInstance(name + "_Instance", this.handle.rootTransform, shape, material);
     instance.setInstanceUniform(InlineUniform('u_color', Color(0.0,1.0,0.0)));
