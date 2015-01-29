@@ -13,7 +13,7 @@
     },
     {
      "type": "ComputeNormalsModifier",
-     "displayDebugging": false
+     "displayDebugging": true
     }
   ]
 }
