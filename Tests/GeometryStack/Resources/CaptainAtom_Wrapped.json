@@ -14,5 +14,5 @@
     "captainatom_body_geoShape": { "r": 1.0, "g": 0.6, "b": 0.6 },
     "captainatom_hair_geoShape": { "r": 0.6, "g": 0.3, "b": 0.3 }
   },
-  "displayGeometries": false
+  "displayGeometries": true
 }

@@ -255,29 +255,30 @@ operator wrapModifier_applyDeltas<<<index>>>(
   Vec3 positionDeltas[],
   Vec3 normalDeltas[],
   io Vec3 positions[],
-  io Vec3 normals[],
+  io Vec3 normals[]/*,
   
   Boolean displayDebugging,
   io UInt32 debugLinesindices[],
-  io Vec3 debugLinespositions[]
+  io Vec3 debugLinespositions[]*/
 ){
   Mat44 mat44 = wrapModifier_buildRefFrame(srcMesh, srcPositions, srcNormals, srcTangents, locations[index]);
   Vec3 newPos = mat44 * positionDeltas[index];
   positions[index] = newPos;
   normals[index] = mat44.upperLeft() * normalDeltas[index];
 
-  if(displayDebugging){
-    debugLinesindices[(index*2)] = (index*2);
-    debugLinesindices[(index*2)+1] = (index*2)+1;
-    debugLinespositions[(index*2)] = mat44.translation();
-    debugLinespositions[(index*2)+1] = newPos;
-  }
+  // if(displayDebugging){
+  //   debugLinesindices[(index*2)] = (index*2);
+  //   debugLinesindices[(index*2)+1] = (index*2)+1;
+  //   debugLinespositions[(index*2)] = mat44.translation();
+  //   debugLinespositions[(index*2)+1] = newPos;
+  // }
 }
 
 
-operator wrapModifier_deformGeometries<<<index>>>(
+operator wrapModifier_deformGeometries(UInt32 index,
   io GeometrySet geomSet,
   GeometrySet srcGeomSet,
+  UInt32 geometryMapping[],
   GeometryLocation locations[][],
   Vec3 positionDeltas[][],
   Vec3 normalDeltas[][],
@@ -285,7 +286,8 @@ operator wrapModifier_deformGeometries<<<index>>>(
   io Lines lines[],
   Boolean useGPU
 ){
-  PolygonMesh srcMesh = srcGeomSet.get(0);
+  report("wrapModifier_deformGeometries:" + index);
+  PolygonMesh srcMesh = srcGeomSet.get(geometryMapping[index]);
   if(!srcMesh){
     // Note: The source GeometrySet could contain multiple meshes to deform the target geoms.
     // There could be a mapping generates from the target meshes to the source meshes on a per-point
@@ -312,7 +314,6 @@ operator wrapModifier_deformGeometries<<<index>>>(
 
   DebugLines debugLines(lines[index]);
 
-
   // Gather the attributes from the source mesh that will be used to 
   // drive the point positions of the target meshes.
   Ref<Vec3Attribute> srcPositionsAttribute = srcMesh.positionsAttribute;
@@ -328,22 +329,19 @@ operator wrapModifier_deformGeometries<<<index>>>(
   }
 
   if(useGPU){
-    if(debugLines.indices.getElementsMemType() == 0)
+    if(displayDebugging && debugLines.indices.getElementsMemType() == 0)
       debugLines.convertToGPU();
-    if(srcMesh.getMemType() == 0)
-      srcMesh.convertToGPU();
-    if(srcPositionsAttribute.getElementsMemType() == 0)
-      srcPositionsAttribute.convertToGPU();
-    if(srcNormalsAttribute.getElementsMemType() == 0)
-      srcNormalsAttribute.convertToGPU();
-    if(srcTangentsAttribute.getElementsMemType() == 0)
-      srcTangentsAttribute.convertToGPU();
   }
   else{
     if(debugLines.indices.getElementsMemType() != 0)
       debugLines.convertToCPU();
   }
 
+  report("srcPositionsAttribute.values:" + srcPositionsAttribute.values.getElementsMemType());
+  report("srcNormalsAttribute.values:" + srcNormalsAttribute.values.getElementsMemType());
+  report("srcTangentsAttribute.values:" + srcTangentsAttribute.values.getElementsMemType());
+  report("positionsAttribute.values:" + positionsAttribute.values.getElementsMemType());
+  report("normalsAttribute.values:" + normalsAttribute.values.getElementsMemType());
   wrapModifier_applyDeltas<<<positionsAttribute.size()@useGPU>>>(
     srcMesh.topology,
     srcPositionsAttribute.values,
@@ -353,11 +351,11 @@ operator wrapModifier_deformGeometries<<<index>>>(
     positionDeltas[index],
     normalDeltas[index],
     positionsAttribute.values,
-    normalsAttribute.values,
+    normalsAttribute.values/*,
 
     displayDebugging,
     debugLines.indices,
-    debugLines.positions
+    debugLines.positions*/
   );
   positionsAttribute.incrementVersion();
   normalsAttribute.incrementVersion();
@@ -392,7 +390,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
     if(this.useGPU()){
       // Before performing the bind, make sure the ref geometries
-      // are on the GPU. All deformed geometries might be bound to a
+      // are on the CPU. All deformed geometries might be bound to a
       // single _shared_ ref geometry, so we can't to this modification 
       // in the wrapModifier_bindGeometries kernel.
       for(UInt32 i=0; i<srcRefGeometries.size; i++){
@@ -426,23 +424,21 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       this.useGPU()
       );
 
-    // if(this.useGPU()){
-    //   for(UInt32 i=0; i<srcRefGeometries.size; i++){
-    //     srcRefGeometries
-    //     // Move all the data back to the GPU after the bind is complete.
-    //     srcRefMesh.convertToGPU();
+    if(this.useGPU()){
+      for(UInt32 i=0; i<srcRefGeometries.size; i++){
+        PolygonMesh srcRefMesh = srcRefGeometries[this.geometryMapping[i]];
+        // Move all the data back to the GPU after the bind is complete.
+        srcRefMesh.convertToGPU();
 
-    //     positionsAttribute.convertToGPU();
-    //     normalsAttribute.convertToGPU();
-    //     srcPositionsAttribute.convertToGPU();
-    //     srcNormalsAttribute.convertToGPU();
-    //     srcTangentsAttribute.convertToGPU();
-      
-    //     locations[index].convertToGPU();
-    //     positionDeltas[index].convertToGPU();
-    //     normalDeltas[index].convertToGPU();
-    //   }
-    // }
+        Ref<Vec3Attribute> srcPositionsAttribute = srcRefMesh.positionsAttribute;
+        Ref<Vec3Attribute> srcNormalsAttribute = srcRefMesh.normalsAttribute;
+        Ref<Vec4Attribute> srcTangentsAttribute = srcRefMesh.getAttribute("tangents");
+
+        srcPositionsAttribute.convertToGPU();
+        srcNormalsAttribute.convertToGPU();
+        srcTangentsAttribute.convertToGPU();
+      }
+    }
 
     this.srcBoundVersion = srcGeomSet.getVersion();
     this.boundVersion = geomSet.getVersion();
@@ -450,17 +446,46 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
   {
     AutoProfilingEvent p2("wrapModifier_deformGeometries");
-    wrapModifier_deformGeometries<<<geomSet.size()>>>(
-      geomSet,
-      srcGeomSet,
-      this.locations,
-      this.positionDeltas,
-      this.normalDeltas,
-      this.displayDebugging,
-      this.lines,
-      this.useGPU()
-      );
 
+    // if(this.useGPU()){
+    //   // Before performing the deformation, make sure the src geometries
+    //   // are on the GPU. All deformed geometries might be bound to a
+    //   // single _shared_ ref geometry, so we can't to this modification 
+    //   // in the wrapModifier_deformGeometries kernel.
+    //   for(UInt32 i=0; i<srcGeomSet.size; i++){
+    //     PolygonMesh srcRefMesh = srcGeomSet.get(this.geometryMapping[i]);
+    //     if(!srcRefMesh)
+    //       throw("Source geometry '"+this.geometryMapping[i]+"' is not a PolygonMesh:" + srcGeomSet.get(this.geometryMapping[i]).type() );
+
+    //     if(srcRefMesh.getMemType() == 0)
+    //       srcRefMesh.convertToGPU();
+
+    //     Ref<Vec3Attribute> srcPositionsAttribute = srcRefMesh.positionsAttribute;
+    //     Ref<Vec3Attribute> srcNormalsAttribute = srcRefMesh.normalsAttribute;
+    //     Ref<Vec4Attribute> srcTangentsAttribute = srcRefMesh.getAttribute("tangents");
+
+    //     if(srcPositionsAttribute.getElementsMemType() == 0)
+    //       srcPositionsAttribute.convertToGPU();
+    //     if(srcNormalsAttribute.getElementsMemType() == 0)
+    //       srcNormalsAttribute.convertToGPU();
+    //     if(srcTangentsAttribute.getElementsMemType() == 0)
+    //       srcTangentsAttribute.convertToGPU();
+    //   }
+    // }
+
+    for(UInt32 i=0; i<geomSet.size(); i++){
+      wrapModifier_deformGeometries(i,
+        geomSet,
+        srcGeomSet,
+        this.geometryMapping,
+        this.locations,
+        this.positionDeltas,
+        this.normalDeltas,
+        this.displayDebugging,
+        this.lines,
+        this.useGPU()
+        );
+    }
   }
 
   if(this.displayDebugging && this.handle==null)
