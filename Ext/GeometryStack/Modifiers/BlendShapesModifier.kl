@@ -368,22 +368,23 @@ operator blendShapesModifier_applyGeomDeltas<<<index>>>(
   }
 }
 
+
 operator blendShapesModifier_applyMeshDeltas<<<index>>>(
   PolygonMeshTopology mesh,
   io Vec3 positions[],
   BlendShapesModifier_Target target,
-  Scalar weight/*,
+  Scalar weight,
   Boolean displayDebugging,
   io Color vertexColors[],
-  Color targetColor*/
+  Color targetColor
 ){
   UInt32 targetOffsetIndex = target.indices[index];
   Vec3 pos = positions[targetOffsetIndex];
   mesh.setPointAttribute(targetOffsetIndex, positions, pos + (target.deltas[index] * weight));
-  // if(displayDebugging){
-  //   Color color = vertexColors[targetOffsetIndex];
-  //   mesh.setPointAttribute(targetOffsetIndex, vertexColors, color + (targetColor * weight));
-  // }
+  if(displayDebugging){
+    Color color = vertexColors[targetOffsetIndex];
+    mesh.setPointAttribute(targetOffsetIndex, vertexColors, color + (targetColor * weight));
+  }
 }
 
 
@@ -407,14 +408,14 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
   
   PolygonMesh mesh = geom;
+  Color vertexColors[];
   Ref<ColorAttribute> vertexColorsAttr = null;
   if(displayDebugging){
     vertexColorsAttr = mesh.getOrCreateAttribute("blendShapes_vertexColors", ColorAttribute);
     vertexColorsAttr.incrementVersion();
     // Re-initilialize the vertex colors each evaluation because the colors are accumulated into this buffer.
-    Color newColors[];
-    newColors.resize(vertexColorsAttr.size());
-    vertexColorsAttr.values = newColors;
+    vertexColors.resize(vertexColorsAttr.size());
+    vertexColorsAttr.values = vertexColors;
 
     if(useGPU){
       vertexColorsAttr.convertToGPU();
@@ -438,7 +439,7 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
           targets[index][i],
           weights[i],
           displayDebugging,
-          vertexColorsAttr.values,
+          vertexColors,
           targetColors[i]
         );
       }
@@ -447,10 +448,10 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
           mesh.topology,
           positionsAttribute.values,
           targets[index][i],
-          weights[i]/*,
+          weights[i],
           displayDebugging,
-          vertexColorsAttr.values,
-          targetColors[i]*/
+          vertexColors,
+          targetColors[i]
         );
       }
       if(displayDebugging){
@@ -616,13 +617,16 @@ function BlendShapesModifier.saveTargetsToBinCache(FilePath binCachefile) {
 function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
   report("loadTargetsFromBinCache:" + binCachefile.string());
   BinaryBlockReader blockReader(binCachefile.string());
-  UInt64 numBlocks = blockReader.getNumBlocks();
-  report("numBlocks:" +  numBlocks);
-  this.targets.resize(UInt32(numBlocks));
-  for(UInt32 i=0; i<this.targets.size; i++){
+  UInt32 numBlocks = UInt32(blockReader.getNumBlocks());
+  this.targets.resize(numBlocks);
+
+  for(UInt32 i=0; i<numBlocks; i++){
+
     BinaryBlockReader targetSetReader = blockReader.beginReadBlock('targetSet'+i);
-    UInt64 numTargets = targetSetReader.getNumBlocks();
-    this.targets[i].resize(UInt32(numTargets));
+    UInt32 numTargets = UInt32(targetSetReader.getNumBlocks());
+    this.targets[i].resize(numTargets);
+    this.weights.resize(numTargets);
+
     for(UInt32 j=0; j<this.targets[i].size; j++){
       BinaryBlockReader targetReader = targetSetReader.beginReadBlock('target'+j);
       UInt32 count = 0;
@@ -633,7 +637,6 @@ function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
     }
   }
 
-  this.weights.resize(this.targets.size);
 }
 
 /// Generates a Description string of this modifier.
