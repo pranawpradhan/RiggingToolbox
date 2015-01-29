@@ -26,42 +26,6 @@ cmds.fabricSplice('addKLOperator', initnode, '{"opName":"tubeCharacter_Init"}', 
 
 require RiggingToolbox;
 
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-
 operator tubeCharacter_Init(
   String filePath,
   io GeometryStack stack
@@ -89,41 +53,6 @@ cmds.connectAttr('SkinnedTube_hierarchy_joint4.worldMatrix[0]', poseNode + '.def
 cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"tubeCharacter_Skinning"}', """
 
 require RiggingToolbox;
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
 
 
 operator tubeCharacter_Skinning(
@@ -158,42 +87,6 @@ cmds.connectAttr(poseNode + '.stack', evalStackNode + '.stack')
 cmds.fabricSplice('addKLOperator', evalStackNode, '{"opName":"tubeCharacter_Eval"}', """
 
 require RiggingToolbox;
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
 
 operator tubeCharacter_Eval(
   io GeometryStack stack,

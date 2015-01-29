@@ -148,7 +148,6 @@ function GeometrySet.rewind!(UInt32 stackPoint) {
 /// Returns a new set of cloned geometires at the specifies point in the stack.
 function Geometry[] GeometrySet.getGeometryClonesAtVersion(UInt32 stackPoint) {
   AutoProfilingEvent p(FUNC+":"+stackPoint);
-  report(FUNC+":"+stackPoint);
   // clone the geometries at the state they are now, and then rewind them back to the state requested.
   Geometry geoms[];
   geoms.resize(this.geometries.size);

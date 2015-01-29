@@ -420,7 +420,6 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
       vertexColorsAttr.convertToGPU();
     }
   }
-  report("useGPU:" + useGPU);
 
   for(UInt32 i=0; i<targets[index].size; i++){
 
@@ -433,9 +432,6 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
         targets[index][i].convertToCPU();
     }
     if(weights[i] > shapeThreshold){
-      //AutoProfilingEvent p_targ("Target:" + i);
-      report("positionsAttribute.getElementsMemType():" + positionsAttribute.getElementsMemType());
-      report("targets[index][i].getMemType():" + targets[index][i].getMemType());
       if(!mesh){
         blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()@useGPU>>>(
           positionsAttribute.values,
@@ -447,7 +443,6 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
         );
       }
       else{
-        report("mesh.getMemType():" + mesh.getMemType());
         blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()@useGPU>>>(
           mesh.topology,
           positionsAttribute.values,
@@ -469,7 +464,6 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
 
 function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  report(FUNC);
   if(this.targets.size != geomSet.size()){
     setError("BlendShapesModifier cannot evaluate because the number of geoms:" + geomSet.size() + " does not match the number of targets:" + this.targets.size);
     return;

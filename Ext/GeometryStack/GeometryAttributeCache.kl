@@ -43,8 +43,7 @@ function GeometryAttributeCache.updateCachedAttributeNames!() {
 
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.update!(Geometry geometries[]) {
-  AutoProfilingEvent p(FUNC+":" + this.modifier.type() +":"+this.attributesNames);
-  report(FUNC+ ":" + this.modifier.type()+":"+this.attributesNames);
+  AutoProfilingEvent p(FUNC+":" + this.modifier.type() +":"+this.attributesNames);\
 
   UInt32 numGeoms = geometries.size;
   UInt32 numcachedAttrs = this.attributesNames.size;
@@ -54,7 +53,6 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
     Geometry geo = geometries[i];
     PolygonMesh mesh = geo;
     if(mesh != null){
-      report("mesh.getMemType():"+mesh.getMemType() + ":" + this.moveDataToGPU);
       if(this.moveDataToGPU){
         if(mesh.getMemType() == 0)
           mesh.convertToGPU();
@@ -69,7 +67,6 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
     this.cachedAttributes[i].resize(numcachedAttrs);
     for(Integer j=0; j<numcachedAttrs; j++){
       String attrName = this.attributesNames[j];
-      report("update:"+attrName);
       Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
       if(!attr){
         // Check if the attribute will be read by the modifier. If so, then throw an exception.
@@ -109,14 +106,12 @@ function GeometryAttributeCache.update!(Geometry geometries[]) {
 /// Restores the geometry attributes to the state found in the cache.
 function GeometryAttributeCache.restore(io Geometry geometries[]) {
   AutoProfilingEvent p(FUNC+ ":" + this.modifier.type()+":"+this.attributesNames);
-  report(FUNC+ ":" + this.modifier.type()+":"+this.attributesNames);
 
   for(Integer i=0; i<geometries.size; i++){
     Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
     for(Integer j=0; j<this.attributesNames.size; j++){
       if(this.attributesInteractions[j] == AttrMode_ReadWrite){
         String attrName = this.attributesNames[j];
-        report("restore:"+attrName);
         Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
 
         // Restore the attribute to its previous value.

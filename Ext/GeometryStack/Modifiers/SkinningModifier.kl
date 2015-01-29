@@ -244,9 +244,6 @@ operator skinningModifier_deformGeometries<<<index>>>(
       Mat44 transformed_skinningMatrices[] = skinningModifier_buildTransformedSkinningMatricies(skinningMatrices, bindShapeTransforms[index]);
       if(useGPU)
         transformed_skinningMatrices.convertToGPU();
-      report("mesh:" + mesh.getMemType());
-      report("positionsAttribute.values:" + positionsAttribute.getElementsMemType());
-      report("skinningAttr.values:" + skinningAttr.getElementsMemType());
       skinningModifier_skinMeshPositions<<<mesh.pointCount()@useGPU>>>(
         mesh.topology,
         positionsAttribute.values,
@@ -270,7 +267,6 @@ operator skinningModifier_deformGeometries<<<index>>>(
 
 function SkinningModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  report(FUNC);
 
   if(this.dataVersion != geomSet.getVersion()){
     if(geomSet.hasMetaData('skeleton')){

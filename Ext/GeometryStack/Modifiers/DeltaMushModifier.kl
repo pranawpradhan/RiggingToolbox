@@ -222,7 +222,6 @@ operator deltaMushModifier_computeMeshBinding<<<index>>>(
   UInt32 iterations,
   Boolean useGPU
 ){
-  report("deltaMushModifier_computeMeshBinding:" + index);
   PolygonMesh mesh = referenceGeometries[index];
   deltas[index].resize(mesh.pointCount());
   UInt32 size = mesh.positionsAttribute.values.size();
@@ -252,8 +251,6 @@ operator deltaMushModifier_computeMeshBinding<<<index>>>(
       deltas[index].convertToCPU();
   }
 
-  report("mesh.topology getMemType:" + mesh.getMemType());
-  report("mushedPositions getMemType:" + mushedPositions.getElementsMemType());
   for(UInt32 i=0; i<iterations; i++){
     // relax the mesh, causing it to lose volume.
     deltaMushModifier_smoothPos<<<mesh.pointCount()@useGPU>>>(mesh.topology, mushedPositions);
@@ -266,7 +263,6 @@ operator deltaMushModifier_computeMeshBinding<<<index>>>(
     mushedPositions,
     deltas[index]
   );
-  report("deltaMushModifier_computeMeshBinding - Done:");
 }
 
 operator deltaMushModifier_deformGeometries<<<index>>>(
@@ -279,14 +275,11 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   io Lines lines[],
   Boolean useGPU
 ){
-  report("deltaMushModifier_deformGeometries:" + index);
-
   PolygonMesh mesh = geomSet.get(0);
   if(!mesh){
     report("Warning in DeltaMushModifier: geometry is not a polygon mesh:" + getGeomDebugName(mesh));
     return;
   }
-  report("getMemType:" + mesh.getMemType());
 
   if(displayDebugging){
     if(lines[index] == null)
@@ -316,7 +309,6 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     mushedPositions = mesh.positionsAttribute.values.clone();
   }
 
-  report("mushedPositions getMemType:" + mushedPositions.getElementsMemType());
   for(UInt32 i=0; i<iterations; i++){
     // relax the mesh, causing it to lose volume.
     deltaMushModifier_smoothPos<<<mesh.pointCount()@useGPU>>>(mesh.topology, mushedPositions);

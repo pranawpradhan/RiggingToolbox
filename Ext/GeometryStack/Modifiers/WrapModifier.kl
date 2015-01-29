@@ -372,7 +372,6 @@ operator wrapModifier_deformGeometries<<<index>>>(
 
 function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  report(FUNC);
 
   if(this.influenceGeometryStack == null){
     report('Warning: no influence stack set on WrapModifier.');
@@ -389,7 +388,6 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   }
   if(srcGeomSet.getVersion() != this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
     AutoProfilingEvent p2("wrapModifier_bindGeometries");
-    report("wrapModifier_bindGeometries");
     this.locations.resize(geomSet.size());
     this.positionDeltas.resize(geomSet.size());
     this.normalDeltas.resize(geomSet.size());
