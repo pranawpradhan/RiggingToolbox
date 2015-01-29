@@ -3,116 +3,46 @@ AlembicGeometryAttributesReader: Property "EnvelopeWeights" not supported.
 AlembicGeometryAttributesReader: Property "MappingIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformerIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformers" not supported.
-function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
 Importing:D:\Projects\RiggingToolbox/Tests/GeometryStack/Resources\skinnedTube.abc
-function Ref<GeometryAttributeCache>#update!(Geometry[]):WrapModifier:["positions"]
-mesh.getMemType():0:true
-update:positions
-function Ref<WrapModifier>#evaluate!(EvalContext, io GeometrySet)
-function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
 Importing:D:\Projects\RiggingToolbox/Tests/GeometryStack/Resources\skinnedTube.abc
 AlembicGeometryAttributesReader: Property "EnvelopeWeights" not supported.
 AlembicGeometryAttributesReader: Property "MappingIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformerIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformers" not supported.
-function Ref<GeometryAttributeCache>#update!(Geometry[]):SkinningModifier:["positions","skinningData"]
-mesh.getMemType():0:true
-update:positions
-update:skinningData
-function Ref<SkinningModifier>#evaluate!(EvalContext, io GeometrySet)
-mesh:1
-positionsAttribute.values:1
-skinningAttr.values:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
-deltaMushModifier_computeMeshBinding:0
-mesh.topology getMemType:1
-mushedPositions getMemType:1
-deltaMushModifier_computeMeshBinding - Done:
-deltaMushModifier_deformGeometries:0
-getMemType:1
-mushedPositions getMemType:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
 function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
-computeNormalsModifier_computePointNormals
-mesh:1
-mesh.positionsAttribute.values:1
-normals.values:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-mesh.getMemType():1:true
-update:positions
-update:uvs0
-update:tangents
-wrapModifier_bindGeometries
-function Geometry[] Ref<GeometrySet>.getGeometryClonesAtVersion?(UInt32):1
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):DeltaMushModifier:["positions","normals"]
-restore:positions
-restore:normals
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):SkinningModifier:["positions","skinningData"]
-restore:positions
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
+wrapModifier_bindGeometries:0
+positionsAttribute:1
+normalsAttribute:1
 function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
-computeNormalsModifier_computePointNormals
-mesh:1
-mesh.positionsAttribute.values:1
-normals.values:1
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):DeltaMushModifier:["positions","normals"]
-restore:positions
-restore:normals
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):SkinningModifier:["positions","skinningData"]
-restore:positions
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
-function Ref<GeometryAttributeCache>#restore?(io Geometry[]):WrapModifier:["positions"]
-restore:positions
-function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
-function Ref<WrapModifier>#evaluate!(EvalContext, io GeometrySet)
-function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
-function Ref<SkinningModifier>#evaluate!(EvalContext, io GeometrySet)
-mesh:1
-positionsAttribute.values:4
-skinningAttr.values:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
-deltaMushModifier_deformGeometries:0
-getMemType:1
-mushedPositions getMemType:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
+Error: ERROR: OGLInlineDrawing.draw. OpenGL context not bound
+  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
+  2 function.setError.in_AS0.ST()
+  3 sharp.draw.io_AS0.UO_OGLInlineDrawing.io_AS0.OO_DrawContext() OGLInlineDrawing.kl:140
+  4 method.draw.in_AS0.UO_InlineDrawingScope.io_AS0.OO_DrawContext() InlineDrawingScope.kl:22
+  5 operator.entry() skinnedDeltaMushedWrappedCharacter.kl:24
+  6 kl.internal.entry.stub.cpu()
 function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
-computeNormalsModifier_computePointNormals
-mesh:1
-mesh.positionsAttribute.values:4
-normals.values:4
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-mesh.getMemType():1:true
-update:positions
-update:uvs0
-update:tangents
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
+positionsAttribute:1
+normalsAttribute:1
 function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
-computeNormalsModifier_computePointNormals
-mesh:1
-mesh.positionsAttribute.values:4
-normals.values:4
+Error: ERROR: OGLInlineDrawing.draw. OpenGL context not bound
+  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
+  2 function.setError.in_AS0.ST()
+  3 sharp.draw.io_AS0.UO_OGLInlineDrawing.io_AS0.OO_DrawContext() OGLInlineDrawing.kl:140
+  4 method.draw.in_AS0.UO_InlineDrawingScope.io_AS0.OO_DrawContext() InlineDrawingScope.kl:22
+  5 operator.entry() skinnedDeltaMushedWrappedCharacter.kl:39
+  6 kl.internal.entry.stub.cpu()
+function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
+positionsAttribute:1
+normalsAttribute:1
+function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
+Error: ERROR: OGLInlineDrawing.draw. OpenGL context not bound
+  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
+  2 function.setError.in_AS0.ST()
+  3 sharp.draw.io_AS0.UO_OGLInlineDrawing.io_AS0.OO_DrawContext() OGLInlineDrawing.kl:140
+  4 method.draw.in_AS0.UO_InlineDrawingScope.io_AS0.OO_DrawContext() InlineDrawingScope.kl:22
+  5 operator.entry() skinnedDeltaMushedWrappedCharacter.kl:55
+  6 kl.internal.entry.stub.cpu()
 function Ref<DeltaMushModifier>.loadReferenceFromAlembic!(FilePath)
 function Ref<GeometryStack>#notify!(Notifier, String, String):WrapModifier.changed
 function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
@@ -140,6 +70,35 @@ function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
 --------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
 --------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):DeltaMushModifier:["positions","normals"]
 --------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):SkinningModifier:["positions","skinningData"]
+----wrapModifier_deformGeometries
+--function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):2
+----function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
+--function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
+function Ref<SkinningModifier>.setPose!(Mat44[])
+--function Ref<GeometryStack>#notify!(Notifier, String, String):SkinningModifier.changed
+----function Ref<GeometrySet>.rewind!(UInt32):1
+------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
+------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
+------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):DeltaMushModifier:["positions","normals"]
+------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):SkinningModifier:["positions","skinningData"]
+----function Ref<WrapModifier>#notify!(Notifier, String, String):GeometryStack.changed
+------function Ref<GeometryStack>#notify!(Notifier, String, String):WrapModifier.changed
+--------function Ref<GeometrySet>.rewind!(UInt32):1
+----------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
+----------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):WrapModifier:["positions"]
+function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
+--function Ref<WrapModifier>#evaluate!(EvalContext, io GeometrySet)
+----function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
+------function Ref<SkinningModifier>#evaluate!(EvalContext, io GeometrySet)
+------function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):2
+--------function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals"]
+------function Ref<DeltaMushModifier>#evaluate!(EvalContext, io GeometrySet)
+------function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):3
+--------function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
+------function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
+------function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):4
+--------function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
+------function Ref<ComputeTangentsModifier>#evaluate!(EvalContext, io GeometrySet)
 ----wrapModifier_deformGeometries
 --function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):2
 ----function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]

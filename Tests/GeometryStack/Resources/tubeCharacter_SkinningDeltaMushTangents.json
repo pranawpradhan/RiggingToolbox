@@ -20,8 +20,7 @@
      "displayDebugging": false
     },
     {
-     "type": "ComputeTangentsModifier",
-     "displayDebugging": false
+     "type": "ComputeTangentsModifier"
     }
   ]
 }
