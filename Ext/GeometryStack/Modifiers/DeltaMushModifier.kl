@@ -171,7 +171,8 @@ operator deltaMushModifier_applyDeltas<<<index>>>(
   Vec3 mushedPositions[],
   Vec3 deltas[],
   Boolean displayDebugging,
-  io DebugLines debugLines
+  io UInt32 debugLinesindices[],
+  io Vec3 debugLinespositions[]
 ){
   Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, mushedPositions);
   Vec3 src = mushedPositions[index];
@@ -179,10 +180,10 @@ operator deltaMushModifier_applyDeltas<<<index>>>(
   mesh.setPointAttribute( index, positions, tgt );
 
   if(displayDebugging){
-    debugLines.indices[(index*2)] = (index*2);
-    debugLines.indices[(index*2)+1] = (index*2)+1;
-    debugLines.positions[(index*2)] = src;
-    debugLines.positions[(index*2)+1] = tgt;
+    debugLinesindices[(index*2)] = (index*2);
+    debugLinesindices[(index*2)+1] = (index*2)+1;
+    debugLinespositions[(index*2)] = src;
+    debugLinespositions[(index*2)+1] = tgt;
   }
 }
 
@@ -193,7 +194,8 @@ operator deltaMushModifier_applyDeltas_Masked<<<index>>>(
   Vec3 deltas[],
   Scalar maskWeightmapValues[],
   Boolean displayDebugging,
-  io DebugLines debugLines
+  io UInt32 debugLinesindices[],
+  io Vec3 debugLinespositions[]
 ){
 
   Vec3 src, tgt;
@@ -209,10 +211,10 @@ operator deltaMushModifier_applyDeltas_Masked<<<index>>>(
   }
 
   if(displayDebugging){
-    debugLines.indices[(index*2)] = (index*2);
-    debugLines.indices[(index*2)+1] = (index*2)+1;
-    debugLines.positions[(index*2)] = src;
-    debugLines.positions[(index*2)+1] = tgt;
+    debugLinesindices[(index*2)] = (index*2);
+    debugLinesindices[(index*2)+1] = (index*2)+1;
+    debugLinespositions[(index*2)] = src;
+    debugLinespositions[(index*2)+1] = tgt;
   }
 }
 
@@ -297,8 +299,7 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
   Vec3 mushedPositions[];
   // If the positions attribute is on the GPU, we can't clone it, so we have to explicitly copy the values.
   if(useGPU){
-    if(debugLines.indices.getElementsMemType() == 0)
-      debugLines.convertToGPU();
+    debugLines.convertToGPU();
 
     UInt32 size = mesh.positionsAttribute.values.size();
     mushedPositions.resize(size);
@@ -332,7 +333,8 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
       deltas[index],
       weightMap.values,
       displayDebugging,
-      debugLines
+      debugLines.indices,
+      debugLines.positions
     );
   }
   else{
@@ -342,7 +344,8 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
       mushedPositions,
       deltas[index],
       displayDebugging,
-      debugLines
+      debugLines.indices,
+      debugLines.positions
     );
   }
   mesh.incrementPointPositionsVersion();
