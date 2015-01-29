@@ -18,6 +18,10 @@
     {
      "type": "ComputeNormalsModifier",
      "displayDebugging": false
+    },
+    {
+     "type": "ComputeTangentsModifier",
+     "displayDebugging": false
     }
   ]
 }

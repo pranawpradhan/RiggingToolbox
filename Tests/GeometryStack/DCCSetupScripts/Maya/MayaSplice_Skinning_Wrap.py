@@ -19,7 +19,7 @@ influenceInitNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Init
 cmds.fabricSplice('addInputPort', influenceInitNode, json.dumps({'portName':'filePath', 'dataType':'String', 'addMayaAttr': True}))
 cmds.fabricSplice('addOutputPort', influenceInitNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': True}))
 
-cmds.setAttr(influenceInitNode + '.filePath', toolboxPath+"/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json", type="string");
+cmds.setAttr(influenceInitNode + '.filePath', toolboxPath+"/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json", type="string");
 
 
 cmds.fabricSplice('addKLOperator', influenceInitNode, '{"opName":"tubeCharacter_Init"}', """
@@ -166,84 +166,6 @@ cmds.connectAttr(influenceInitNode + '.stack', influencePoseNode + '.stack')
 
 
 ##############################################
-## Set up the delta mush node.
-
-influenceMushNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_DeltaMush")
-
-cmds.fabricSplice('addIOPort', influenceMushNode, json.dumps({'portName':'stack', 'dataType':'GeometryStack', 'extension':'RiggingToolbox', 'addSpliceMayaAttr':True, 'autoInitObjects': False }))
-cmds.fabricSplice('addInputPort', influenceMushNode, json.dumps({'portName':'iterations', 'dataType':'Integer', 'addMayaAttr': True}))
-cmds.fabricSplice('addInputPort', influenceMushNode, json.dumps({'portName':'displayDebugging', 'dataType':'Boolean', 'addMayaAttr': True}))
-
-cmds.setAttr(influenceMushNode + '.iterations', 30);
-
-cmds.fabricSplice('addKLOperator', influenceMushNode, '{"opName":"tubeCharacter_DeltaMush"}', """
-
-require RiggingToolbox;
-
-
-inline __compile_Vec3Attribute_copyFrom() { Vec3 a[]; Vec3 b[]; Vec3Attribute_copyFrom<<<1@true>>>(a, b); }
-
-// Skinning GPU Kernels
-inline __compile_SkinningAttribute_copyFrom() { SkinningAttributeData a; SkinningAttributeData b; SkinningAttribute_copyFrom<<<1@true>>>(a, b); }
-inline __compile_skinningModifier_skinMeshPositions() { 
-  PolygonMeshTopology a; Vec3 b[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositions<<<1@true>>>(a,b, d, e); 
-}
-inline __compile_skinningModifier_skinMeshPositionsAndNormals() { 
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; SkinningAttributeData d; Mat44 e[]; skinningModifier_skinMeshPositionsAndNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Normals GPU Kernels
-inline __compile_computeNormalsModifier_computePointNormals() { 
-  PolygonMeshTopology a; Vec3 b[];Vec3 c[];Boolean d; DebugLines e; computeNormalsModifier_computePointNormals<<<1@true>>>(a, b, c, d, e); 
-}
-
-// Compute Tangents GPU Kernels
-inline __compile_polygonMesh_recomputeTangents_setTangentTask() { 
-  PolygonMeshTopology a; Vec4 b[];Vec4 c[]; 
-  polygonMesh_recomputeTangents_setTangentTask<<<1@true>>>(a, b, c); 
-}
-
-inline __compile_polygonMesh_recomputeTangents_ComputeBiNormTask(){
-  UInt32 a[];  UInt32 b[];  Vec3 c[];  Vec3 d[];  Vec3 e[];  Vec3 f[];  PolygonMeshTopology g;  Vec3 h[];  Vec2 i[];
-  polygonMesh_recomputeTangents_ComputeBiNormTask<<<1@true>>>(a, b, c, d, e, f, g, h, i);
-}
-inline __compile_polygonMesh_recomputeTangents_computeVertexTanTask(){
-  Vec4 a[];  Vec3 b[];  Vec3 c[];  Vec3 d[];
-  polygonMesh_recomputeTangents_computeVertexTanTask<<<1@true>>>(a, b, c, d);
-}
-inline __compile_polygonMesh_recomputeTangents_countPolygonsTask(){
-  PolygonMeshTopology a;  Size b; Size c; UInt32 d[]; UInt32 e[];
-  polygonMesh_recomputeTangents_countPolygonsTask<<<1@true>>>(a, b, c, d, e);
-}
-
-inline __compile_deltaMushModifier_smoothPos() { PolygonMeshTopology a; Vec3 b[]; deltaMushModifier_smoothPos<<<1@true>>>(a, b); }
-inline __compile_deltaMushModifier_computePointBinding() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; deltaMushModifier_computePointBinding<<<1@true>>>(a, b, c, d); }
-inline __compile_deltaMushModifier_applyDeltas() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Boolean e; DebugLines f; deltaMushModifier_applyDeltas<<<1@true>>>(a, b, c, d, e, f); }
-inline __compile_deltaMushModifier_applyDeltas_Masked() { PolygonMeshTopology a; Vec3 b[];Vec3 c[];Vec3 d[]; Scalar e[]; Boolean f; DebugLines g; deltaMushModifier_applyDeltas_Masked<<<1@true>>>(a, b, c, d, e, f, g); }
-
-inline __compile_wrapModifier_applyDeltas(){
-  PolygonMeshTopology a; Vec3 b[]; Vec3 c[]; Vec4 d[]; GeometryLocation e[]; Vec3 f[]; Vec3 g[]; Vec3 h[]; Vec3 i[]; Boolean j; DebugLines k;
-  wrapModifier_applyDeltas<<<1@true>>>(a,b,c,d,e,f,g,h,i,j,k);
-}
-
-operator tubeCharacter_DeltaMush(
-  io GeometryStack stack,
-  Integer iterations,
-  Boolean displayDebugging
-) {
-  if(stack.numGeometryOperators() >= 3){
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
-    deltaMushModifier.setNumIterations(iterations);
-    deltaMushModifier.setDisplayDebugging(displayDebugging);
-  }
-}
-""")
-
-cmds.connectAttr(influencePoseNode + '.stack', influenceMushNode + '.stack')
-
-
-
-##############################################
 ## Set up the eval/render node.
 
 influenceEvalNode = cmds.createNode("spliceMayaNode", name = "tubeCharacter_Eval")
@@ -255,7 +177,7 @@ cmds.fabricSplice('addOutputPort', influenceEvalNode, json.dumps({'portName':'ev
 cmds.fabricSplice('addInputPort', influenceEvalNode, json.dumps({'portName':'displayGeometries', 'dataType':'Boolean', 'addMayaAttr': True}))
 cmds.setAttr(influenceEvalNode + '.displayGeometries', 1);
 
-cmds.connectAttr(influenceMushNode + '.stack', influenceEvalNode + '.stack')
+cmds.connectAttr(influencePoseNode + '.stack', influenceEvalNode + '.stack')
 
 cmds.fabricSplice('addKLOperator', influenceEvalNode, '{"opName":"tubeCharacter_Eval"}', """
 
