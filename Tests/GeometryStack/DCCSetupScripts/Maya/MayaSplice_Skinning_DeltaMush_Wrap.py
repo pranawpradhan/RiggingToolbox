@@ -91,8 +91,8 @@ operator tubeCharacter_DeltaMush(
   Integer iterations,
   Boolean displayDebugging
 ) {
-  if(stack.numGeometryOperators() >= 2){
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
+  if(stack.numGeometryOperators() >= 3){
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
     deltaMushModifier.setNumIterations(iterations);
     deltaMushModifier.setDisplayDebugging(displayDebugging);
   }
