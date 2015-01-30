@@ -24,6 +24,7 @@ function GeometryOperator DeltaMushModifierFactory.constructGeometryOperator(){
 
 object DeltaMushModifier : BaseModifier {
   Vec3 deltas[][];
+  Vec3 positionsBuffer[][];
 
   UInt32 iterations;
   Boolean bound;
@@ -106,10 +107,10 @@ function Mat44 deltaMushModifier_buildRefFrame(PolygonMeshTopology mesh, UInt32 
 }
 
 
-operator deltaMushModifier_smoothPos<<<index>>>(PolygonMeshTopology mesh, io Vec3 positions[]) {
+operator deltaMushModifier_smoothPos<<<index>>>(PolygonMeshTopology mesh, Vec3 srcPositions[], io Vec3 tgtPositions[]) {
 
   //Pseudo-gaussian: center weight = 0.5, neighbor weights sum = 0.5
-  Vec3 position = positions[ index ];
+  Vec3 position = srcPositions[ index ];
 
   LocalL16UInt32Array surroundingPoints;
   mesh.getPointSurroundingPoints( index, false, surroundingPoints );
@@ -118,11 +119,11 @@ operator deltaMushModifier_smoothPos<<<index>>>(PolygonMeshTopology mesh, io Vec
     Vec3 neiSum = Vec3(0,0,0);
     for( UInt32 i = 0; i < nbNei; ++i ) {
       UInt32 neiPt = surroundingPoints.get(i);
-      neiSum += positions[neiPt];
+      neiSum += srcPositions[neiPt];
     }
     neiSum /= Scalar(nbNei);
     position = ( position + neiSum ) * 0.5;
-    mesh.setPointAttribute( index, positions, position );
+    mesh.setPointAttribute( index, tgtPositions, position );
   }
 }
 
@@ -153,7 +154,7 @@ operator deltaMushModifier_smoothPos<<<index>>>(PolygonMeshTopology mesh, io Vec
 
 operator deltaMushModifier_computePointBinding<<<index>>>(
   PolygonMeshTopology mesh,
-  Vec3 positions[],
+  Vec3 undeformedPositions[],
   Vec3 mushedPositions[],
   io Vec3 deltas[]
 ){
@@ -161,7 +162,7 @@ operator deltaMushModifier_computePointBinding<<<index>>>(
   Mat44 mat44 = deltaMushModifier_buildRefFrame(mesh, index, mushedPositions);
 
   // Compute the delta between the relaxed frame and the original position.
-  deltas[index] = mat44.inverse() * positions[index];
+  deltas[index] = mat44.inverse() * undeformedPositions[index];
 }
 
 
@@ -218,51 +219,79 @@ operator deltaMushModifier_applyDeltas_Masked<<<index>>>(
   }
 }
 
+function deltaMushModifier_smoothMesh(PolygonMeshTopology mesh, UInt32 iterations, io Vec3 positionsBuffer[], io Vec3 positions[], Boolean useGPU){
+  // Smoothing requires double buffers so that we can read from one buffer while writing do a different buffer.
+  Vec3 srcPositions[];
+  Vec3 tgtPositions[];
+  srcPositions = positions;
+  tgtPositions = positionsBuffer;
+  for(UInt32 i=0; i<iterations; i++){
+    // relax the mesh, causing it to lose volume.
+    deltaMushModifier_smoothPos<<<mesh.pointCount()@useGPU>>>(mesh, srcPositions, tgtPositions);
+
+    if(i<iterations-1){
+      // Swap the buffers
+      Vec3 tmp[];
+      tmp = srcPositions;
+      srcPositions = tgtPositions;
+      tgtPositions = tmp;
+    }
+  }
+  // For odd number of iterations, we have to do one final swap to ensure that the 
+  // positionsBuffer contains the final iteration of smoothing.
+  if(iterations % 2 == 1){
+    positions = srcPositions;
+    positionsBuffer = tgtPositions;
+  }
+}
+
 operator deltaMushModifier_computeMeshBinding<<<index>>>(
   PolygonMesh referenceGeometries[],
   io Vec3 deltas[][],
+  io Vec3 positionsBuffer[][],
   UInt32 iterations,
   Boolean useGPU
 ){
   PolygonMesh mesh = referenceGeometries[index];
   deltas[index].resize(mesh.pointCount());
   UInt32 size = mesh.positionsAttribute.values.size();
-  Vec3 mushedPositions[];
-  // Cache the initial positions of the points before relaxing.
-  // If the positoins attribute is on the GPU, we can't clone i, so we have to explicitly copy the values.
+  positionsBuffer[index].resize(size);
+  Vec3 undeformedPositions[];
+
   if(useGPU){
     if(mesh.getMemType() == 0)
       mesh.convertToGPU();
     if(mesh.positionsAttribute.getElementsMemType() == 0)
       mesh.positionsAttribute.convertToGPU();
-    mushedPositions.resize(size);
-    mushedPositions.convertToGPU();
-    Vec3Attribute_copyFrom<<<size@true>>>(mushedPositions, mesh.positionsAttribute.values);
-
+    if(positionsBuffer[index].getElementsMemType() == 0)
+      positionsBuffer[index].convertToGPU();
     if(deltas[index].getElementsMemType() == 0)
       deltas[index].convertToGPU();
+
+    undeformedPositions.resize(size);
+    undeformedPositions.convertToGPU();
+    Vec3Attribute_copyFrom<<<size@true>>>(undeformedPositions, mesh.positionsAttribute.values);
   }
   else{
     if(mesh.getMemType() != 0)
       mesh.convertToCPU();
     if(mesh.positionsAttribute.getElementsMemType() != 0)
       mesh.positionsAttribute.convertToCPU();
-    mushedPositions = mesh.positionsAttribute.values.clone();
-
+    if(positionsBuffer[index].getElementsMemType() != 0)
+      positionsBuffer[index].convertToCPU();
     if(deltas[index].getElementsMemType() != 0)
       deltas[index].convertToCPU();
+
+    undeformedPositions = mesh.positionsAttribute.values.clone();
   }
 
-  for(UInt32 i=0; i<iterations; i++){
-    // relax the mesh, causing it to lose volume.
-    deltaMushModifier_smoothPos<<<mesh.pointCount()@useGPU>>>(mesh.topology, mushedPositions);
-  }
+  deltaMushModifier_smoothMesh(mesh.topology, iterations, positionsBuffer[index], mesh.positionsAttribute.values, useGPU);
 
   // compute the deltas between the relaxed mesh, and the original vertex positions.
   deltaMushModifier_computePointBinding<<<mesh.pointCount()@useGPU>>>(
     mesh.topology,
-    mesh.positionsAttribute.values,
-    mushedPositions,
+    undeformedPositions,
+    positionsBuffer[index],
     deltas[index]
   );
 }
@@ -270,6 +299,7 @@ operator deltaMushModifier_computeMeshBinding<<<index>>>(
 operator deltaMushModifier_deformGeometries<<<index>>>(
   io GeometrySet geomSet,
   Vec3 deltas[][],
+  io Vec3 positionsBuffer[][],
   UInt32 iterations,
   Boolean useMask,
   String maskWeightmapName,
@@ -294,26 +324,13 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     // Always increment the positions version as they will be re-computed in the following kernel.
     lines[index].incrementPositionsVersion();
   }
-  DebugLines debugLines(lines[index]);
 
-  Vec3 mushedPositions[];
-  // If the positions attribute is on the GPU, we can't clone it, so we have to explicitly copy the values.
+  DebugLines debugLines(lines[index]);
   if(useGPU){
     debugLines.convertToGPU();
-
-    UInt32 size = mesh.positionsAttribute.values.size();
-    mushedPositions.resize(size);
-    mushedPositions.convertToGPU();
-    Vec3Attribute_copyFrom<<<size@true>>>(mushedPositions, mesh.positionsAttribute.values);
-  }
-  else{
-    mushedPositions = mesh.positionsAttribute.values.clone();
   }
 
-  for(UInt32 i=0; i<iterations; i++){
-    // relax the mesh, causing it to lose volume.
-    deltaMushModifier_smoothPos<<<mesh.pointCount()@useGPU>>>(mesh.topology, mushedPositions);
-  }
+  deltaMushModifier_smoothMesh(mesh.topology, iterations, positionsBuffer[index], mesh.positionsAttribute.values, useGPU);
 
   // Re-apply the deltas to re-inflate the mesh.
   // (Even when binding, the mesh is deflated, so it must be re-inflated)
@@ -329,7 +346,7 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     deltaMushModifier_applyDeltas_Masked<<<mesh.pointCount()@useGPU>>>(
       mesh.topology,
       mesh.positionsAttribute.values,
-      mushedPositions,
+      positionsBuffer[index],
       deltas[index],
       weightMap.values,
       displayDebugging,
@@ -341,7 +358,7 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     deltaMushModifier_applyDeltas<<<mesh.pointCount()@useGPU>>>(
       mesh.topology,
       mesh.positionsAttribute.values,
-      mushedPositions,
+      positionsBuffer[index],
       deltas[index],
       displayDebugging,
       debugLines.indices,
@@ -349,7 +366,6 @@ operator deltaMushModifier_deformGeometries<<<index>>>(
     );
   }
   mesh.incrementPointPositionsVersion();
-
 }
 
 function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
@@ -359,6 +375,7 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
   if(geomSet.getVersion()+this.iterations != this.boundVersion){
     this.bound = false;
     this.deltas.resize(geomSet.size());
+    this.positionsBuffer.resize(geomSet.size());
     this.lines.resize(geomSet.size());
 
     // Note: We could provide a way to query the original undeformed geometry from the geomSet. 
@@ -378,6 +395,7 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
     deltaMushModifier_computeMeshBinding<<<geomSet.size()>>>(
       this.referenceGeometries,
       this.deltas,
+      this.positionsBuffer,
       this.iterations,
       this.useGPU()
       );
@@ -386,6 +404,7 @@ function DeltaMushModifier.evaluate!(EvalContext context, io GeometrySet geomSet
     deltaMushModifier_deformGeometries<<<geomSet.size()>>>(
       geomSet,
       this.deltas,
+      this.positionsBuffer,
       this.iterations,
       this.useMask,
       this.maskWeightmapName,
