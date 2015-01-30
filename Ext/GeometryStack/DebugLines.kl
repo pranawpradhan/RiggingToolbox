@@ -1,0 +1,47 @@
+
+/*
+ *  Copyright 2010-2014 Fabric Engine Inc. All rights reserved.
+ */
+
+require Math;
+require Geometry;
+
+
+// A helper struct that can be passed into GPU operator encapsulating just the indices and positions arrays.
+struct DebugLines {
+  UInt32 indices[];
+  Vec3 positions[];
+  UInt32 memType;
+};
+
+function DebugLines(Lines lines){
+  this.init(lines);
+}
+function DebugLines.init!(Lines lines){
+  if(lines){
+    this.indices = lines.indices;
+    Vec3Attribute positionsAttribute = lines.attributes.positionsAttribute;
+    this.positions = positionsAttribute.values;
+  }
+}
+
+/// Returns the memory location id. CPU = 0, GPU = 1, VSM = 2, VBO = 4;
+inline UInt32 DebugLines.getMemType( ) {
+  return this.memType;
+}
+
+function DebugLines.convertToGPU!() {
+  if(this.indices.getElementsMemType() == 0)
+    this.indices.convertToGPU();
+  if(this.positions.getElementsMemType() == 0)
+    this.positions.convertToGPU();
+  this.memType = 1;
+}
+
+function DebugLines.convertToCPU!() {
+  if(this.indices.getElementsMemType() != 0)
+  	this.indices.convertToCPU();
+  if(this.positions.getElementsMemType() != 0)
+  	this.positions.convertToCPU();
+  this.memType = 0;
+}

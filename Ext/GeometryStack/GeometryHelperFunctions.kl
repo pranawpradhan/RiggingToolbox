@@ -6,19 +6,46 @@ require Math;
 require Geometry;
 
 
+function ThreadsafeMetaDataContainer cloneMetadata(ThreadsafeMetaDataContainer metaData) {
+  // Note: we need clone to be part of the Geometry interface. 
+  ThreadsafeMetaDataContainer newmetaData();
+  for(key, obj in metaData.dict){
+    if(obj.type == PolygonMeshTopology_computeTangentsTopologyWorkingData_Object)
+      continue;
+    if(obj.type == PolygonMeshTopology_computeTangentsWorkingData_Object)
+      continue;
+    newmetaData.dict[key] = obj.clone();
+  }
+  
+  return newmetaData;
+}
+
 function Geometry cloneGeom(Geometry geometry) {
   // Note: we need clone to be part of the Geometry interface. 
+  // Meta data should be cloned with the geometry.
   PolygonMesh mesh = geometry;
-  if(mesh)
-    return mesh.clone();
+  if(mesh){
+    PolygonMesh newmesh();
+    newmesh.copy(mesh);
+    newmesh.metaData = cloneMetadata(mesh.metaData);
+    return newmesh;
+  }
   else{
     Lines lines = geometry;
-    if(lines)
-      return lines.clone();
+    if(lines){
+      Lines newlines();
+      newlines.copy(lines);
+      newlines.metaData = cloneMetadata(lines.metaData);
+      return newlines;
+    }
     else{
       Points points = geometry;
-      if(points)
-        return points.clone();
+      if(points){
+        Points newpoints();
+        newpoints.copy(points);
+        newpoints.metaData = cloneMetadata(points.metaData);
+        return newpoints;
+      }
     }
   }
   setError("Invalid Geometry type:" + geometry.type());
@@ -78,7 +105,7 @@ function UInt32 getGeomVersion(Geometry geometry) {
 
 
 function ThreadsafeMetaDataContainer getGeomMetaData(Geometry geometry) {
-  // Note: we need 'getVersion' to be part of the Geometry interface. 
+  // Note: we need 'getMetaData' to be part of the Geometry interface. 
   PolygonMesh mesh = geometry;
   if(mesh)
     return mesh.metaData;
@@ -125,87 +152,104 @@ function GeometryAttribute cloneAttribute(GeometryAttribute attr) {
   switch(attr.type()){
     case ColorAttribute:{
       ColorAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case IntegerAttribute:{
       IntegerAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Mat33Attribute:{
       Mat33Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Mat44Attribute:{
       Mat44Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case QuatAttribute:{
       QuatAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case RGBAAttribute:{
       RGBAAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case RGBAttribute:{
       RGBAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case RGBAttribute:{
       RGBAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case ScalarAttribute:{
       ScalarAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case ScalarConstantArrayAttribute:{
       ScalarConstantArrayAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case SkinningAttribute:{
       SkinningAttribute colorAttr = attr;
       SkinningAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case UInt16ConstantArrayAttribute:{
       UInt16ConstantArrayAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case UInt32Attribute:{
       UInt32Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec2Attribute:{
       Vec2Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec3_dAttribute:{
       Vec3_dAttribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec3Attribute:{
       Vec3Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
     case Vec4Attribute:{
       Vec4Attribute clone();
+      clone.resize(attr.size());
       clone.copyFrom(src);
       return clone;
     }
