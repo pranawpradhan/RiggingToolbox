@@ -160,7 +160,7 @@ operator wrapModifier_computeBinding<<<index>>>(
 
 operator wrapModifier_bindGeometries<<<index>>>(
   GeometrySet geomSet,
-  Geometry srcRefGeometries[],
+  Geometry influenceRefGeometries[],
   UInt32 geometryMapping[],
   io GeometryLocation locations[][],
   io Vec3 positionDeltas[][],
@@ -168,9 +168,9 @@ operator wrapModifier_bindGeometries<<<index>>>(
   Boolean useGPU
 ){
   report("wrapModifier_bindGeometries:" + index);
-  PolygonMesh srcRefMesh = srcRefGeometries[geometryMapping[index]];
+  PolygonMesh srcRefMesh = influenceRefGeometries[geometryMapping[index]];
   if(!srcRefMesh)
-    throw("Source geometry '"+geometryMapping[index]+"' is not a PolygonMesh:" + srcRefGeometries[geometryMapping[index]].type() );
+    throw("Source geometry '"+geometryMapping[index]+"' is not a PolygonMesh:" + influenceRefGeometries[geometryMapping[index]].type() );
   Geometry refGeometry = geomSet.get(index);
   Ref<GeometryAttributes> attributes = refGeometry.getAttributes();
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
@@ -277,7 +277,7 @@ operator wrapModifier_applyDeltas<<<index>>>(
 
 operator wrapModifier_deformGeometries(UInt32 index,
   io GeometrySet geomSet,
-  GeometrySet srcGeomSet,
+  GeometrySet influenceGeomSet,
   UInt32 geometryMapping[],
   GeometryLocation locations[][],
   Vec3 positionDeltas[][],
@@ -286,8 +286,7 @@ operator wrapModifier_deformGeometries(UInt32 index,
   io Lines lines[],
   Boolean useGPU
 ){
-  report("wrapModifier_deformGeometries:" + index);
-  PolygonMesh srcMesh = srcGeomSet.get(geometryMapping[index]);
+  PolygonMesh srcMesh = influenceGeomSet.get(geometryMapping[index]);
   if(!srcMesh){
     // Note: The source GeometrySet could contain multiple meshes to deform the target geoms.
     // There could be a mapping generates from the target meshes to the source meshes on a per-point
@@ -337,11 +336,6 @@ operator wrapModifier_deformGeometries(UInt32 index,
       debugLines.convertToCPU();
   }
 
-  report("srcPositionsAttribute.values:" + srcPositionsAttribute.values.getElementsMemType());
-  report("srcNormalsAttribute.values:" + srcNormalsAttribute.values.getElementsMemType());
-  report("srcTangentsAttribute.values:" + srcTangentsAttribute.values.getElementsMemType());
-  report("positionsAttribute.values:" + positionsAttribute.values.getElementsMemType());
-  report("normalsAttribute.values:" + normalsAttribute.values.getElementsMemType());
   wrapModifier_applyDeltas<<<positionsAttribute.size()@useGPU>>>(
     srcMesh.topology,
     srcPositionsAttribute.values,
@@ -369,15 +363,15 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
     return;
   }
 
-  GeometrySet srcGeomSet = this.influenceGeometryStack.evaluate(context);
-  if(srcGeomSet.size() == 0){
+  GeometrySet influenceGeomSet = this.influenceGeometryStack.evaluate(context);
+  if(influenceGeomSet.size() == 0){
     // Note: The source GeometrySet could contain multiple meshes to deform the target geoms.
     // There could be a mapping generates from the target meshes to the source meshes on a per-point
     // basis. For now we just expect one polymesh as the source. 
     setError("Warning in wrapModifier_deformGeometries: Source GeometrySet contains zero geometries.");
     return;
   }
-  if(srcGeomSet.getVersion() != this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
+  if(influenceGeomSet.getVersion() != this.srcBoundVersion || geomSet.getVersion() != this.boundVersion){
     AutoProfilingEvent p2("wrapModifier_bindGeometries");
     this.locations.resize(geomSet.size());
     this.positionDeltas.resize(geomSet.size());
@@ -386,17 +380,17 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
     this.geometryMapping.resize(geomSet.size());
     // Get the source goemetires right after the generator has evaluated.
-    Geometry srcRefGeometries[] = srcGeomSet.getGeometryClonesAtVersion(1);
+    Geometry influenceRefGeometries[] = influenceGeomSet.getGeometryClonesAtVersion(1);
 
     if(this.useGPU()){
       // Before performing the bind, make sure the ref geometries
       // are on the CPU. All deformed geometries might be bound to a
       // single _shared_ ref geometry, so we can't to this modification 
       // in the wrapModifier_bindGeometries kernel.
-      for(UInt32 i=0; i<srcRefGeometries.size; i++){
-        PolygonMesh srcRefMesh = srcRefGeometries[this.geometryMapping[i]];
+      for(UInt32 i=0; i<influenceRefGeometries.size; i++){
+        PolygonMesh srcRefMesh = influenceRefGeometries[this.geometryMapping[i]];
         if(!srcRefMesh)
-          throw("Source geometry '"+this.geometryMapping[i]+"' is not a PolygonMesh:" + srcRefGeometries[this.geometryMapping[i]].type() );
+          throw("Source geometry '"+this.geometryMapping[i]+"' is not a PolygonMesh:" + influenceRefGeometries[this.geometryMapping[i]].type() );
 
         if(srcRefMesh.getMemType() != 0)
           srcRefMesh.convertToCPU();
@@ -416,7 +410,7 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
 
     wrapModifier_bindGeometries<<<geomSet.size()>>>(
       geomSet,
-      srcRefGeometries,
+      influenceRefGeometries,
       this.geometryMapping,
       this.locations,
       this.positionDeltas,
@@ -425,8 +419,8 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       );
 
     if(this.useGPU()){
-      for(UInt32 i=0; i<srcRefGeometries.size; i++){
-        PolygonMesh srcRefMesh = srcRefGeometries[this.geometryMapping[i]];
+      for(UInt32 i=0; i<influenceRefGeometries.size; i++){
+        PolygonMesh srcRefMesh = influenceRefGeometries[this.geometryMapping[i]];
         // Move all the data back to the GPU after the bind is complete.
         srcRefMesh.convertToGPU();
 
@@ -440,43 +434,17 @@ function WrapModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
       }
     }
 
-    this.srcBoundVersion = srcGeomSet.getVersion();
+    this.srcBoundVersion = influenceGeomSet.getVersion();
     this.boundVersion = geomSet.getVersion();
   }
 
   {
     AutoProfilingEvent p2("wrapModifier_deformGeometries");
 
-    // if(this.useGPU()){
-    //   // Before performing the deformation, make sure the src geometries
-    //   // are on the GPU. All deformed geometries might be bound to a
-    //   // single _shared_ ref geometry, so we can't to this modification 
-    //   // in the wrapModifier_deformGeometries kernel.
-    //   for(UInt32 i=0; i<srcGeomSet.size; i++){
-    //     PolygonMesh srcRefMesh = srcGeomSet.get(this.geometryMapping[i]);
-    //     if(!srcRefMesh)
-    //       throw("Source geometry '"+this.geometryMapping[i]+"' is not a PolygonMesh:" + srcGeomSet.get(this.geometryMapping[i]).type() );
-
-    //     if(srcRefMesh.getMemType() == 0)
-    //       srcRefMesh.convertToGPU();
-
-    //     Ref<Vec3Attribute> srcPositionsAttribute = srcRefMesh.positionsAttribute;
-    //     Ref<Vec3Attribute> srcNormalsAttribute = srcRefMesh.normalsAttribute;
-    //     Ref<Vec4Attribute> srcTangentsAttribute = srcRefMesh.getAttribute("tangents");
-
-    //     if(srcPositionsAttribute.getElementsMemType() == 0)
-    //       srcPositionsAttribute.convertToGPU();
-    //     if(srcNormalsAttribute.getElementsMemType() == 0)
-    //       srcNormalsAttribute.convertToGPU();
-    //     if(srcTangentsAttribute.getElementsMemType() == 0)
-    //       srcTangentsAttribute.convertToGPU();
-    //   }
-    // }
-
     for(UInt32 i=0; i<geomSet.size(); i++){
       wrapModifier_deformGeometries(i,
         geomSet,
-        srcGeomSet,
+        influenceGeomSet,
         this.geometryMapping,
         this.locations,
         this.positionDeltas,

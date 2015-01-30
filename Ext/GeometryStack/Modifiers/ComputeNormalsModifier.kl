@@ -145,7 +145,6 @@ operator computeNormalsModifier_modifyGeometries<<<index>>>(
 
 function ComputeNormalsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  report(FUNC);
 
   if(geomSet.getVersion() != this.boundVersion){
     this.lines.resize(geomSet.size());
