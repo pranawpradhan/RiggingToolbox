@@ -270,7 +270,7 @@ operator deltaMushModifier_computeMeshBinding<<<index>>>(
 
     undeformedPositions.resize(size);
     undeformedPositions.convertToGPU();
-    Vec3Attribute_copyFrom<<<size@true>>>(undeformedPositions, mesh.positionsAttribute.values);
+    mesh.positionsAttribute.values.copyTo(undeformedPositions);
   }
   else{
     if(mesh.getMemType() != 0)
