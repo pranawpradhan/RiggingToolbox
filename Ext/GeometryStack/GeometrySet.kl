@@ -9,9 +9,6 @@ object GeometrySet {
 
   UInt32 attributeGenerations[String];
 
-  CachePoint cachePoints[];
-  UInt32 stackPoint;
-
   ///Container for holding various user data, such as the Skeleton.
   Object metaData[String];
   UInt32 version;
@@ -90,7 +87,7 @@ function String GeometrySet.getDesc(String indent, Boolean includeGeometryTolopo
     desc += indent + "    " + getGeomDebugName(this.get(i)) + ":{\n";
     
     if(includeGeometryTolopology){
-      desc += indent + "      " + this.get(i).getDesc(true, true);
+      desc += indent + "      " + this.get(i).getDesc(false, false);
     }
     desc += indent + "    },\n";
   }
@@ -108,84 +105,4 @@ function String GeometrySet.getDesc(String indent, Boolean includeGeometryTolopo
 /// Generates a Description string of this stack.
 function String GeometrySet.getDesc() {
   return this.getDesc("", false);
-}
-
-/// Adds a new cache point using the provided operator.
-function GeometrySet.addCachePoint!(GeometryOperator op) {
-  // Generate cache points for each operator.
-  // Note: currently we are creating cache points for every operator
-  // but this is excessive. Many operators may not need to be cached.
-  Generator generator = op;
-  CachePoint cachePoint = null;
-  if(generator)
-    cachePoint = GeometryCache();
-  else
-    cachePoint = GeometryAttributeCache(op, 0);
-  this.cachePoints.push(cachePoint);
-}
-
-/// Updates the cache to the point specified.
-function GeometrySet.updateCache!(UInt32 stackPoint, GeometryOperator op) {
-  AutoProfilingEvent p(FUNC+":"+stackPoint);
-
-  // The data previous to this point has been re-computed. 
-  // The cache must be updated.
-  this.cachePoints[stackPoint].update(this.geometries);
-  this.stackPoint = stackPoint;
-}
-
-function GeometrySet.rewind!(UInt32 stackPoint) {
-  AutoProfilingEvent p(FUNC+":"+stackPoint);
-
-  if(stackPoint >= this.cachePoints.size)
-    return;
-
-  for(UInt32 i=this.stackPoint-1; i>=stackPoint; i--)
-    this.cachePoints[i].restore(this.geometries);
-  this.stackPoint = stackPoint;
-}
-
-/// Returns a new set of cloned geometires at the specifies point in the stack.
-function Geometry[] GeometrySet.getGeometryClonesAtVersion(UInt32 stackPoint) {
-  AutoProfilingEvent p(FUNC+":"+stackPoint);
-  // clone the geometries at the state they are now, and then rewind them back to the state requested.
-  Geometry geoms[];
-  geoms.resize(this.geometries.size);
-  Boolean useGPU[];
-  useGPU.resize(this.geometries.size);
-  Boolean gpuAttribs[String];
-  for(UInt32 i=0; i<this.geometries.size; i++){
-    Geometry geom = this.geometries[i];
-
-    // Convert the geometry back to the CPU before cloning. 
-    if(geom.getMemType() != 0){
-      geom.convertToCPU();
-      useGPU[i] = true;
-    }
-    Ref<GeometryAttributes> attributes = geom.getAttributes();
-    for(UInt32 j=0; j<attributes.attributes.size; j++){
-      if(attributes.attributes[j].getElementsMemType() != 0){
-        attributes.attributes[j].convertToCPU();
-        gpuAttribs[attributes.attributes[j].getName()] = true;
-      }
-    }
-    geoms[i] = cloneGeom(geom);
-  }
-
-  for(UInt32 i=this.stackPoint-1; i>=stackPoint; i--)
-    this.cachePoints[i].restore(geoms);
-
-  // Now put the data back on the GPU if it was there before.
-  for(UInt32 i=0; i<this.geometries.size; i++){
-    Geometry geom = this.geometries[i];
-    if(useGPU[i])
-      geom.convertToGPU();
-    Ref<GeometryAttributes> attributes = geom.getAttributes();
-    for(UInt32 j=0; j<attributes.attributes.size; j++){
-      if(gpuAttribs.has(attributes.attributes[j].getName()))
-        attributes.attributes[j].convertToGPU();
-    }
-  }
-  
-  return geoms;
 }

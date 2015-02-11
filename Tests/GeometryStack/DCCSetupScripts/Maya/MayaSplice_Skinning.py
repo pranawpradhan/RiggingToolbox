@@ -54,7 +54,6 @@ cmds.fabricSplice('addKLOperator', poseNode, '{"opName":"tubeCharacter_Skinning"
 
 require RiggingToolbox;
 
-
 operator tubeCharacter_Skinning(
   io GeometryStack stack,
   Mat44 deformers[],

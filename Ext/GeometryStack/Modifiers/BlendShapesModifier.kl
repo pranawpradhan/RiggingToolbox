@@ -36,21 +36,6 @@ function BlendShapesModifier_Target.resize!(UInt32 size){
   this.deltas.resize(size);
 }
 
-
-inline UInt32 BlendShapesModifier_Target.getMemType( ) {
-  return this.indices.getElementsMemType();
-}
-
-inline BlendShapesModifier_Target.convertToGPU!( ) {
-  this.indices.convertToGPU();
-  this.deltas.convertToGPU();
-}
-
-inline BlendShapesModifier_Target.convertToCPU!( ) {
-  this.indices.convertToCPU();
-  this.deltas.convertToCPU();
-}
-
 //////////////////////////////////////
 //
 
@@ -280,9 +265,10 @@ function BlendShapesModifier.addReferenceGeometry!(Geometry refGeometry){
 function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targetGeometry){
   AutoProfilingEvent p(FUNC);
 
-  UInt32 numTargets = this.targetCount+1;
-  UInt32 targetIndex = this.targetCount;
+  UInt32 numTargets = this.targets[geomIndex].size()+1;
+  UInt32 targetIndex = numTargets-1;
   this.targets[geomIndex].resize(numTargets);
+  this.weights.resize(numTargets);
 
   PolygonMesh targetMesh = targetGeometry;
   UInt32 referencePointCount;
@@ -329,8 +315,7 @@ function BlendShapesModifier.addTargetGeometry!(UInt32 geomIndex, Geometry targe
   UInt32 targetPointCount = this.targets[geomIndex][targetIndex].indices.size;
   report("addTargetGeometry:" + geomIndex +":" + this.targets[geomIndex].size + ":" + Scalar(targetPointCount)/Scalar(referencePointCount));
   this.sparcity += Scalar(targetPointCount)/Scalar(referencePointCount);
-  this.targetCount++;
-  this.weights.resize(this.targetCount);
+  this.targetCount ++;
 }
 
 
@@ -368,22 +353,20 @@ operator blendShapesModifier_applyGeomDeltas<<<index>>>(
   }
 }
 
-
 operator blendShapesModifier_applyMeshDeltas<<<index>>>(
-  PolygonMeshTopology mesh,
-  io Vec3 positions[],
+  io PolygonMesh mesh,
   BlendShapesModifier_Target target,
   Scalar weight,
   Boolean displayDebugging,
-  io Color vertexColors[],
+  io Ref<ColorAttribute> vertexColorsAttr,
   Color targetColor
 ){
   UInt32 targetOffsetIndex = target.indices[index];
-  Vec3 pos = positions[targetOffsetIndex];
-  mesh.setPointAttribute(targetOffsetIndex, positions, pos + (target.deltas[index] * weight));
+  Vec3 pos = mesh.getPointPosition(targetOffsetIndex);
+  mesh.setPointPosition(targetOffsetIndex, pos + (target.deltas[index] * weight));
   if(displayDebugging){
-    Color color = vertexColors[targetOffsetIndex];
-    mesh.setPointAttribute(targetOffsetIndex, vertexColors, color + (targetColor * weight));
+    Color color = vertexColorsAttr.values[targetOffsetIndex];
+    mesh.setPointAttribute(targetOffsetIndex, vertexColorsAttr, color + (targetColor * weight));
   }
 }
 
@@ -395,10 +378,9 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   Scalar shapeThreshold,
   Boolean displayDebugging,
   Color targetColors[],
-  io UInt32 numActiveShapes,
-  Boolean useGPU
+  io UInt32 numActiveShapes
 ){
-  // AutoProfilingEvent p(FUNC);
+  AutoProfilingEvent p(FUNC);
   if(targets[index].size != weights.size()){
     report("BlendShapesModifier cannot evaluate because the number of weights:" + weights.size() + " does not match the number of targets:" + targets[index].size);
     return;
@@ -408,49 +390,36 @@ operator blendShapesModifier_deformGeometries<<<index>>>(
   Vec3Attribute positionsAttribute = attributes.positionsAttribute;
   
   PolygonMesh mesh = geom;
-  Color vertexColors[];
   Ref<ColorAttribute> vertexColorsAttr = null;
   if(displayDebugging){
     vertexColorsAttr = mesh.getOrCreateAttribute("blendShapes_vertexColors", ColorAttribute);
     vertexColorsAttr.incrementVersion();
     // Re-initilialize the vertex colors each evaluation because the colors are accumulated into this buffer.
-    vertexColors.resize(vertexColorsAttr.size());
-    vertexColorsAttr.values = vertexColors;
-
-    if(useGPU){
-      vertexColorsAttr.convertToGPU();
-    }
+    Color newColors[];
+    newColors.resize(vertexColorsAttr.size());
+    vertexColorsAttr.values = newColors;
   }
 
   for(UInt32 i=0; i<targets[index].size; i++){
-
-    if(useGPU){
-      if(targets[index][i].getMemType() == 0)
-        targets[index][i].convertToGPU();
-    }
-    else{
-      if(targets[index][i].getMemType() != 0)
-        targets[index][i].convertToCPU();
-    }
     if(weights[i] > shapeThreshold){
+      //AutoProfilingEvent p_targ("Target:" + i);
       if(!mesh){
-        blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()@useGPU>>>(
+        blendShapesModifier_applyGeomDeltas<<<targets[index][i].size()>>>(
           positionsAttribute.values,
           targets[index][i],
           weights[i],
           displayDebugging,
-          vertexColors,
+          vertexColorsAttr.values,
           targetColors[i]
         );
       }
       else{
-        blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()@useGPU>>>(
-          mesh.topology,
-          positionsAttribute.values,
+        blendShapesModifier_applyMeshDeltas<<<targets[index][i].size()>>>(
+          mesh,
           targets[index][i],
           weights[i],
           displayDebugging,
-          vertexColors,
+          vertexColorsAttr,
           targetColors[i]
         );
       }
@@ -488,8 +457,7 @@ function BlendShapesModifier.evaluate!(EvalContext context, io GeometrySet geomS
       this.shapeThreshold,
       this.displayDebugging,
       this.targetColors,
-      numActiveShapes,
-      this.useGPU()
+      numActiveShapes
     );
 
   if(this.displayDebugging){
@@ -617,16 +585,12 @@ function BlendShapesModifier.saveTargetsToBinCache(FilePath binCachefile) {
 function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
   report("loadTargetsFromBinCache:" + binCachefile.string());
   BinaryBlockReader blockReader(binCachefile.string());
-  UInt32 numBlocks = UInt32(blockReader.getNumBlocks());
-  this.targets.resize(numBlocks);
-
-  for(UInt32 i=0; i<numBlocks; i++){
-
+  UInt64 numBlocks = blockReader.getNumBlocks();
+  this.targets.resize(UInt32(numBlocks));
+  for(UInt32 i=0; i<this.targets.size; i++){
     BinaryBlockReader targetSetReader = blockReader.beginReadBlock('targetSet'+i);
-    UInt32 numTargets = UInt32(targetSetReader.getNumBlocks());
-    this.targets[i].resize(numTargets);
-    this.weights.resize(numTargets);
-
+    UInt64 numTargets = targetSetReader.getNumBlocks();
+    this.targets[i].resize(UInt32(numTargets));
     for(UInt32 j=0; j<this.targets[i].size; j++){
       BinaryBlockReader targetReader = targetSetReader.beginReadBlock('target'+j);
       UInt32 count = 0;
@@ -636,7 +600,6 @@ function BlendShapesModifier.loadTargetsFromBinCache!(FilePath binCachefile) {
       targetReader.read(this.targets[i][j].deltas.data, this.targets[i][j].deltas.dataSize);
     }
   }
-
 }
 
 /// Generates a Description string of this modifier.

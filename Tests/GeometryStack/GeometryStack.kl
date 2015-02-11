@@ -13,7 +13,6 @@ operator entry(){
   {
     GeometrySet geomSet = stack.evaluate(context);
 
-    geomSet.convertToCPU();
     report("NumGeometries:" + geomSet.size);
     for(Integer i=0; i<geomSet.size; i++){
       report(geomSet.get(i).getDesc(true, true));
@@ -23,7 +22,6 @@ operator entry(){
   {
     GeometrySet geomSet = stack.evaluate(context);
 
-    geomSet.convertToCPU();
     report("NumGeometries:" + geomSet.size);
     for(Integer i=0; i<geomSet.size; i++){
       report(geomSet.get(i).getDesc(true, true));

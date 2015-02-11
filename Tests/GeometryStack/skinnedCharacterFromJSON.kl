@@ -5,16 +5,18 @@ operator entry(){
 
   StartFabricProfiling();
 
-  GeometryStack scrStack();
-  scrStack.loadJSONFile("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/tubeCharacter_SkinningAndDeltaMush.json");
+  String json = "    {\n\
+    \"geomOperators\": [
+        { \"type\": \"AlembicSkinnedMeshGeometryGenerator\", \"filePath\": \"${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/skinnedTube.abc\", \"geometryNames\": [\"pCylinderShape1\"] },
+        { \"type\": \"SkinningModifier\" }
+    ]
+  }";
 
   GeometryStack stack();
-  stack.loadJSONFile("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/tubeCharacter_Wrap.json");
+  PersistenceContext persistenceContext();
+  stack.loadJSONString(persistenceContext, json);
 
-  WrapModifier wrapModifier = stack.getGeometryOperator(1);
-  wrapModifier.setSourceGeomStack(scrStack);
-
-  SkinningModifier skiningModifier = scrStack.getGeometryOperator(1);
+  SkinningModifier skiningModifier = stack.getGeometryOperator(1);
 
   EvalContext context();
   stack.evaluate(context);
@@ -28,13 +30,12 @@ operator entry(){
   pose[3] = Xfo(Vec3(10, 20, 5)).toMat44();
   skiningModifier.setPose(pose);
 
-  stack.evaluate(context);
+  GeometrySet geomSet = stack.evaluate(context);
 
   StopFabricProfiling();
 
   report( GetEvalPathReport() );
 
-  report("scrStack:" + scrStack.getDesc());
   report("stack:" + stack.getDesc());
   
 }

@@ -6,7 +6,9 @@ require Math;
 require Geometry;
 
 interface CachePoint  {
-  update!( Geometry geometries[] );
-  restore(io Geometry geometries[] );
+  update!(io GeometrySet geomSet, GeometryOperator op);
+
+  // Free all memory in the cache.
+  free!();
 };
 
