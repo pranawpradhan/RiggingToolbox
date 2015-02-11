@@ -5,17 +5,16 @@
 require Math;
 require Geometry;
 
-object BaseModifier;
 
 object GeometryAttributeCache : CachePoint, Listener  {
   BaseModifier modifier;
-  Boolean moveDataToGPU;
+
   String attributesNames[];
-  UInt32 attributesInteractions[];
   GeometryAttribute cachedAttributes[][];
+  UInt32 attributeGenerations[][];
 };
 
-function GeometryAttributeCache(BaseModifier modifier, UInt32 extraArg) {
+function GeometryAttributeCache(BaseModifier modifier) {
   // Add a listener to know when we should update the cached attribute interaction types. 
   this.modifier = modifier;
   Listener listener = this; // No implicit casting in KL from objects to interfaces.
@@ -33,91 +32,53 @@ function GeometryAttributeCache.notify!(Notifier notifier, String type, String d
 function GeometryAttributeCache.updateCachedAttributeNames!() {
   UInt32 deps[String] = this.modifier.getAttributeInteractions();
   this.attributesNames.resize(0);
-  this.attributesInteractions.resize(0);
   for(key, value in deps){
-    this.attributesNames.push(key);
-    this.attributesInteractions.push(value);
+    if(value == AttrMode_ReadWrite)
+      this.attributesNames.push(key);
   }
-  this.moveDataToGPU = this.modifier.useGPU();
 }
 
 /// Restores the geometry attributes to the state found in the cache.
-function GeometryAttributeCache.update!(Geometry geometries[]) {
-  AutoProfilingEvent p(FUNC+":" + this.modifier.type() +":"+this.attributesNames);\
+function GeometryAttributeCache.update!(io GeometrySet geomSet, GeometryOperator op) {
+  AutoProfilingEvent p(FUNC+":"+this.attributesNames);
 
-  UInt32 numGeoms = geometries.size;
+
+  UInt32 numGeoms = geomSet.size;
   UInt32 numcachedAttrs = this.attributesNames.size;
   this.cachedAttributes.resize(numGeoms);
+  this.attributeGenerations.resize(numGeoms);
 
   for(Integer i=0; i<numGeoms; i++){
-    Geometry geo = geometries[i];
-    PolygonMesh mesh = geo;
-    if(mesh != null){
-      if(this.moveDataToGPU){
-        if(mesh.getMemType() == 0)
-          mesh.convertToGPU();
-      }
-      else{
-        if(mesh.getMemType() != 0)
-          mesh.convertToCPU();
-      }
-    }
-
-    Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
+    Ref<GeometryAttributes> attributes = geomSet.get(i).getAttributes();
     this.cachedAttributes[i].resize(numcachedAttrs);
+    this.attributeGenerations[i].resize(numcachedAttrs);
     for(Integer j=0; j<numcachedAttrs; j++){
       String attrName = this.attributesNames[j];
       Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
-      if(!attr){
-        // Check if the attribute will be read by the modifier. If so, then throw an exception.
-        if(this.attributesInteractions[j] != AttrMode_Write)
-          throw("Error: Missing Attribute:" + attrName + ". Required for modifier:" + this.modifier.type());
-        // Else, the modifier will generate the attribute.
-        continue;
-      }
+      UInt32 gen = geomSet.getAttributeGeneration(attrName);
+      UInt32 cachedGen = this.attributeGenerations[i][j];
+      if(this.cachedAttributes[i][j].type() != attr.type() || cachedGen >= gen){
+        // Update the cached attribute to the new value.
+        AutoProfilingEvent pUpdate("Update:"+attrName);
 
-      // If the operator requires the data to be on the GPU, and the data is currently on the CPU,
-      // move it to the GPU. If the operator requires the data on the CPU, but it is on the GPU,
-      // move it back.
-      if(this.moveDataToGPU){
-        if(attr.getElementsMemType() == 0)
-          attr.convertToGPU();
+        this.cachedAttributes[i][j] = cloneAttribute(attr);
+        this.attributeGenerations[i][j] = gen;
       }
-      else{
-        if(attr.getElementsMemType() != 0){
-          report("WARNING: Moving data back to the CPU is quite costly and should be avoided.");
-          attr.convertToCPU();
-        }
-      }
-      if(this.attributesInteractions[j] == AttrMode_ReadWrite){
-        // Only read/write attributes must be cached before the modifier changes the value.
-        if(this.cachedAttributes[i][j] == null || this.cachedAttributes[i][j].type() != attr.type()){
-          this.cachedAttributes[i][j] = cloneAttribute(attr);
-        }
-        else{
-          this.cachedAttributes[i][j].copyFrom(attr);
-        }
+      else if(cachedGen < gen){
+        // Restore the attribute to its previous value.
+        AutoProfilingEvent pRestore("Restore:"+attrName);
+
+        Ref<Object> cachedAttr = this.cachedAttributes[i][j];
+        attr.copyFrom( cachedAttr );
+        geomSet.setAttributeGeneration(attrName, cachedGen);
       }
     }
   }
 }
 
 
-/// Restores the geometry attributes to the state found in the cache.
-function GeometryAttributeCache.restore(io Geometry geometries[]) {
-  AutoProfilingEvent p(FUNC+ ":" + this.modifier.type()+":"+this.attributesNames);
-
-  for(Integer i=0; i<geometries.size; i++){
-    Ref<GeometryAttributes> attributes = geometries[i].getAttributes();
-    for(Integer j=0; j<this.attributesNames.size; j++){
-      if(this.attributesInteractions[j] == AttrMode_ReadWrite){
-        String attrName = this.attributesNames[j];
-        Ref<GeometryAttribute> attr = attributes.getAttribute(attrName);
-
-        // Restore the attribute to its previous value.
-        Ref<Object> cachedAttr = this.cachedAttributes[i][j];
-        attr.copyFrom( cachedAttr );
-      }
-    }
-  }
+function GeometryAttributeCache.free!(){
+  AutoProfilingEvent p(FUNC);
+  this.cachedAttributes.resize(0);
+  this.attributeGenerations.resize(0);
 }

@@ -19,6 +19,7 @@ object GeometryStack : Notifier, Listener, IGeometryStack, Persistable {
 
   GeometrySet geomSet;
   GeometryOperator geomOperators[];
+  CachePoint cachePoints[];
   UInt32 dirtyPoint;
 
   Boolean displayGeometries;
@@ -26,8 +27,6 @@ object GeometryStack : Notifier, Listener, IGeometryStack, Persistable {
   Boolean renderingInitialized;
   UInt32 geomSetVersion;
   Color geomColors[String];
-
-  Boolean useGPU;
 
   // e.g. If a deformer modifies positions, and the subsequent deformer
   // ultilizes normals, and there is a dependency from normals to positions
@@ -69,7 +68,7 @@ function GeometryStack.addAttributeDependency!(String from, String to) {
 
 function GeometryStack.addGeometryOperator!(GeometryOperator op) {
   this.geomOperators.push(op);
-  this.geomSet.addCachePoint(op);
+  this.cachePoints.resize(this.geomOperators.size);
 
   // Note: the cast causes the 'in' arg to become 'io' here.
   Notifier notifier = op;
@@ -96,10 +95,12 @@ function GeometryStack.notify!(Notifier notifier, String type, String data) {
     for(Integer i=0; i<this.geomOperators.size; i++){
       Notifier op = this.geomOperators[i];
       if(op === notifier){
-        if(i < this.dirtyPoint){
+        if(i < this.dirtyPoint)
           this.dirtyPoint = i;
-          this.geomSet.rewind(i);
-        }
+        // for(Integer j=i; j<this.geomOperators.size; j++){
+        //   if(this.cachePoints[j] != null)
+        //     this.cachePoints[j].invalidate();
+        // }
         break;
       }
     }
@@ -122,16 +123,59 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
   if(this.dirtyPoint < this.geomOperators.size){
     for(Integer i=this.dirtyPoint; i<this.geomOperators.size; i++){
       GeometryOperator op = this.geomOperators[i];
-      
-      // Update the cache if the data has been recomputed bya previous operator.
-      if(i > this.dirtyPoint)
-        this.geomSet.updateCache(i, op);
+
+      // Now check the geometries if they have the attributes required by the next operation.
+      Boolean debug = true;
+      if(debug){
+        UInt32 deps[String] = op.getAttributeInteractions();
+        for(Integer k=0; k<this.geomSet.size; k++){
+          String missingAttributes[];
+          for(key, value in deps){
+            if(value == AttrMode_Read || value == AttrMode_ReadWrite){
+              Ref<GeometryAttributes> attributes = this.geomSet.get(k).getAttributes();
+              if(!attributes.has(key))
+                missingAttributes.push(key);
+            }
+          }
+          if(missingAttributes.size > 0){
+            setError("Cannot evaluate '" + op.type() + "'. Geometry missing required attributes:" + missingAttributes);
+            return this.geomSet;
+          }
+        }
+      }
+      // Generate cache points for each operator.
+      // Note: currently we are creating cache points for every operator
+      // but this is excessive. Many operators may not need to be cached.
+      CachePoint cachePoint = this.cachePoints[i];
+      if(cachePoint == null){
+        Generator generator = op;
+        if(generator)
+          cachePoint = GeometryCache();
+        else
+          cachePoint = GeometryAttributeCache(op);
+        this.cachePoints[i] = cachePoint;
+      }
+
+      // The data previous to this point has been re-computed. 
+      // The cache must be updated.
+      cachePoint.update(this.geomSet, op);
       
       // Evaluate the operator now that the geomSet is in the state ready for this operator.
       op.evaluate(context, this.geomSet);
+
+      {
+        // Increment the modified attribute generations so that the caching system 
+        // knows which ones to restore in subsequent evaluations.
+        UInt32 deps[String] = op.getAttributeInteractions();
+        for(key, value in deps){
+          if(value == AttrMode_Write || value == AttrMode_ReadWrite){
+            this.geomSet.incrementAttributeGeneration(key);
+            // TODO: we could increment the attribute versions here too.
+          }
+        }
+      }
     }
     this.dirtyPoint = this.geomOperators.size;
-    this.geomSet.stackPoint = this.geomOperators.size;
   }
 
   if(this.displayGeometries && (this.handle==null || this.geomSetVersion != this.geomSet.getVersion())){
@@ -142,6 +186,7 @@ function GeometrySet GeometryStack.evaluate!(EvalContext context) {
 
   if(this.geomSetVersion != this.geomSet.getVersion())
     this.geomSetVersion = this.geomSet.getVersion();
+
 
   return this.geomSet;
 }
@@ -295,7 +340,7 @@ function String GeometryStack.getDesc(String indent, Boolean includeGeometryTolo
   desc += indent + "GeometryStack { \n";
   desc += indent + "  geomOperators:[ \n";
   for(Integer i=0; i<this.geomOperators.size; i++){
-    desc += this.geomOperators[i].getDesc(indent+'    ') + (i<(this.geomOperators.size-1) ? ',' : '') + "\n";
+    desc += this.geomOperators[i].getDesc(indent+'    ') + "\n";
   }
   desc += indent + "  ],\n";
   desc += indent + "  geomSet: " + this.geomSet.getDesc(indent + '  ',  includeGeometryTolopology) + '\n';
