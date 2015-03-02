@@ -5,51 +5,49 @@ operator entry(){
 
   StartFabricProfiling();
 
-
-  FilePath basePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/");
-  basePath = basePath.expandEnvVars();
-
-  String json = "    {\n\
-    \"geomOperators\": [
-      {\n\
-       \"type\": \"AlembicGeometryGenerator\",\n\
-       \"filePath\": \"sphereBlendShapes.abc\",\n\
-       \"geometryNames\": [\"SphereRefShape\"]
-      },
-      {\n\
-       \"type\": \"BlendShapesModifier\",\n\
-       \"filePath\": \"sphereBlendShapes.abc\",\n\
-       \"referenceGeometryName\": \"SphereRefShape\",\n\
-       \"targetGeometryNames\": [\"SphereRefTarget*\"]\n\
-       \"displayDebugging\": true\n\
-      }
-    ]
-  }";
-
   GeometryStack stack();
-  PersistenceContext persistenceContext();
-  persistenceContext.filePath = basePath.string();
-  stack.loadJSONString(persistenceContext, json);
+  stack.loadJSONFile("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/blendShapesSphereCharacter.json");
 
   BlendShapesModifier blendShapesModifier = stack.getGeometryOperator(1);
 
   EvalContext context();
+  report("stack.evaluate(context)");
   stack.evaluate(context);
 
   // Modify the blend params and then reevaluate. 
-  Scalar weights[];
-  weights.resize(2);
-  weights[0] = 0.65;
-  weights[1] = 1.0;
-  blendShapesModifier.setBlendWeights(weights);
+  {
+    Scalar weights[];
+    weights.resize(2);
+    weights[0] = 0.65;
+    weights[1] = 1.0;
+    blendShapesModifier.setBlendWeights(weights);
+  }
 
+  report("stack.evaluate(context)");
   GeometrySet geomSet = stack.evaluate(context);
 
+  DrawContext drawContext = DrawContext();
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
+
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Scalar weights[];
+    weights.resize(2);
+    weights[0] = 0.56;
+    weights[1] = 0.12;
+    blendShapesModifier.setBlendWeights(weights);
+  }
+  
+  stack.evaluate(context);
+  inlineDrawingScope.draw(drawContext);
+  
+  report("StopFabricProfiling");
   StopFabricProfiling();
 
   report( GetEvalPathReport() );
 
   report("stack:" + stack.getDesc());
-  
 }
 

@@ -87,6 +87,7 @@ cmds.fabricSplice('addKLOperator', mushNode, '{"opName":"tubeCharacter_DeltaMush
 
 require RiggingToolbox;
 
+
 operator tubeCharacter_DeltaMush(
   io GeometryStack stack,
   Integer iterations,
@@ -94,10 +95,10 @@ operator tubeCharacter_DeltaMush(
   Boolean displayDebugging
 ) {
   if(stack.numGeometryOperators() > 3){
-    WeightmapModifier weightmapModifier = stack.getGeometryOperator(2);
-    weightmapModifier.setDisplay(displayMask);
+    //WeightmapModifier weightmapModifier = stack.getGeometryOperator(2);
+    //weightmapModifier.setDisplay(displayMask);
 
-    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(3);
+    DeltaMushModifier deltaMushModifier = stack.getGeometryOperator(2);
     deltaMushModifier.setNumIterations(iterations);
     deltaMushModifier.setDisplayDebugging(displayDebugging);
   }

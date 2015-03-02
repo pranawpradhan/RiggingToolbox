@@ -1,0 +1,9 @@
+{
+  "geomOperators": [
+    {
+     "type": "AlembicSkinnedMeshGeometryGenerator",
+     "filePath": "skinnedTube.abc",
+     "geometryNames": ["pCylinderShape1"]
+    }
+  ]
+}

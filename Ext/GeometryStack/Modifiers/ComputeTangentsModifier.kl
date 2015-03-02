@@ -22,7 +22,7 @@ function GeometryOperator ComputeTangentsModifierFactory.constructGeometryOperat
 
 
 object ComputeTangentsModifier : BaseModifier {
-  Scalar hardAngleRadians;
+  
 };
 
 
@@ -36,8 +36,9 @@ function UInt32[String] ComputeTangentsModifier.getAttributeInteractions(){
 
 /// Per-geometry computation of the push. 
 /// \internal
-operator computeTangentsModifier_deformGeometries<<<index>>>(
-  io GeometrySet geomSet
+operator computeTangentsModifier_modifyGeometries<<<index>>>(
+  io GeometrySet geomSet,
+  Boolean useGPU
 ){
   PolygonMesh mesh = geomSet.get(index);
   if(mesh)
@@ -46,7 +47,7 @@ operator computeTangentsModifier_deformGeometries<<<index>>>(
 
 function ComputeTangentsModifier.evaluate!(EvalContext context, io GeometrySet geomSet){
   AutoProfilingEvent p(FUNC);
-  computeTangentsModifier_deformGeometries<<<geomSet.size()>>>(geomSet);
+  computeTangentsModifier_modifyGeometries<<<geomSet.size()>>>(geomSet, this.useGPU());
 }
 
 

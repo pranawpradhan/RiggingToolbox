@@ -1,37 +1,60 @@
 
 require RiggingToolbox;
+require InlineDrawing;
 
 operator entry(){
 
   StartFabricProfiling();
 
   GeometryStack stack();
+  stack.loadJSONFile("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/tubeCharacter_Skinning.json");
 
-  AlembicSkinnedMeshGeometryGenerator alembicGenerator();
-  SkinningModifier skiningModifier();
-  stack.addGeometryOperator(alembicGenerator);
-  stack.addGeometryOperator(skiningModifier);
-
-  alembicGenerator.setFilePath("${FABRIC_RIGGINGTOOLBOX_PATH}/Tests/GeometryStack/Resources/skinnedTube.abc");
-
-  String geometryNames[];
-  geometryNames.push("pCylinderShape1");
-  alembicGenerator.setGeometryNames(geometryNames);
+  SkinningModifier skiningModifier = stack.getGeometryOperator(1);
 
   EvalContext context();
   GeometrySet geomSet = stack.evaluate(context);
 
-  // Modify the pose and then reevaluate. 
-  Mat44 pose[];
-  pose.resize(2);
-  pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
-  pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
-  skiningModifier.setPose(pose);
+  {
+    // Modify the pose and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
+    pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
+    skiningModifier.setPose(pose);
+  }
+
+  stack.evaluate(context);
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(1, 2, 3)).toMat44();
+    pose[1] = Xfo(Vec3(4, 6, 7)).toMat44();
+    skiningModifier.setPose(pose);
+  }
 
   stack.evaluate(context);
 
   StopFabricProfiling();
 
   report( GetEvalPathReport() );
+
+  DrawContext drawContext = DrawContext();
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
+
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(4, 7, 13)).toMat44();
+    pose[1] = Xfo(Vec3(14, 16, 17)).toMat44();
+    skiningModifier.setPose(pose);
+  }
+  
+  stack.evaluate(context);
+  inlineDrawingScope.draw(drawContext);
 }
 

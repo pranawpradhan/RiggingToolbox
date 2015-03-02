@@ -258,7 +258,6 @@ function Boolean Weightmap2.isConnected(){
 /// \param meshTransform The transform of the mesh. This is required to be able to dispaly the weightmap correctly.
 /// \param index The index of the mesh in the weightmap. 
 function Weightmap2.connect!( PolygonMesh mesh, Xfo meshTransform, UInt32 index){
-  report(this.name + ".connect:"+index);
   if(this.weightMapAttrs.size <= index){
     UInt32 newNumMeshes = index + 1;
     this.meshes.resize(newNumMeshes);

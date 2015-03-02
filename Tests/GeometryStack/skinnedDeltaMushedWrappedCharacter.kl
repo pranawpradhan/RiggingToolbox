@@ -19,17 +19,39 @@ operator entry(){
   EvalContext context();
   stack.evaluate(context);
 
+  DrawContext drawContext = DrawContext();
+  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
+  inlineDrawingScope.draw(drawContext);
+  
   // Modify the pose and then reevaluate. 
-  Mat44 pose[];
-  pose.resize(4);
-  pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
-  pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
-  pose[2] = Xfo(Vec3(10, 20, 5)).toMat44();
-  pose[3] = Xfo(Vec3(10, 20, 5)).toMat44();
-  skiningModifier.setPose(pose);
+  {
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(3, 4, 5)).toMat44();
+    pose[1] = Xfo(Vec3(10, 20, 5)).toMat44();
+    pose[2] = Xfo(Vec3(10, 20, 5)).toMat44();
+    pose[3] = Xfo(Vec3(10, 20, 5)).toMat44();
+    skiningModifier.setPose(pose);
+  }
 
   stack.evaluate(context);
 
+  inlineDrawingScope.draw(drawContext);
+
+
+  {
+    // Modify the pose again and then reevaluate. 
+    Mat44 pose[];
+    pose.resize(4);
+    pose[0] = Xfo(Vec3(4, 7, 13)).toMat44();
+    pose[1] = Xfo(Vec3(14, 16, 17)).toMat44();
+    skiningModifier.setPose(pose);
+  }
+  
+  stack.evaluate(context);
+  inlineDrawingScope.draw(drawContext);
+
+  
   StopFabricProfiling();
 
   report( GetEvalPathReport() );
