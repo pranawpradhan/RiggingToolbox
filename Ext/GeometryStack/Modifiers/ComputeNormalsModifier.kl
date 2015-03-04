@@ -178,13 +178,13 @@ function ComputeNormalsModifier.setupRendering!(){
 
 
 function JSONDictValue ComputeNormalsModifier.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
   json.setBoolean('displayDebugging', this.displayDebugging);
   return json;
 }
 
 function ComputeNormalsModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
   if(json.has('displayDebugging'))
     this.displayDebugging = json.getBoolean('displayDebugging');
 }

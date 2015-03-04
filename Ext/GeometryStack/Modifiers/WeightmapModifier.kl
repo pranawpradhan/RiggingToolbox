@@ -39,7 +39,7 @@ function WeightmapPaintManipulator(WeightmapModifier modifier){
 /// the collectedPoints struct contains the points, distances and weights
 /// of the points in the geometry that are within the volume of the paint brush.
 function WeightmapPaintManipulator.onPaint!(io MouseEvent mouseEvent, SurfacePaintManipulator_PointCollection collectedPoints){
-  this.parent#onPaint( mouseEvent, collectedPoints);
+  this.parent.onPaint( mouseEvent, collectedPoints);
   // Notify the WeightmapModifier that its data has been modified by painting. 
   // This will cause the modifier to emit a notification that will dirty the stack. 
   this.modifier.onPainted();
@@ -141,7 +141,7 @@ function WeightmapModifier.evaluate!(EvalContext context, io GeometrySet geomSet
 
 
 function JSONDictValue WeightmapModifier.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
   json.setString('weightmapName', this.weightmap.getName());
 
   json.set('weightmap', this.weightmap.saveJSON(persistenceContext));
@@ -150,7 +150,7 @@ function JSONDictValue WeightmapModifier.saveJSON(PersistenceContext persistence
 }
 
 function WeightmapModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
 
   if(json.has('weightmapName'))
     this.weightmap.setName(json.getString('weightmapName'));

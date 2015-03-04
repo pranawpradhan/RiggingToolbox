@@ -410,14 +410,14 @@ function SkinningModifier.setupRendering!(io GeometrySet geomSet){
 
 
 function JSONDictValue SkinningModifier.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
   json.setBoolean('transformNormals', this.transformNormals);
   json.setBoolean('displayDebugging', this.displayDebugging);
   return json;
 }
 
 function SkinningModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
   if(json.has('transformNormals'))
     this.transformNormals = json.getBoolean('transformNormals');
   if(json.has('displayDebugging'))

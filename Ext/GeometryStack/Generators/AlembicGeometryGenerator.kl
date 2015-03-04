@@ -187,7 +187,7 @@ function AlembicGeometryGenerator.evaluate!(EvalContext context, io GeometrySet 
 
 /// Saves a json dict
 function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
 
   json.setString('filePath', this.filePath);
 
@@ -201,7 +201,7 @@ function JSONDictValue AlembicGeometryGenerator.saveJSON(PersistenceContext pers
 
 /// Loads a json dict
 function AlembicGeometryGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
 
   JSONArrayValue geometryNamesData = json.get('geometryNames');
   if(geometryNamesData)

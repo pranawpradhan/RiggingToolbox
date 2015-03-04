@@ -463,14 +463,14 @@ function DeltaMushModifier.loadReferenceFromAlembic!(FilePath expandedPath){
 
 
 function JSONDictValue DeltaMushModifier.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
   json.setInteger('iterations', this.iterations);
   json.setBoolean('displayDebugging', this.displayDebugging);
   return json;
 }
 
 function DeltaMushModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
 
   if(json.has('iterations'))
     this.iterations = json.getInteger('iterations');

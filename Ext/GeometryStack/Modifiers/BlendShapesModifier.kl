@@ -525,7 +525,7 @@ function BlendShapesModifier.setupRendering!(io GeometrySet geomSet){
 
 
 function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
   json.setString('filePath', this.filePath);
   json.setString('referenceGeometryName', this.referenceGeometryName);
   json.setBoolean('displayDebugging', this.displayDebugging);
@@ -539,7 +539,7 @@ function JSONDictValue BlendShapesModifier.saveJSON(PersistenceContext persisten
 }
 
 function BlendShapesModifier.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
 
   if(json.has('threshold'))
     this.threshold = json.getScalar('threshold');
