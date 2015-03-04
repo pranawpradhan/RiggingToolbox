@@ -25,6 +25,10 @@ object ComputeTangentsModifier : BaseModifier {
   
 };
 
+function ComputeTangentsModifier(){
+  this.parent.init();
+}
+
 
 function UInt32[String] ComputeTangentsModifier.getAttributeInteractions(){
   UInt32 result[String];

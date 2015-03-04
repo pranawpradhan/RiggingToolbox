@@ -44,6 +44,7 @@ object SkinningModifier : BaseModifier {
 };
 
 function SkinningModifier(){
+  this.parent.init();
   this.transformNormals = false;
   this.poseDirty = true;
   this.displayDebugging = false;

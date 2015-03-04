@@ -42,6 +42,7 @@ object DeltaMushModifier : BaseModifier {
 
 
 function DeltaMushModifier(){
+  this.parent.init();
   this.iterations = 20;
   this.useMask = false;
   this.maskWeightmapName = '';

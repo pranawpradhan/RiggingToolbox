@@ -44,6 +44,7 @@ object WrapModifier : BaseModifier, Listener {
 
 
 function WrapModifier(){
+  this.parent.init();
 }
 
 function UInt32[String] WrapModifier.getAttributeInteractions(){
@@ -167,7 +168,6 @@ operator wrapModifier_bindGeometries<<<index>>>(
   io Vec3 normalDeltas[][],
   Boolean useGPU
 ){
-  report("wrapModifier_bindGeometries:" + index);
   PolygonMesh srcRefMesh = influenceRefGeometries[geometryMapping[index]];
   if(!srcRefMesh)
     throw("Source geometry '"+geometryMapping[index]+"' is not a PolygonMesh:" + influenceRefGeometries[geometryMapping[index]].type() );

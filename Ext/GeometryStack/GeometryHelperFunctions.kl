@@ -292,3 +292,17 @@ function Boolean applyNameFilters(String name, String filters[]){
   }
   return false;
 }
+
+
+// simple(hacky) utility function for accessing the value of an environment variable.
+function String getEnvVar(String name){
+  String key = '${'+name+'}';
+  FilePath temp = FilePath('/'+key+'/').expandEnvVars();
+  String vals[] = temp.string().split('/');
+  if(vals.size == 2)
+    return '';
+  // If the var was not found, then the middle values is still the key.
+  if(vals[1] == key)
+    return '';
+  return vals[1];
+}

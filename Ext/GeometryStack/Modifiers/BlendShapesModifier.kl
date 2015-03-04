@@ -79,6 +79,7 @@ object BlendShapesModifier : BaseModifier {
 
 
 function BlendShapesModifier(){
+  this.parent.init();
   this.threshold = 0.001;
   this.sparcity = 0.0;
   this.targetCount = 0.0;

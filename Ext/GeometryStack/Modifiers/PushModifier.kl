@@ -26,10 +26,12 @@ object PushModifier : BaseModifier {
 };
 
 function PushModifier(){
+  this.parent.init();
   this.push = 1.0;
 }
 
 function PushModifier(Scalar push){
+  this.parent.init();
   this.push = push;
 }
 

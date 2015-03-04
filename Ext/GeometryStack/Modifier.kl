@@ -9,9 +9,16 @@ interface Modifier {
 };
 
 object BaseModifier : Notifier, Modifier, GeometryOperator {
-
+  Boolean cudaEnabled;
 };
 
+function BaseModifier.init!(){
+  // The Deformation stack will only use the GPU if the FABRIC_FEATURE_CUDA_COMPUTE environment variable is set to 1
+  String cudaVar = getEnvVar('FABRIC_FEATURE_CUDA_COMPUTE');
+  if(cudaVar != '' && cudaVar.toInteger() != 0){
+    this.cudaEnabled = true;
+  }
+}
 
 function UInt32[String] BaseModifier.getAttributeInteractions(){
   UInt32 result[String];
@@ -20,7 +27,7 @@ function UInt32[String] BaseModifier.getAttributeInteractions(){
 
 
 function Boolean BaseModifier.useGPU(){
-  return true;
+  return this.cudaEnabled;
 }
 
 
