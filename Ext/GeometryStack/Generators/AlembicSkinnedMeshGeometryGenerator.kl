@@ -420,7 +420,7 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
 
     //-----------------------------------------
     // Get the envelope weights data
-    AlembicICompoundProperty compound = readers[i]._schema.getArbGeomParams();
+    AlembicICompoundProperty compound = readers[i].getAlembicGeometryAttributesReader().getRootCompound();
     if(!compound.valid())
       continue;
 
@@ -428,7 +428,6 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     for (Integer pp=0; pp<compound.getNumProperties(); pp++){
       AlembicPropertyHeader header = compound.getPropertyHeader(pp);
       String propname = header.getName();
-      AlembicPropertyType pType = header.getPropertyType();
       if(propname == "EnvelopeDeformers" || propname == "Envelope_Deformers" || propname == "_EnvelopeDeformers" ) {
         if (header.isCompound()){
           AlembicICompoundProperty envDeformersCpmd = AlembicICompoundProperty(compound, propname);
@@ -529,10 +528,9 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     UInt32 subArrayIndices[];
     UInt32 envelopeDeformerIndices[];
 
-    AlembicICompoundProperty compound = readers[skinnedGeometryIndices[i]]._schema.getArbGeomParams();
+    AlembicICompoundProperty compound = readers[i].getAlembicGeometryAttributesReader().getRootCompound();
     for (Integer pp=0; pp<compound.getNumProperties(); pp++) {
       AlembicPropertyHeader header = compound.getPropertyHeader(pp);
-      AlembicPropertyType pType = header.getPropertyType();
       String propname = header.getName();
       switch(propname){
         case "EnvelopeWeights":
@@ -836,13 +834,13 @@ function Skeleton AlembicSkinnedMeshGeometryGenerator.buildSkeleton(io AlembicAr
       }
     }
   }
-  return Skeleton('this.getName()', bones);
+  return Skeleton(FilePath(this.filePath).fileName(), bones);
 }
 
 
 /// Saves a json dict
 function JSONDictValue AlembicSkinnedMeshGeometryGenerator.saveJSON(PersistenceContext persistenceContext){
-  JSONDictValue json = this.parent#saveJSON(persistenceContext);
+  JSONDictValue json = this.parent.saveJSON(persistenceContext);
 
   json.setString('filePath', this.filePath);
 
@@ -861,7 +859,7 @@ function JSONDictValue AlembicSkinnedMeshGeometryGenerator.saveJSON(PersistenceC
 
 /// Loads a json dict
 function AlembicSkinnedMeshGeometryGenerator.loadJSON!(PersistenceContext persistenceContext, JSONDictValue json){
-  this.parent#loadJSON(persistenceContext, json);
+  this.parent.loadJSON(persistenceContext, json);
 
   JSONArrayValue geometryNamesData = json.get('geometryNames');
   if(geometryNamesData)
