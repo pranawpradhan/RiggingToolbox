@@ -19,9 +19,14 @@ operator entry(){
   EvalContext context();
   stack.evaluate(context);
 
-  DrawContext drawContext = DrawContext();
-  InlineDrawingScope inlineDrawingScope = InlineDrawingScope();
-  inlineDrawingScope.draw(drawContext);
+  Boolean testDrawingPipeline = false;
+  DrawContext drawContext = null;
+  InlineDrawingScope inlineDrawingScope = null;
+  if(testDrawingPipeline){
+    drawContext = DrawContext();
+    inlineDrawingScope = InlineDrawingScope();
+    inlineDrawingScope.draw(drawContext);
+  }
   
   // Modify the pose and then reevaluate. 
   {
@@ -36,8 +41,8 @@ operator entry(){
 
   stack.evaluate(context);
 
-  inlineDrawingScope.draw(drawContext);
-
+  if(testDrawingPipeline)
+    inlineDrawingScope.draw(drawContext);
 
   {
     // Modify the pose again and then reevaluate. 
@@ -49,7 +54,9 @@ operator entry(){
   }
   
   stack.evaluate(context);
-  inlineDrawingScope.draw(drawContext);
+
+  if(testDrawingPipeline)
+    inlineDrawingScope.draw(drawContext);
 
   
   StopFabricProfiling();

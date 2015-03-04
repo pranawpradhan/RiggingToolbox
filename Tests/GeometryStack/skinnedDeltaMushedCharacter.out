@@ -8,125 +8,39 @@ AlembicGeometryAttributesReader: Property "EnvelopeWeights" not supported.
 AlembicGeometryAttributesReader: Property "MappingIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformerIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformers" not supported.
-function Ref<GeometryAttributeCache>#update!(Geometry[]):SkinningModifier:["positions","skinningData"]
-mesh.getMemType():0:true
-update:positions
-update:skinningData
-function Ref<GeometryAttributeCache>#update!(Geometry[]):WeightmapModifier:["positions","DeltaMushMask"]
-mesh.getMemType():1:true
-update:positions
-update:DeltaMushMask
-function Ref<WeightmapModifier>#evaluate!(EvalContext, io GeometrySet)
-Weightmap2.connect!
-function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals","DeltaMushMask"]
-mesh.getMemType():1:true
-update:positions
-update:normals
-update:DeltaMushMask
-deltaMushModifier_computeMeshBinding:0
-mesh.topology getMemType:1
-mushedPositions getMemType:1
-deltaMushModifier_computeMeshBinding - Done:
-deltaMushModifier_deformGeometries:0
-getMemType:1
-mushedPositions getMemType:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-mesh.getMemType():1:true
-update:positions
-update:uvs0
-update:tangents
-Error: this: data not available in CPU memory
-  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
-  2 function.setError.in_AS0.ST()
-  3 internal.internal.verifyHeapSpecOk.io_AS0.UI32_VA.in.BO.in.BO.in_AS0.ST()
-  4 internal.__UI32_VA__ConstIndex.in_AS0.UI32_VA.in.UI32.in_AS0.ST.in.UI32.in.UI32()
-  5 method.getItemIter.in_AS0.STArrayOffsetAllocator.in.UI32() PolygonMeshInternalAllocator.kl:348
-  6 method.getPolygonIter.in_AS0.STPolygonMeshTopology.in.UI32() PolygonMeshInternal.kl:138
-  7 method.getPolygonSize.in_AS0.STPolygonMeshTopology.in.UI32() PolygonMeshBase.kl:479
-  8 method.getPolygonSize.in_AS0.UO_PolygonMesh.in.UI32() PolygonMeshBase.kl:482
-  9 method.recomputeTangents.io_AS0.UO_PolygonMesh.in.BO() PolygonMeshBase.kl:1553
-  10 method.recomputeTangentsIfRequired.io_AS0.UO_PolygonMesh() PolygonMeshBase.kl:1613
-  11 operator.computeTangentsModifier_deformGeometries.in.UI32.io_AS0.OO_GeometrySet() ComputeTangentsModifier.kl:43
-  12 internal.computeTangentsModifier_deformGeometries.stub.cpu.0()
-function Ref<GeometryAttributeCache>#update!(Geometry[]):WeightmapModifier:["positions","DeltaMushMask"]
-mesh.getMemType():1:true
-update:positions
-update:DeltaMushMask
-function Ref<WeightmapModifier>#evaluate!(EvalContext, io GeometrySet)
-function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals","DeltaMushMask"]
-mesh.getMemType():1:true
-update:positions
-update:normals
-update:DeltaMushMask
-deltaMushModifier_deformGeometries:0
-getMemType:1
-mushedPositions getMemType:1
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
-mesh.getMemType():1:true
-update:positions
-update:normals
-function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-mesh.getMemType():1:true
-update:positions
-update:uvs0
-update:tangents
-Error: this: data not available in CPU memory
-  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
-  2 function.setError.in_AS0.ST()
-  3 internal.internal.verifyHeapSpecOk.io_AS0.UI32_VA.in.BO.in.BO.in_AS0.ST()
-  4 internal.__UI32_VA__ConstIndex.in_AS0.UI32_VA.in.UI32.in_AS0.ST.in.UI32.in.UI32()
-  5 method.getItemIter.in_AS0.STArrayOffsetAllocator.in.UI32() PolygonMeshInternalAllocator.kl:348
-  6 method.getPolygonIter.in_AS0.STPolygonMeshTopology.in.UI32() PolygonMeshInternal.kl:138
-  7 method.getPolygonSize.in_AS0.STPolygonMeshTopology.in.UI32() PolygonMeshBase.kl:479
-  8 method.getPolygonSize.in_AS0.UO_PolygonMesh.in.UI32() PolygonMeshBase.kl:482
-  9 method.recomputeTangents.io_AS0.UO_PolygonMesh.in.BO() PolygonMeshBase.kl:1553
-  10 method.recomputeTangentsIfRequired.io_AS0.UO_PolygonMesh() PolygonMeshBase.kl:1613
-  11 operator.computeTangentsModifier_deformGeometries.in.UI32.io_AS0.OO_GeometrySet() ComputeTangentsModifier.kl:43
-  12 internal.computeTangentsModifier_deformGeometries.stub.cpu.0()
-function Ref<DeltaMushModifier>.loadReferenceFromAlembic!(FilePath)
-function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
---function Ref<AlembicSkinnedMeshGeometryGenerator>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):1
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):SkinningModifier:["positions","skinningData"]
---function Ref<SkinningModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):2
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):WeightmapModifier:["positions","DeltaMushMask"]
---function Ref<WeightmapModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):3
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals","DeltaMushMask"]
---function Ref<DeltaMushModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):4
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
---function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):5
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
---function Ref<ComputeTangentsModifier>#evaluate!(EvalContext, io GeometrySet)
-function Ref<SkinningModifier>.setPose!(Mat44[])
---function Ref<GeometryStack>#notify!(Notifier, String, String):SkinningModifier.changed
-----function Ref<GeometrySet>.rewind!(UInt32):1
-------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):["positions","uvs0","tangents"]
-------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):["positions","normals"]
-------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):["positions","normals","DeltaMushMask"]
-------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):["positions","DeltaMushMask"]
-------function Ref<GeometryAttributeCache>#restore?(io Geometry[]):["positions","skinningData"]
-function GeometrySet Ref<GeometryStack>.evaluate!(EvalContext)
---function Ref<SkinningModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):2
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):WeightmapModifier:["positions","DeltaMushMask"]
---function Ref<WeightmapModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):3
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):DeltaMushModifier:["positions","normals","DeltaMushMask"]
---function Ref<DeltaMushModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):4
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
---function Ref<ComputeNormalsModifier>#evaluate!(EvalContext, io GeometrySet)
---function Ref<GeometrySet>.updateCache!(UInt32, GeometryOperator):5
-----function Ref<GeometryAttributeCache>#update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
---function Ref<ComputeTangentsModifier>#evaluate!(EvalContext, io GeometrySet)
+function DeltaMushModifier.loadReferenceFromAlembic!(FilePath)
+function GeometrySet GeometryStack.evaluate!(EvalContext)
+--function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):1
+----function GeometryAttributeCache.update!(Geometry[]):SkinningModifier:["positions","skinningData"]
+--function SkinningModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):2
+----function GeometryAttributeCache.update!(Geometry[]):DeltaMushModifier:["positions","normals"]
+--function DeltaMushModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):3
+----function GeometryAttributeCache.update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
+--function ComputeNormalsModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):4
+----function GeometryAttributeCache.update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
+--function ComputeTangentsModifier.evaluate!(EvalContext, io GeometrySet)
+function SkinningModifier.setPose!(Mat44[])
+--function GeometryStack.notify!(Notifier, String, String):SkinningModifier.changed
+----function GeometrySet.rewind!(UInt32):1
+------function GeometryAttributeCache.restore?(io Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
+------function GeometryAttributeCache.restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
+------function GeometryAttributeCache.restore?(io Geometry[]):DeltaMushModifier:["positions","normals"]
+------function GeometryAttributeCache.restore?(io Geometry[]):SkinningModifier:["positions","skinningData"]
+function GeometrySet GeometryStack.evaluate!(EvalContext)
+--function SkinningModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):2
+----function GeometryAttributeCache.update!(Geometry[]):DeltaMushModifier:["positions","normals"]
+--function DeltaMushModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):3
+----function GeometryAttributeCache.update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
+--function ComputeNormalsModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):4
+----function GeometryAttributeCache.update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
+--function ComputeTangentsModifier.evaluate!(EvalContext, io GeometrySet)
 
 stack:GeometryStack { 
   geomOperators:[ 
@@ -134,19 +48,16 @@ stack:GeometryStack {
       type: AlembicSkinnedMeshGeometryGenerator,
       filePath: skinnedTube.abc
       expandedPath: D:\Projects\RiggingToolbox/Tests/GeometryStack/Resources\skinnedTube.abc
-    }
+    },
     { 
       type: SkinningModifier
-    }
-    { 
-      type: WeightmapModifier
-    }
+    },
     { 
       type: DeltaMushModifier
-    }
+    },
     { 
       type: ComputeNormalsModifier
-    }
+    },
     { 
       type: ComputeTangentsModifier
     }

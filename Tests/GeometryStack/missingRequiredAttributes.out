@@ -1,16 +1,8 @@
-Error: Geometry missing required attributes:["normals"]
+Error: Error: Missing Attribute:normals. Required for modifier:PushModifier
   1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
   2 function.setError.in_AS0.ST()
-  3 method.evaluate.io_AS0.UO_GeometryStack.in_AS0.OO_EvalContext() GeometryStack.kl:122
-  4 operator.entry() GeometryStack_missingRequiredAttributes.kl:13
-  5 kl.internal.entry.stub.cpu()
-Error: Error in PushModifier_deformGeometries. Missing attributes.
-  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
-  2 function.setError.in_AS0.ST()
-  3 operator.PushModifier_deformGeometries.in.UI32.io_AS0.OO_GeometrySet.in.F32() PushModifier.kl:61
-  4 internal.PushModifier_deformGeometries.stub.cpu.00()
-Error: GeometryStack/PushModifier.kl:65:3: dereferenced null object
-  1 kl.internal.String.SetErrorDataPtrAndLength.AS0()
-  2 function.setError.in_AS0.ST()
-  3 operator.PushModifier_deformGeometries.in.UI32.io_AS0.OO_GeometrySet.in.F32() PushModifier.kl:65
-  4 internal.PushModifier_deformGeometries.stub.cpu.00()
+  3 method.update.io_AS0.UO_GeometryAttributeCache.in_AS0.OI_Geometry_VA() GeometryAttributeCache.kl:74
+  4 method.updateCache.io_AS0.UO_GeometrySet.in.UI32.in_AS0.OI_GeometryOperator() GeometrySet.kl:134
+  5 method.evaluate.io_AS0.UO_GeometryStack.in_AS0.OO_EvalContext() GeometryStack.kl:131
+  6 operator.entry() missingRequiredAttributes.kl:12
+  7 kl.internal.entry.stub.cpu()
