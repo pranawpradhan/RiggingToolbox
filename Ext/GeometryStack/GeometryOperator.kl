@@ -23,6 +23,8 @@ interface GeometryOperator {
   // attributes. This dictionary is used to determine where caching should occur in the geometry stack.
   UInt32[String] getAttributeInteractions();
 
+  Boolean useGPU();
+
   // Evaluate the operator modifying the geomSet
   evaluate!(EvalContext context, io GeometrySet geomSet);
 

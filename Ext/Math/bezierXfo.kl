@@ -286,7 +286,7 @@ function Xfo[] BezierXfo.projectRegularly(Size count, Size samples, Scalar maxLe
   if(count == 0)
     return result;
 
-  Scalar step = 1.0/(count-1);
+  Scalar step = 1.0f/Scalar(count-1);
   Scalar ratios[];
   ratios.resize(count);
   for (Index i=0; i<count; i++) {

@@ -97,7 +97,7 @@ function Boolean OGLFlatOverlayShader.draw!(io DrawContext context) {
   //  we need to see from both sides. E.g. the planar translation gizmo.
   glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
 
-  Boolean result = this.parent#draw(context);
+  Boolean result = this.parent.draw(context);
  
   // Reset the depth mode. (Maybe this isn't necessay)
   glDepthRange(0.0, 1.0); 

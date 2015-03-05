@@ -1,17 +1,26 @@
+loadReferenceFromAlembic:D:\Projects\RiggingToolbox/Tests/GeometryStack/Resources\skinnedTube.abc
+AlembicGeometryAttributesReader: Property "EnvelopeWeights" not supported.
+AlembicGeometryAttributesReader: Property "MappingIndices" not supported.
+AlembicGeometryAttributesReader: Property "EnvelopeDeformerIndices" not supported.
+AlembicGeometryAttributesReader: Property "EnvelopeDeformers" not supported.
 Importing:D:\Projects\RiggingToolbox/Tests/GeometryStack/Resources\skinnedTube.abc
 AlembicGeometryAttributesReader: Property "EnvelopeWeights" not supported.
 AlembicGeometryAttributesReader: Property "MappingIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformerIndices" not supported.
 AlembicGeometryAttributesReader: Property "EnvelopeDeformers" not supported.
+function DeltaMushModifier.loadReferenceFromAlembic!(FilePath)
 function GeometrySet GeometryStack.evaluate!(EvalContext)
 --function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext, io GeometrySet)
 --function GeometrySet.updateCache!(UInt32, GeometryOperator):1
-----function GeometryAttributeCache.update!(Geometry[]):SkinningModifier:["positions","normals","skinningData"]
+----function GeometryAttributeCache.update!(Geometry[]):SkinningModifier:["positions","skinningData"]
 --function SkinningModifier.evaluate!(EvalContext, io GeometrySet)
 --function GeometrySet.updateCache!(UInt32, GeometryOperator):2
+----function GeometryAttributeCache.update!(Geometry[]):DeltaMushModifier:["positions","normals"]
+--function DeltaMushModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):3
 ----function GeometryAttributeCache.update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
 --function ComputeNormalsModifier.evaluate!(EvalContext, io GeometrySet)
---function GeometrySet.updateCache!(UInt32, GeometryOperator):3
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):4
 ----function GeometryAttributeCache.update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
 --function ComputeTangentsModifier.evaluate!(EvalContext, io GeometrySet)
 function SkinningModifier.setPose!(Mat44[])
@@ -19,27 +28,46 @@ function SkinningModifier.setPose!(Mat44[])
 ----function GeometrySet.rewind!(UInt32):1
 ------function GeometryAttributeCache.restore?(io Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
 ------function GeometryAttributeCache.restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
-------function GeometryAttributeCache.restore?(io Geometry[]):SkinningModifier:["positions","normals","skinningData"]
+------function GeometryAttributeCache.restore?(io Geometry[]):DeltaMushModifier:["positions","normals"]
+------function GeometryAttributeCache.restore?(io Geometry[]):SkinningModifier:["positions","skinningData"]
 function GeometrySet GeometryStack.evaluate!(EvalContext)
 --function SkinningModifier.evaluate!(EvalContext, io GeometrySet)
 --function GeometrySet.updateCache!(UInt32, GeometryOperator):2
+----function GeometryAttributeCache.update!(Geometry[]):DeltaMushModifier:["positions","normals"]
+--function DeltaMushModifier.evaluate!(EvalContext, io GeometrySet)
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):3
 ----function GeometryAttributeCache.update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
 --function ComputeNormalsModifier.evaluate!(EvalContext, io GeometrySet)
---function GeometrySet.updateCache!(UInt32, GeometryOperator):3
-----function GeometryAttributeCache.update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
---function ComputeTangentsModifier.evaluate!(EvalContext, io GeometrySet)
-function SkinningModifier.setPose!(Mat44[])
---function GeometryStack.notify!(Notifier, String, String):SkinningModifier.changed
-----function GeometrySet.rewind!(UInt32):1
-------function GeometryAttributeCache.restore?(io Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
-------function GeometryAttributeCache.restore?(io Geometry[]):ComputeNormalsModifier:["positions","normals"]
-------function GeometryAttributeCache.restore?(io Geometry[]):SkinningModifier:["positions","normals","skinningData"]
-function GeometrySet GeometryStack.evaluate!(EvalContext)
---function SkinningModifier.evaluate!(EvalContext, io GeometrySet)
---function GeometrySet.updateCache!(UInt32, GeometryOperator):2
-----function GeometryAttributeCache.update!(Geometry[]):ComputeNormalsModifier:["positions","normals"]
---function ComputeNormalsModifier.evaluate!(EvalContext, io GeometrySet)
---function GeometrySet.updateCache!(UInt32, GeometryOperator):3
+--function GeometrySet.updateCache!(UInt32, GeometryOperator):4
 ----function GeometryAttributeCache.update!(Geometry[]):ComputeTangentsModifier:["positions","uvs0","tangents"]
 --function ComputeTangentsModifier.evaluate!(EvalContext, io GeometrySet)
 
+stack:GeometryStack { 
+  geomOperators:[ 
+    {
+      type: AlembicSkinnedMeshGeometryGenerator,
+      filePath: skinnedTube.abc
+      expandedPath: D:\Projects\RiggingToolbox/Tests/GeometryStack/Resources\skinnedTube.abc
+    },
+    { 
+      type: SkinningModifier
+    },
+    { 
+      type: DeltaMushModifier
+    },
+    { 
+      type: ComputeNormalsModifier
+    },
+    { 
+      type: ComputeTangentsModifier
+    }
+  ],
+  geomSet:   { 
+    geometries:[ 
+      pCylinderShape1:{
+      },
+    ]
+    attributeGenerations:{ 
+    },
+  }
+}
