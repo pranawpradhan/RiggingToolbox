@@ -528,7 +528,7 @@ function AlembicSkinnedMeshGeometryGenerator.evaluate!(EvalContext context, io G
     UInt32 subArrayIndices[];
     UInt32 envelopeDeformerIndices[];
 
-    AlembicICompoundProperty compound = readers[i].getAlembicGeometryAttributesReader().getRootCompound();
+    AlembicICompoundProperty compound = readers[skinnedGeometryIndices[i]].getAlembicGeometryAttributesReader().getRootCompound();
     for (Integer pp=0; pp<compound.getNumProperties(); pp++) {
       AlembicPropertyHeader header = compound.getPropertyHeader(pp);
       String propname = header.getName();
