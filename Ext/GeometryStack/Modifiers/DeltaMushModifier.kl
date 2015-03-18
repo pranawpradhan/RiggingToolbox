@@ -108,7 +108,30 @@ function Mat44 deltaMushModifier_buildRefFrame(PolygonMeshTopology mesh, UInt32 
 }
 
 
-operator deltaMushModifier_smoothPos<<<index>>>(PolygonMeshTopology mesh, Vec3 srcPositions[], io Vec3 tgtPositions[]) {
+struct SmoothPosMRInput {
+  PolygonMesh mesh;
+  Vec3 positions[];
+};
+
+
+// These are some internal methods borrowed from PolygonMesh to modify the cloned positions array.
+inline deltaMushModifier_setPointIterAttributeValues(PolygonMesh mesh,  DataIter pointIter, io Vec3 attributeValues[], Vec3 value ) {
+  PolygonMesh_UnsharedAttributeIndexIter iter = mesh.topology.getPointIterUnsharedAttributeIndexIter( pointIter );
+  UInt32 attributeIndex;
+  while( mesh.topology.PolygonMesh_UnsharedAttributeIndexIterGetNext(iter, attributeIndex) )
+    attributeValues[ attributeIndex ] = value;
+}
+
+inline deltaMushModifier_setPointAttributeValues(PolygonMesh mesh, Size point, io Vec3 attributeValues[], Vec3 value ) {
+  DataIter pointIter = mesh.getPointIter( point );
+  if( pointIter )
+    deltaMushModifier_setPointIterAttributeValues(mesh, pointIter, attributeValues, value );
+  else
+    attributeValues[point] = value;
+}
+
+
+operator deltaMushModifier_smoothPos<<<index>>>(io Vec3 positions[], io PolygonMesh mesh) {
 
   //Pseudo-gaussian: center weight = 0.5, neighbor weights sum = 0.5
   Vec3 position = srcPositions[ index ];
