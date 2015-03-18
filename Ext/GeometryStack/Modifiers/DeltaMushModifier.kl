@@ -113,9 +113,9 @@ struct SmoothPosMRInput {
 
 // These are some internal methods borrowed from PolygonMesh to modify the cloned positions array.
 inline deltaMushModifier_setPointIterAttributeValues(PolygonMesh mesh,  DataIter pointIter, io Vec3 attributeValues[], Vec3 value ) {
-  PolygonMesh_UnsharedAttributeIndexIter iter = mesh.getPointIterUnsharedAttributeIndexIter( pointIter );
+  PolygonMesh_UnsharedAttributeIndexIter iter = mesh.topology.getPointIterUnsharedAttributeIndexIter( pointIter );
   UInt32 attributeIndex;
-  while( mesh.PolygonMesh_UnsharedAttributeIndexIterGetNext(iter, attributeIndex) )
+  while( mesh.topology.PolygonMesh_UnsharedAttributeIndexIterGetNext(iter, attributeIndex) )
     attributeValues[ attributeIndex ] = value;
 }
 
