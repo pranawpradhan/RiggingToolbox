@@ -5,6 +5,7 @@
     "Math/softClamp.kl",
     "Math/pivotDistanceLimit.kl",
     "Kinematics/solveNCFIK.kl",
+    "Kinematics/solveFABRIK.kl",
     
     "GeometryStack/Shaders/OGLFlatOverlayShader.kl",
     "GeometryStack/Shaders/OGLVertexColorOverlayShader2.kl",
