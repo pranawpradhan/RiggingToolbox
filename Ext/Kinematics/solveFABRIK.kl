@@ -153,6 +153,7 @@ function FABRIKSolver.EvaluateBoneTransforms!( io Mat44 out_bone_transforms[], i
         is_bone_location_updated = true;
 
     } else {
+        this.ResetToReferencePose();
         this.SolvePosition( effector_position );
         is_bone_location_updated = true;
     }
@@ -172,6 +173,11 @@ function FABRIKSolver.EvaluateBoneTransforms!( io Mat44 out_bone_transforms[], i
 }
 
 
+function FABRIKSolver.ResetToReferencePose!() {
+    for ( Index i=0; i < this.num_bones; i++ ){
+        this.links[i].xfo = this.links[i].referencePose;
+    }
+}
 
 /// if effector is within reach, calculate bone translations to position tip
 /// at  effector location.
